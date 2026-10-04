@@ -12,6 +12,7 @@
 <meta name="color-scheme" content="dark">
 <style>/*@include css/studio.css*/</style>
 <style>/*@include css/kit.css*/</style>
+<style>/*@include css/learn.css*/</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
@@ -30,6 +31,7 @@
 <header class="top">
   <div class="bar">
     <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--wood)"/><path d="M7 23V10M11.5 23V7M16 23V12M20.5 23V8M25 23v-9" stroke="var(--brass)" stroke-width="2.4" stroke-linecap="round"/></svg><span>Jam Room</span></div>
+    <div class="modes" role="tablist" aria-label="Section"><button data-mode="studio" aria-pressed="true" data-ic="studio"><span>Studio</span></button><button data-mode="learn" aria-pressed="false" data-ic="learn"><span>Learn</span></button></div>
     <div class="transport">
       <button id="bPlay" class="round play" aria-label="Play"></button>
       <button id="bRec" class="round rec" aria-label="Record"></button>
@@ -93,11 +95,13 @@
 </div>
 
 <footer class="dock" id="dock"></footer>
+<section class="learn" id="learn" hidden></section>
 
 <input type="file" id="file" accept=".json,application/json" hidden>
 <div class="toast" id="toast" role="status"></div>
 <div class="modal" id="modal"><div class="mbox" id="mBox"></div></div>
 
+@@LEARN@@
 <script type="application/json" id="smp">{"organ":{"24":"<B64>","30":"<B64>","36":"<B64>","42":"<B64>","48":"<B64>","54":"<B64>","60":"<B64>","66":"<B64>","72":"<B64>","78":"<B64>","84":"<B64>"},"harmonium":{"36":"<B64>","40":"<B64>","44":"<B64>","48":"<B64>","52":"<B64>","56":"<B64>","60":"<B64>","64":"<B64>","68":"<B64>","72":"<B64>","74":"<B64>"},"steel":{"38":"<B64>","41":"<B64>","44":"<B64>","47":"<B64>","50":"<B64>","53":"<B64>","56":"<B64>","59":"<B64>","62":"<B64>","65":"<B64>","68":"<B64>","71":"<B64>","74":"<B64>"},"nylon":{"35":"<B64>","38":"<B64>","42":"<B64>","45":"<B64>","49":"<B64>","52":"<B64>","55":"<B64>","59":"<B64>","63":"<B64>","66":"<B64>","69":"<B64>","73":"<B64>","76":"<B64>","79":"<B64>","82":"<B64>"},"eguitar":{"37":"<B64>","40":"<B64>","45":"<B64>","48":"<B64>","51":"<B64>","54":"<B64>","57":"<B64>","60":"<B64>","63":"<B64>","66":"<B64>","69":"<B64>","72":"<B64>","75":"<B64>","78":"<B64>","81":"<B64>","84":"<B64>"},"harp":{"28":"<B64>","31":"<B64>","35":"<B64>","38":"<B64>","41":"<B64>","45":"<B64>","48":"<B64>","52":"<B64>","55":"<B64>","59":"<B64>","62":"<B64>","65":"<B64>","69":"<B64>","72":"<B64>","76":"<B64>","79":"<B64>","83":"<B64>","86":"<B64>","89":"<B64>","93":"<B64>","98":"<B64>","101":"<B64>"},"ebass":{"25":"<B64>","28":"<B64>","31":"<B64>","34":"<B64>","37":"<B64>","40":"<B64>","43":"<B64>","46":"<B64>","49":"<B64>","52":"<B64>","55":"<B64>","58":"<B64>","61":"<B64>","64":"<B64>","67":"<B64>","70":"<B64>","73":"<B64>"},"contrabass":{"30":"<B64>","34":"<B64>","38":"<B64>","42":"<B64>","45":"<B64>","49":"<B64>","52":"<B64>","56":"<B64>","59":"<B64>"},"violin":{"55":"<B64>","60":"<B64>","64":"<B64>","67":"<B64>","72":"<B64>","76":"<B64>","79":"<B64>","84":"<B64>","88":"<B64>","91":"<B64>","96":"<B64>"},"cello":{"36":"<B64>","39":"<B64>","43":"<B64>","46":"<B64>","49":"<B64>","52":"<B64>","55":"<B64>","58":"<B64>","61":"<B64>","64":"<B64>","67":"<B64>","71":"<B64>"},"trumpet":{"53":"<B64>","57":"<B64>","60":"<B64>","63":"<B64>","67":"<B64>","70":"<B64>","74":"<B64>","77":"<B64>","81":"<B64>","84":"<B64>"},"trombone":{"34":"<B64>","37":"<B64>","41":"<B64>","44":"<B64>","48":"<B64>","51":"<B64>","56":"<B64>","60":"<B64>","63":"<B64>","65":"<B64>"},"horn":{"33":"<B64>","36":"<B64>","39":"<B64>","43":"<B64>","50":"<B64>","53":"<B64>","57":"<B64>","60":"<B64>","74":"<B64>","77":"<B64>"},"tuba":{"29":"<B64>","34":"<B64>","39":"<B64>","46":"<B64>","50":"<B64>","53":"<B64>","58":"<B64>","62":"<B64>"},"flute":{"60":"<B64>","64":"<B64>","69":"<B64>","72":"<B64>","76":"<B64>","81":"<B64>","84":"<B64>","88":"<B64>","93":"<B64>","96":"<B64>"},"clarinet":{"50":"<B64>","53":"<B64>","58":"<B64>","62":"<B64>","65":"<B64>","70":"<B64>","74":"<B64>","77":"<B64>","82":"<B64>","86":"<B64>","90":"<B64>"},"sax":{"49":"<B64>","52":"<B64>","55":"<B64>","58":"<B64>","61":"<B64>","64":"<B64>","67":"<B64>","70":"<B64>","73":"<B64>","76":"<B64>","79":"<B64>","81":"<B64>"},"bassoon":{"43":"<B64>","48":"<B64>","55":"<B64>","60":"<B64>","64":"<B64>","67":"<B64>","72":"<B64>"},"xylo":{"67":"<B64>","72":"<B64>","79":"<B64>","84":"<B64>","91":"<B64>","96":"<B64>","103":"<B64>","108":"<B64>"},"piano":{"22":"<B64>","26":"<B64>","30":"<B64>","34":"<B64>","38":"<B64>","42":"<B64>","46":"<B64>","50":"<B64>","54":"<B64>","58":"<B64>","62":"<B64>","66":"<B64>","70":"<B64>","74":"<B64>","78":"<B64>","82":"<B64>","86":"<B64>","90":"<B64>","94":"<B64>","98":"<B64>","102":"<B64>"},"piano_s":{"22":"<B64>","26":"<B64>","30":"<B64>","34":"<B64>","38":"<B64>","42":"<B64>","46":"<B64>","50":"<B64>","54":"<B64>","58":"<B64>","62":"<B64>","66":"<B64>","70":"<B64>","74":"<B64>","78":"<B64>","82":"<B64>","86":"<B64>","90":"<B64>","94":"<B64>","98":"<B64>","102":"<B64>"},"vibes":{"53":"<B64>","57":"<B64>","60":"<B64>","64":"<B64>","67":"<B64>","71":"<B64>","74":"<B64>","77":"<B64>","81":"<B64>","84":"<B64>","88":"<B64>"},"marimba":{"41":"<B64>","48":"<B64>","55":"<B64>","59":"<B64>","65":"<B64>","72":"<B64>","79":"<B64>","83":"<B64>","89":"<B64>","96":"<B64>"},"glock":{"79":"<B64>","84":"<B64>","91":"<B64>","96":"<B64>","103":"<B64>","108":"<B64>"},"harpsi":{"30":"<B64>","34":"<B64>","38":"<B64>","42":"<B64>","46":"<B64>","50":"<B64>","54":"<B64>","58":"<B64>","62":"<B64>","66":"<B64>","70":"<B64>","74":"<B64>","78":"<B64>","82":"<B64>"},"harmonica":{"60":"<B64>","64":"<B64>","72":"<B64>","76":"<B64>","79":"<B64>","84":"<B64>","88":"<B64>","91":"<B64>","96":"<B64>"},"ocarina":{"69":"<B64>","71":"<B64>","73":"<B64>","74":"<B64>","76":"<B64>","78":"<B64>","80":"<B64>","81":"<B64>","82":"<B64>","84":"<B64>","85":"<B64>"},"kalimba":{"59.01":"<B64>","61.55":"<B64>","62.86":"<B64>","66.23":"<B64>","68.18":"<B64>","71.08":"<B64>","72.98":"<B64>","75.25":"<B64>","78.46":"<B64>","81.25":"<B64>","83.25":"<B64>"},"kit":{"0":["<B64>","<B64>","<B64>","<B64>"],"1":["<B64>","<B64>","<B64>","<B64>"],"2":["<B64>","<B64>","<B64>","<B64>"],"3":["<B64>","<B64>","<B64>","<B64>"],"4":["<B64>","<B64>"],"5":["<B64>","<B64>"],"6":["<B64>","<B64>"],"7":["<B64>","<B64>"],"8":["<B64>","<B64>"],"9":["<B64>","<B64>"],"10":["<B64>","<B64>"],"11":["<B64>","<B64>"]}}</script>
 <script>/* Signalsmith Stretch 1.3.2, MIT License, (c) 2022 Geraint Luff / Signalsmith Audio Ltd. https://signalsmith-audio.co.uk/code/stretch/ */
 
@@ -2092,6 +2096,7 @@ function midiLabel(){
   return n.length?'MIDI: '+n[0]+(n.length>1?' +'+(n.length-1):''):'MIDI: none found';
 }
 /*@include js/viz.js*/
+/*@include js/learn.js*/
 function renderDock(){
   recomputeKeys();
   var kt=keyTrack(),host=$('dock'),drumMode=kt&&kt.kind==='drum',h='';
@@ -2168,6 +2173,7 @@ function bindMidi(){
 }
 function onMidi(e){
   var d=e.data,st=d[0]&0xf0,n=d[1],vel=d[2],kt=keyTrack();
+  if(MODE==='learn'){LEARN.midi(st,n,vel);return;}
   if(st===0x90&&vel>0){
     if(!kt)return;
     if(kt.kind==='drum'){var pi=GM_DRUM[n]!=null?GM_DRUM[n]:((n%8)+8)%8;pressStart('m'+n,[pi],document.querySelector('.pad[data-m="'+pi+'"]'),Math.max(.25,vel/127),true);}
@@ -2194,6 +2200,7 @@ $('dock').addEventListener('change',function(e){
 document.addEventListener('keydown',function(e){
   var tg=e.target.tagName;if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA'||e.metaKey||e.ctrlKey||e.altKey)return;
   if($('modal').classList.contains('show'))return;
+  if(MODE==='learn'){LEARN.key(e,true);return;}
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'){if(!e.repeat)susOn();return;}
   if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(P.playing)stop();else start(false);}return;}
   if(e.code==='Escape'){stop();return;}
@@ -2207,6 +2214,7 @@ document.addEventListener('keydown',function(e){
   if(m!=null){e.preventDefault();pressStart('k'+e.code,[m],document.querySelector('.kb [data-m="'+m+'"]'));}
 });
 document.addEventListener('keyup',function(e){
+  if(MODE==='learn'){LEARN.key(e,false);return;}
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'){susOff();return;}
   pressEnd('k'+e.code);
 });
@@ -2832,6 +2840,7 @@ $('feel').addEventListener('change',function(){S.swing=+this.value;markDirty();}
 $('space').addEventListener('change',function(){S.space=this.value;if(A.c)A.rev.buffer=makeIR(A.c,S.space);markDirty();});
 $('bGuide').addEventListener('click',function(){openGuide('start');});
 document.querySelectorAll('[data-ic]').forEach(function(b){var ic=IC[b.dataset.ic];if(ic)b.insertAdjacentHTML('afterbegin',ic);});
+document.querySelectorAll('.modes [data-mode]').forEach(function(b){b.addEventListener('click',function(){LEARN.setMode(b.dataset.mode);});});
 function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
 function syncFull(){var b=$('bFull');if(b){b.title=fsEl()?'Exit full screen':'Full screen';b.setAttribute('aria-label',b.title);b.classList.toggle('on',!!fsEl());}}
 document.addEventListener('fullscreenchange',syncFull);document.addEventListener('webkitfullscreenchange',syncFull);

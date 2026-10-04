@@ -1,0 +1,1478 @@
+[
+{
+"id": "minuet-g",
+"t": "Minuet in G",
+"c": "Christian Petzold (once credited to J. S. Bach)",
+"y": 1725,
+"g": "Baroque",
+"lv": 2,
+"bpm": 110,
+"ts": "3/4",
+"ks": 1,
+"beats": 192.0,
+"nn": 408,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 43,
+"hi": 83
+},
+{
+"id": "prelude-c",
+"t": "Prelude in C major, BWV 846",
+"c": "J. S. Bach",
+"y": 1722,
+"g": "Baroque",
+"lv": 3,
+"bpm": 72,
+"ts": "4/4",
+"ks": 0,
+"beats": 136.0,
+"nn": 535,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 36,
+"hi": 81
+},
+{
+"id": "air-g-string",
+"t": "Air on the G String (piano)",
+"c": "J. S. Bach",
+"y": 1730,
+"g": "Baroque",
+"lv": 3,
+"bpm": 60,
+"ts": "4/4",
+"ks": 1,
+"beats": 288.0,
+"nn": 879,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 33,
+"hi": 77
+},
+{
+"id": "prelude-c-minor",
+"t": "Prelude in C minor, BWV 847",
+"c": "J. S. Bach",
+"y": 1722,
+"g": "Baroque",
+"lv": 4,
+"bpm": 92,
+"ts": "4/4",
+"ks": -3,
+"beats": 152.0,
+"nn": 1120,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 36,
+"hi": 80
+},
+{
+"id": "canon-easy",
+"t": "Canon in D (easy)",
+"c": "Johann Pachelbel",
+"y": 1680,
+"g": "Baroque",
+"lv": 2,
+"bpm": 60,
+"ts": "4/4",
+"ks": 2,
+"beats": 212.0,
+"nn": 471,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 38,
+"hi": 86
+},
+{
+"id": "canon-mid",
+"t": "Canon in D",
+"c": "Johann Pachelbel",
+"y": 1680,
+"g": "Baroque",
+"lv": 3,
+"bpm": 70,
+"ts": "4/4",
+"ks": 2,
+"beats": 212.0,
+"nn": 764,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 38,
+"hi": 86
+},
+{
+"id": "canon-full",
+"t": "Canon in D (full)",
+"c": "Johann Pachelbel",
+"y": 1680,
+"g": "Baroque",
+"lv": 4,
+"bpm": 90,
+"ts": "4/4",
+"ks": 2,
+"beats": 408.0,
+"nn": 1589,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 38,
+"hi": 86
+},
+{
+"id": "passacaglia",
+"t": "Passacaglia (after Handel)",
+"c": "G. F. Handel",
+"y": 1720,
+"g": "Baroque",
+"lv": 4,
+"bpm": 110,
+"ts": "4/4",
+"ks": 0,
+"beats": 296.0,
+"nn": 1030,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 36,
+"hi": 96
+},
+{
+"id": "toccata",
+"t": "Toccata and Fugue in D minor (piano)",
+"c": "J. S. Bach",
+"y": 1708,
+"g": "Baroque",
+"lv": 5,
+"bpm": 80,
+"ts": "4/4",
+"ks": -1,
+"beats": 572.0,
+"nn": 4140,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 20,
+"hi": 86
+},
+{
+"id": "ode-to-joy",
+"t": "Ode to Joy (easy)",
+"c": "Ludwig van Beethoven",
+"y": 1824,
+"g": "Classical",
+"lv": 1,
+"bpm": 110,
+"ts": "4/4",
+"ks": 1,
+"beats": 68.0,
+"nn": 123,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 38,
+"hi": 74
+},
+{
+"id": "fur-elise-beginner",
+"t": "Für Elise (beginner)",
+"c": "Ludwig van Beethoven",
+"y": 1810,
+"g": "Classical",
+"lv": 1,
+"bpm": 66,
+"ts": "3/8",
+"ks": 0,
+"beats": 45.0,
+"nn": 199,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 40,
+"hi": 88
+},
+{
+"id": "fur-elise-easy",
+"t": "Für Elise (easy)",
+"c": "Ludwig van Beethoven",
+"y": 1810,
+"g": "Classical",
+"lv": 2,
+"bpm": 100,
+"ts": "3/4",
+"ks": 0,
+"beats": 66.0,
+"nn": 104,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 33,
+"hi": 77
+},
+{
+"id": "fur-elise",
+"t": "Für Elise",
+"c": "Ludwig van Beethoven",
+"y": 1810,
+"g": "Classical",
+"lv": 3,
+"bpm": 66,
+"ts": "3/8",
+"ks": 0,
+"beats": 188.0,
+"nn": 1039,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 33,
+"hi": 100
+},
+{
+"id": "danse-villageoise",
+"t": "Danse villageoise (Country Dance)",
+"c": "Ludwig van Beethoven",
+"y": 1795,
+"g": "Classical",
+"lv": 2,
+"bpm": 120,
+"ts": "3/4",
+"ks": 2,
+"beats": 289.0,
+"nn": 1040,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 45,
+"hi": 88
+},
+{
+"id": "moonlight-1",
+"t": "Moonlight Sonata, 1st movement",
+"c": "Ludwig van Beethoven",
+"y": 1801,
+"g": "Classical",
+"lv": 3,
+"bpm": 54,
+"ts": "4/4",
+"ks": 4,
+"beats": 276.0,
+"nn": 1168,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 29,
+"hi": 87
+},
+{
+"id": "pathetique-2",
+"t": "Pathétique Sonata, 2nd movement",
+"c": "Ludwig van Beethoven",
+"y": 1798,
+"g": "Classical",
+"lv": 4,
+"bpm": 50,
+"ts": "2/4",
+"ks": -4,
+"beats": 146.0,
+"nn": 1639,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 29,
+"hi": 89
+},
+{
+"id": "k545-1",
+"t": "Sonata in C, K. 545, 1st movement",
+"c": "W. A. Mozart",
+"y": 1788,
+"g": "Classical",
+"lv": 3,
+"bpm": 120,
+"ts": "4/4",
+"ks": 0,
+"beats": 583.0,
+"nn": 2748,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 36,
+"hi": 89
+},
+{
+"id": "turkish-march",
+"t": "Turkish March (Rondo alla Turca)",
+"c": "W. A. Mozart",
+"y": 1783,
+"g": "Classical",
+"lv": 4,
+"bpm": 120,
+"ts": "2/4",
+"ks": 0,
+"beats": 448.0,
+"nn": 2530,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 45,
+"hi": 88
+},
+{
+"id": "twinkle-variations",
+"t": "12 Variations on \"Ah vous dirai-je, Maman\"",
+"c": "W. A. Mozart",
+"y": 1782,
+"g": "Classical",
+"lv": 4,
+"bpm": 100,
+"ts": "2/4",
+"ks": 0,
+"beats": 1327.0,
+"nn": 6149,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 29,
+"hi": 89
+},
+{
+"id": "lacrimosa",
+"t": "Lacrimosa (Requiem)",
+"c": "W. A. Mozart",
+"y": 1791,
+"g": "Classical",
+"lv": 3,
+"bpm": 66,
+"ts": "12/8",
+"ks": 0,
+"beats": 180.0,
+"nn": 713,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 33,
+"hi": 86
+},
+{
+"id": "beethoven-5",
+"t": "Symphony No. 5, 1st movement (piano)",
+"c": "Ludwig van Beethoven",
+"y": 1808,
+"g": "Classical",
+"lv": 4,
+"bpm": 108,
+"ts": "2/4",
+"ks": -3,
+"beats": 1015.0,
+"nn": 4334,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 26,
+"hi": 92
+},
+{
+"id": "moonlight-3",
+"t": "Moonlight Sonata, 3rd movement",
+"c": "Ludwig van Beethoven",
+"y": 1801,
+"g": "Classical",
+"lv": 5,
+"bpm": 160,
+"ts": "4/4",
+"ks": 4,
+"beats": 817.5,
+"nn": 4958,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 29,
+"hi": 88
+},
+{
+"id": "nocturne-eb-easy",
+"t": "Nocturne in E-flat, Op. 9 No. 2 (easy)",
+"c": "Frédéric Chopin",
+"y": 1832,
+"g": "Romantic",
+"lv": 2,
+"bpm": 100,
+"ts": "3/4",
+"ks": -3,
+"beats": 192.0,
+"nn": 476,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 44,
+"hi": 86
+},
+{
+"id": "prelude-e-minor",
+"t": "Prelude in E minor, Op. 28 No. 4",
+"c": "Frédéric Chopin",
+"y": 1839,
+"g": "Romantic",
+"lv": 3,
+"bpm": 60,
+"ts": "2/2",
+"ks": 1,
+"beats": 101.0,
+"nn": 602,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 28,
+"hi": 84
+},
+{
+"id": "waltz-a-minor",
+"t": "Waltz in A minor",
+"c": "Frédéric Chopin",
+"y": 1843,
+"g": "Romantic",
+"lv": 3,
+"bpm": 120,
+"ts": "3/4",
+"ks": 0,
+"beats": 240.0,
+"nn": 878,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 33,
+"hi": 100
+},
+{
+"id": "ave-maria",
+"t": "Ave Maria (piano)",
+"c": "Franz Schubert",
+"y": 1825,
+"g": "Romantic",
+"lv": 3,
+"bpm": 46,
+"ts": "4/4",
+"ks": -2,
+"beats": 120.0,
+"nn": 1071,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 34,
+"hi": 80
+},
+{
+"id": "nocturne-eb",
+"t": "Nocturne in E-flat, Op. 9 No. 2",
+"c": "Frédéric Chopin",
+"y": 1832,
+"g": "Romantic",
+"lv": 4,
+"bpm": 66,
+"ts": "12/8",
+"ks": -3,
+"beats": 212.5,
+"nn": 1231,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 32,
+"hi": 99
+},
+{
+"id": "nocturne-c-sharp",
+"t": "Nocturne in C-sharp minor (posth.)",
+"c": "Frédéric Chopin",
+"y": 1830,
+"g": "Romantic",
+"lv": 4,
+"bpm": 65,
+"ts": "4/4",
+"ks": 4,
+"beats": 246.0,
+"nn": 801,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 32,
+"hi": 99
+},
+{
+"id": "nocturne-bb-minor",
+"t": "Nocturne in B-flat minor, Op. 9 No. 1",
+"c": "Frédéric Chopin",
+"y": 1832,
+"g": "Romantic",
+"lv": 4,
+"bpm": 60,
+"ts": "6/4",
+"ks": -5,
+"beats": 514.0,
+"nn": 1728,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 34,
+"hi": 101
+},
+{
+"id": "waltz-c-sharp",
+"t": "Waltz in C-sharp minor, Op. 64 No. 2",
+"c": "Frédéric Chopin",
+"y": 1847,
+"g": "Romantic",
+"lv": 4,
+"bpm": 140,
+"ts": "3/4",
+"ks": 4,
+"beats": 576.0,
+"nn": 1854,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 32,
+"hi": 97
+},
+{
+"id": "hungarian-5",
+"t": "Hungarian Dance No. 5",
+"c": "Johannes Brahms",
+"y": 1869,
+"g": "Romantic",
+"lv": 4,
+"bpm": 120,
+"ts": "2/4",
+"ks": -2,
+"beats": 284.0,
+"nn": 1716,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 31,
+"hi": 91
+},
+{
+"id": "serenade",
+"t": "Serenade (Ständchen), arr. Liszt",
+"c": "Franz Schubert / Franz Liszt",
+"y": 1838,
+"g": "Romantic",
+"lv": 4,
+"bpm": 58,
+"ts": "3/4",
+"ks": -1,
+"beats": 345.0,
+"nn": 2373,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 29,
+"hi": 93
+},
+{
+"id": "liebestraum",
+"t": "Liebestraum No. 3",
+"c": "Franz Liszt",
+"y": 1850,
+"g": "Romantic",
+"lv": 5,
+"bpm": 60,
+"ts": "6/4",
+"ks": -4,
+"beats": 589.0,
+"nn": 1925,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 32,
+"hi": 103
+},
+{
+"id": "ballade-1",
+"t": "Ballade No. 1 in G minor",
+"c": "Frédéric Chopin",
+"y": 1835,
+"g": "Romantic",
+"lv": 5,
+"bpm": 80,
+"ts": "4/4",
+"ks": -2,
+"beats": 1455.98,
+"nn": 5173,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 22,
+"hi": 101
+},
+{
+"id": "la-campanella",
+"t": "La Campanella",
+"c": "Franz Liszt",
+"y": 1851,
+"g": "Romantic",
+"lv": 5,
+"bpm": 120,
+"ts": "6/8",
+"ks": 5,
+"beats": 447.0,
+"nn": 4366,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 27,
+"hi": 102
+},
+{
+"id": "bumblebee",
+"t": "Flight of the Bumblebee",
+"c": "Nikolai Rimsky-Korsakov",
+"y": 1900,
+"g": "Romantic",
+"lv": 5,
+"bpm": 140,
+"ts": "2/4",
+"ks": 0,
+"beats": 200.5,
+"nn": 1141,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 33,
+"hi": 93
+},
+{
+"id": "gymnopedie-1",
+"t": "Gymnopédie No. 1",
+"c": "Erik Satie",
+"y": 1888,
+"g": "Impressionist",
+"lv": 2,
+"bpm": 72,
+"ts": "3/4",
+"ks": 2,
+"beats": 234.0,
+"nn": 459,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 33,
+"hi": 81
+},
+{
+"id": "gnossienne-1",
+"t": "Gnossienne No. 1",
+"c": "Erik Satie",
+"y": 1890,
+"g": "Impressionist",
+"lv": 3,
+"bpm": 66,
+"ts": "4/4",
+"ks": -4,
+"beats": 324.0,
+"nn": 736,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 34,
+"hi": 83
+},
+{
+"id": "clair-de-lune",
+"t": "Clair de Lune",
+"c": "Claude Debussy",
+"y": 1905,
+"g": "Impressionist",
+"lv": 4,
+"bpm": 72,
+"ts": "9/8",
+"ks": -5,
+"beats": 322.5,
+"nn": 1592,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 27,
+"hi": 97
+},
+{
+"id": "arabesque-1",
+"t": "Arabesque No. 1",
+"c": "Claude Debussy",
+"y": 1891,
+"g": "Impressionist",
+"lv": 4,
+"bpm": 90,
+"ts": "4/4",
+"ks": 4,
+"beats": 423.0,
+"nn": 1493,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 28,
+"hi": 92
+},
+{
+"id": "swan-lake",
+"t": "Swan Lake theme",
+"c": "Pyotr Ilyich Tchaikovsky",
+"y": 1876,
+"g": "Ballet & orchestral",
+"lv": 2,
+"bpm": 90,
+"ts": "4/4",
+"ks": 2,
+"beats": 108.0,
+"nn": 326,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 48,
+"hi": 85
+},
+{
+"id": "sugar-plum",
+"t": "Dance of the Sugar Plum Fairy",
+"c": "Pyotr Ilyich Tchaikovsky",
+"y": 1892,
+"g": "Ballet & orchestral",
+"lv": 3,
+"bpm": 70,
+"ts": "2/4",
+"ks": 1,
+"beats": 106.0,
+"nn": 1098,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 35,
+"hi": 107
+},
+{
+"id": "waltz-flowers",
+"t": "Waltz of the Flowers",
+"c": "Pyotr Ilyich Tchaikovsky",
+"y": 1892,
+"g": "Ballet & orchestral",
+"lv": 3,
+"bpm": 100,
+"ts": "3/4",
+"ks": 2,
+"beats": 274.0,
+"nn": 921,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 38,
+"hi": 88
+},
+{
+"id": "entertainer",
+"t": "The Entertainer",
+"c": "Scott Joplin",
+"y": 1902,
+"g": "Ragtime",
+"lv": 3,
+"bpm": 80,
+"ts": "2/4",
+"ks": 0,
+"beats": 303.5,
+"nn": 2007,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 31,
+"hi": 90
+},
+{
+"id": "maple-leaf",
+"t": "Maple Leaf Rag",
+"c": "Scott Joplin",
+"y": 1899,
+"g": "Ragtime",
+"lv": 4,
+"bpm": 90,
+"ts": "2/4",
+"ks": -4,
+"beats": 258.0,
+"nn": 2308,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 32,
+"hi": 92
+},
+{
+"id": "happy-birthday",
+"t": "Happy Birthday",
+"c": "Mildred & Patty Hill",
+"y": 1893,
+"g": "Folk & holiday",
+"lv": 1,
+"bpm": 100,
+"ts": "3/4",
+"ks": 0,
+"beats": 24.0,
+"nn": 52,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 47,
+"hi": 79
+},
+{
+"id": "happy-birthday-2",
+"t": "Happy Birthday (two hands)",
+"c": "Mildred & Patty Hill",
+"y": 1893,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 100,
+"ts": "3/4",
+"ks": 0,
+"beats": 57.0,
+"nn": 145,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 48,
+"hi": 82
+},
+{
+"id": "greensleeves",
+"t": "Greensleeves",
+"c": "Traditional English",
+"y": 1580,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 110,
+"ts": "3/4",
+"ks": 0,
+"beats": 97.0,
+"nn": 172,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 40,
+"hi": 79
+},
+{
+"id": "carol-bells-easy",
+"t": "Carol of the Bells (easy)",
+"c": "Mykola Leontovych",
+"y": 1914,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 150,
+"ts": "3/4",
+"ks": 0,
+"beats": 120.0,
+"nn": 186,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 45,
+"hi": 81
+},
+{
+"id": "carol-bells",
+"t": "Carol of the Bells",
+"c": "Mykola Leontovych",
+"y": 1914,
+"g": "Folk & holiday",
+"lv": 3,
+"bpm": 180,
+"ts": "3/4",
+"ks": -1,
+"beats": 359.5,
+"nn": 1264,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 33,
+"hi": 93
+},
+{
+"id": "fs-middle-c",
+"t": "1 · Meet middle C",
+"c": "Jam Room",
+"y": 2026,
+"g": "First steps",
+"lv": 1,
+"bpm": 80,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 24,
+"hands": [
+0
+],
+"fing": "score",
+"lo": 60,
+"hi": 64
+},
+{
+"id": "fs-five-fingers",
+"t": "2 · Five finger walk",
+"c": "Jam Room",
+"y": 2026,
+"g": "First steps",
+"lv": 1,
+"bpm": 84,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 22,
+"hands": [
+0
+],
+"fing": "score",
+"lo": 60,
+"hi": 67
+},
+{
+"id": "fs-left-hand",
+"t": "3 · Hello, left hand",
+"c": "Jam Room",
+"y": 2026,
+"g": "First steps",
+"lv": 1,
+"bpm": 80,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 22,
+"hands": [
+1
+],
+"fing": "score",
+"lo": 48,
+"hi": 55
+},
+{
+"id": "fs-together",
+"t": "4 · Hands together",
+"c": "Jam Room",
+"y": 2026,
+"g": "First steps",
+"lv": 1,
+"bpm": 72,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 22,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 43,
+"hi": 67
+},
+{
+"id": "fs-black-keys",
+"t": "5 · Black keys: sharps",
+"c": "Jam Room",
+"y": 2026,
+"g": "First steps",
+"lv": 1,
+"bpm": 76,
+"ts": "4/4",
+"ks": 1,
+"beats": 32.0,
+"nn": 31,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 50,
+"hi": 74
+},
+{
+"id": "fs-chords",
+"t": "6 · Your first chords",
+"c": "Jam Room",
+"y": 2026,
+"g": "First steps",
+"lv": 2,
+"bpm": 72,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 38,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 47,
+"hi": 69
+},
+{
+"id": "hot-cross-buns",
+"t": "Hot Cross Buns",
+"c": "Traditional",
+"y": 1798,
+"g": "Folk & holiday",
+"lv": 1,
+"bpm": 90,
+"ts": "4/4",
+"ks": 0,
+"beats": 16.0,
+"nn": 17,
+"hands": [
+0
+],
+"fing": "score",
+"lo": 60,
+"hi": 64
+},
+{
+"id": "mary-lamb",
+"t": "Mary Had a Little Lamb",
+"c": "Lowell Mason",
+"y": 1830,
+"g": "Folk & holiday",
+"lv": 1,
+"bpm": 100,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 34,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 43,
+"hi": 67
+},
+{
+"id": "twinkle",
+"t": "Twinkle, Twinkle, Little Star",
+"c": "Traditional French",
+"y": 1761,
+"g": "Folk & holiday",
+"lv": 1,
+"bpm": 100,
+"ts": "4/4",
+"ks": 0,
+"beats": 48.0,
+"nn": 64,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 43,
+"hi": 69
+},
+{
+"id": "ode-melody",
+"t": "Ode to Joy (melody)",
+"c": "Ludwig van Beethoven",
+"y": 1824,
+"g": "Folk & holiday",
+"lv": 1,
+"bpm": 100,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 42,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 43,
+"hi": 67
+},
+{
+"id": "jingle-bells",
+"t": "Jingle Bells (chorus)",
+"c": "James Lord Pierpont",
+"y": 1857,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 120,
+"ts": "4/4",
+"ks": 0,
+"beats": 64.0,
+"nn": 67,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 43,
+"hi": 67
+},
+{
+"id": "saints",
+"t": "When the Saints Go Marching In",
+"c": "Traditional spiritual",
+"y": 1896,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 120,
+"ts": "4/4",
+"ks": 0,
+"beats": 64.0,
+"nn": 66,
+"hands": [
+0,
+1
+],
+"fing": "score",
+"lo": 43,
+"hi": 67
+},
+{
+"id": "amazing-grace",
+"t": "Amazing Grace",
+"c": "Traditional (New Britain)",
+"y": 1835,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 84,
+"ts": "3/4",
+"ks": 0,
+"beats": 48.0,
+"nn": 51,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 67
+},
+{
+"id": "silent-night",
+"t": "Silent Night",
+"c": "Franz Xaver Gruber",
+"y": 1818,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 60,
+"ts": "6/8",
+"ks": 0,
+"beats": 69.0,
+"nn": 92,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 77
+},
+{
+"id": "scarborough",
+"t": "Scarborough Fair",
+"c": "Traditional English",
+"y": 1670,
+"g": "Folk & holiday",
+"lv": 2,
+"bpm": 96,
+"ts": "3/4",
+"ks": 0,
+"beats": 51.0,
+"nn": 68,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 48,
+"hi": 74
+},
+{
+"id": "pop-four-chords",
+"t": "Four-chord ballad (I–V–vi–IV)",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Pop patterns",
+"lv": 1,
+"bpm": 76,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 28,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 72
+},
+{
+"id": "pop-chords-hands",
+"t": "Pop chords, both hands",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Pop patterns",
+"lv": 2,
+"bpm": 80,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 51,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 69
+},
+{
+"id": "pop-sad",
+"t": "Moody pop (vi–IV–I–V)",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Pop patterns",
+"lv": 2,
+"bpm": 84,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 37,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 79
+},
+{
+"id": "doo-wop",
+"t": "50s doo-wop (I–vi–IV–V)",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Pop patterns",
+"lv": 2,
+"bpm": 72,
+"ts": "12/8",
+"ks": 0,
+"beats": 24.0,
+"nn": 56,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 40,
+"hi": 69
+},
+{
+"id": "blues-12",
+"t": "12-bar blues in C",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Blues & boogie",
+"lv": 2,
+"bpm": 96,
+"ts": "4/4",
+"ks": 0,
+"beats": 48.0,
+"nn": 77,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 71
+},
+{
+"id": "boogie",
+"t": "Boogie-woogie left hand",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Blues & boogie",
+"lv": 3,
+"bpm": 110,
+"ts": "4/4",
+"ks": 0,
+"beats": 40.0,
+"nn": 115,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 72
+},
+{
+"id": "lofi-rain",
+"t": "Lo-fi rain",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Modern originals",
+"lv": 2,
+"bpm": 70,
+"ts": "4/4",
+"ks": 0,
+"beats": 32.0,
+"nn": 41,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 43,
+"hi": 74
+},
+{
+"id": "sunrise-waltz",
+"t": "Sunrise waltz",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Modern originals",
+"lv": 2,
+"bpm": 120,
+"ts": "3/4",
+"ks": 0,
+"beats": 24.0,
+"nn": 39,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 41,
+"hi": 69
+},
+{
+"id": "ambient-drift",
+"t": "Ambient drift",
+"c": "Jam Room (original)",
+"y": 2026,
+"g": "Modern originals",
+"lv": 3,
+"bpm": 60,
+"ts": "4/4",
+"ks": 1,
+"beats": 32.0,
+"nn": 39,
+"hands": [
+0,
+1
+],
+"fing": "suggested",
+"lo": 40,
+"hi": 78
+}
+]

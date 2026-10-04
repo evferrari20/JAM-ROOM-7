@@ -25,3 +25,13 @@ Licences differ: check them before using the app for anything other than persona
 - Drum machines (TR-808, LinnDrum, CR-8000, Drumtraks, RZ-1) via danigb/samples.
 - MusyngKite soundfont samples via gleitz/midi-js-soundfonts: clavinet, drawbar organ, accordion, pan flute, shakuhachi, voices (ooh), sitar, banjo, koto, shamisen, dulcimer, steel drum, slap bass, music box.
 - Harmonica, ocarina, kalimba: original instruments from the first version of Jam Room.
+
+# Learn: music and software
+- Scores (MusicXML) from the **MuseTrainer public-domain library** (github.com/musetrainer/library). Every composition used
+  is in the public domain (composers who died long ago, or traditional tunes). Pieces with copyrighted arrangements or
+  modern compositions were left out (e.g. "Mariage d'Amour", the La Casa de Papel "Bella Ciao").
+- Simple folk and holiday melodies (Twinkle, Mary Had a Little Lamb, Jingle Bells, Amazing Grace, Silent Night, ...) are
+  public domain; their left-hand parts, the First steps lessons and the Pop / Blues / Modern pieces were written for Jam Room.
+- Suggested fingerings are calculated by Jam Room where a score has none (marked "suggested").
+- Sheet music is drawn by **OpenSheetMusicDisplay** (BSD 3-Clause, see src/vendor/OSMD-LICENSE.txt), with VexFlow inside.
+- Scores were converted with **music21** (BSD).

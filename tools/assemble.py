@@ -45,6 +45,23 @@ def manifest(urls):
     return man
 
 
+def learn_blocks(inline):
+    """Learn: song index always inline; song files + sheet-music library inline (single file) or as files (website)"""
+    L = 'src/learn/'
+    idx = open(L + 'index.json').read()
+    out = '<script type="application/json" id="learnidx">' + json.dumps(json.loads(idx), separators=(',', ':'), ensure_ascii=False) + '</script>'
+    if inline:
+        import base64
+        lines = []
+        for f in sorted(os.listdir(L + 'songs')):
+            sid, ext = f.rsplit('.', 1)
+            b = open(L + 'songs/' + f, 'rb').read()
+            lines.append(sid + '.' + ext + ' ' + (b.decode() if ext == 'json' else base64.b64encode(b).decode()))
+        out += '\n<script type="text/plain" id="learndata">\n' + '\n'.join(lines) + '\n</script>'
+        out += '\n<script type="text/plain" id="osmdsrc">' + open('src/vendor/opensheetmusicdisplay.min.js').read().replace('</script', '<\\/script') + '</script>'
+    return out
+
+
 def main():
     os.makedirs('dist', exist_ok=True)
     s = template()
@@ -56,7 +73,7 @@ def main():
     single = s.replace('@@SAMPLES@@',
         '<script type="application/json" id="sman">' + json.dumps(manifest(None), separators=(',', ':')) + '</script>\n'
         '<script type="text/plain" id="smp">\n' + '\n'.join(lines) + '\n</script>')
-    single = single.replace('@@BUILD@@', ver)
+    single = single.replace('@@BUILD@@', ver).replace('@@LEARN@@', learn_blocks(True))
     open('dist/jam-room.html', 'w').write(single)
     # 2) website: page + hashed packs + service worker
     shutil.rmtree('site', ignore_errors=True); os.makedirs('site/s')
@@ -66,7 +83,10 @@ def main():
         name = 's/%s.%s.bin' % (pid, hashlib.sha1(b).hexdigest()[:10])
         open('site/' + name, 'wb').write(b); urls[pid] = name
     page = s.replace('@@SAMPLES@@', '<script type="application/json" id="sman">' + json.dumps(manifest(urls), separators=(',', ':')) + '</script>')
-    page = page.replace('@@BUILD@@', ver)
+    page = page.replace('@@BUILD@@', ver).replace('@@LEARN@@', learn_blocks(False))
+    os.makedirs('site/learn')
+    for f in os.listdir('src/learn/songs'): shutil.copy('src/learn/songs/' + f, 'site/learn/' + f)
+    shutil.copy('src/vendor/opensheetmusicdisplay.min.js', 'site/learn/osmd.min.js')
     for n in ('index.html', 'jam-room.html', 'jam-room-share.html'): open('site/' + n, 'w').write(page)
     sw = open('src/sw.js').read().replace('@@BUILD@@', ver)
     open('site/sw.js', 'w').write(sw)
