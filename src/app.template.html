@@ -797,7 +797,7 @@ function buildGraph(c){
   mid.connect(ml);mid.connect(mr);A.wd.connect(sl);sl.gain.value=1;A.wd.connect(sr);sr.gain.value=-1;
   ml.connect(mg,0,0);sl.connect(mg,0,0);mr.connect(mg,0,1);sr.connect(mg,0,1);
   A.sat=c.createWaveShaper();A.sat.oversample='2x';A.satDry=c.createGain();A.satWet=c.createGain();A.satWet.gain.value=0;
-  mg.connect(A.satDry);mg.connect(A.sat);A.sat.connect(A.satWet);A.satDry.connect(A.pre);A.satWet.connect(A.pre);A.sat.curve=tapeCurve();
+  A.mg=mg;A.satOn=false;mg.connect(A.satDry);A.sat.connect(A.satWet);A.satDry.connect(A.pre);A.satWet.connect(A.pre);A.sat.curve=tapeCurve();
   /* safety stage: untouched below -1 dB, rounds off anything the limiter lets through instead of hard clipping (a crackle source) */
   A.sci=c.createGain();A.sci.gain.value=.5;A.sc=c.createWaveShaper();A.sc.curve=safeCurve();
   A.pre.connect(A.comp);A.comp.connect(A.lim);A.lim.connect(A.trim);A.trim.connect(A.sci);A.sci.connect(A.sc);A.sc.connect(c.destination);A.sc.connect(A.an);A.out=A.sc;
@@ -819,7 +819,7 @@ function mstName(){return S.mst||(S.fin?'balanced':'off');}
 function applyFin(){
   if(!A||!A.fl)return;var m=MASTERS[mstName()]||MASTERS.off,p=m.p;
   A.fl.gain.value=p[0];A.fm.gain.value=p[1];A.fh.gain.value=p[2];A.comp.threshold.value=p[3];A.comp.ratio.value=p[4];A.comp.attack.value=p[5];
-  if(A.wd)A.wd.gain.value=p[6];if(A.satWet){A.satWet.gain.value=p[7]*.5;A.satDry.gain.value=1-p[7]*.35;}A.trim.gain.value=.9*p[8];
+  if(A.wd)A.wd.gain.value=p[6];if(A.satWet){A.satWet.gain.value=p[7]*.5;A.satDry.gain.value=1-p[7]*.35;var wantSat=p[7]>0;if(wantSat!==A.satOn){A.satOn=wantSat;try{if(wantSat)A.mg.connect(A.sat);else A.mg.disconnect(A.sat);}catch(e){}}}A.trim.gain.value=.9*p[8];
 }
 function audible(t){return!t.mute&&(S.solo===null||S.solo.indexOf(t.id)>=0);}
 function applyGains(){if(!A.c)return;S.tracks.forEach(function(t){if(t.vn)t.vn.gain.setTargetAtTime(audible(t)?t.vol:0,A.c.currentTime,.015);});}
@@ -976,17 +976,21 @@ function chainTrack(t){
   if(t.cmp){t.vn.connect(t.cmp);t.cmp.connect(t.cmk);t.cmk.connect(t.lo);}else t.vn.connect(t.lo);
   t.lo.connect(t.mid);t.mid.connect(t.hi);
   if(!t.ag){t.ag=A.c.createGain();}
+  /* a flat EQ costs processing for nothing: route around it until a band is moved */
+  t.eqOn=!eqFlat(t);if(!t.eqOn){try{(t.cmp?t.cmk:t.vn).disconnect(t.lo);}catch(e){}t.lo.disconnect();t.mid.disconnect();t.lo.connect(t.mid);t.mid.connect(t.hi);}
   var wantF=autoNeedsFilter(t);
   if(wantF&&!t.af){t.af=A.c.createBiquadFilter();t.af.type='lowpass';t.af.Q.value=.9;t.af.frequency.value=A.c.sampleRate*.45;}
   if(!wantF)t.af=null;
-  if(t.af){t.hi.connect(t.af);t.af.connect(t.ag);}else t.hi.connect(t.ag);
+  var eqOut=t.eqOn?t.hi:(t.cmp?t.cmk:t.vn);
+  if(t.af){eqOut.connect(t.af);t.af.connect(t.ag);}else eqOut.connect(t.ag);
   if(t.pn)t.ag.connect(t.pn);
 }
+function eqFlat(t){if(t.eq)return Math.abs(t.eq.l||0)<.05&&Math.abs(t.eq.m||0)<.05&&Math.abs(t.eq.h||0)<.05;return Math.abs(t.tone||0)<.01;}
 function applyMix(t){
   if(!t.lo)return;
   if(t.eq){t.lo.frequency.value=140;t.hi.frequency.value=6000;t.lo.gain.value=t.eq.l||0;t.mid.gain.value=t.eq.m||0;t.hi.gain.value=t.eq.h||0;}
   else{var tn=t.tone||0;t.lo.gain.value=-tn*7;t.mid.gain.value=0;t.hi.gain.value=tn*7;}
-  if(!!t.cmp!==((t.comp||0)>.01))chainTrack(t);
+  if(!!t.cmp!==((t.comp||0)>.01)||t.eqOn===eqFlat(t))chainTrack(t);
   if(t.cmp){var a=t.comp;t.cmp.threshold.value=-8-a*26;t.cmp.ratio.value=1.6+a*4.4;t.cmp.knee.value=10;t.cmp.attack.value=.012-a*.008;t.cmp.release.value=.18;t.cmk.gain.value=Math.pow(10,(a*8)/20);}
   if(t.pn.pan)t.pn.pan.value=t.pan||0;
   if(t.send)t.send.gain.value=t.rev;if(t.dsend)t.dsend.gain.value=t.echo||0;
@@ -1343,11 +1347,11 @@ function sampleVoice(id,c,out,m,t,v){
   var si=SI[id],dest=out,srcs=[];
   if(si.pan==='pitch'&&c.createStereoPanner){var pn=c.createStereoPanner();pn.pan.value=Math.max(-.55,Math.min(.55,(m-60)/40));pn.connect(out);dest=pn;}
   var lpf=si.lp0+v*si.lpv;if(si.L&&si.L.length>2)lpf=Math.max(lpf,7000+v*11000);/* real soft/loud recordings already carry the tone change */
-  var fl=F(c,'lowpass',lpf,.4),g=G(c,dest,t,.9*si.gain*(si.pg||1)*(si.L&&si.L.length>1?.62+.38*v:.4+.6*v),si.att||.002,10,1);fl.connect(g);
+  var g=G(c,dest,t,.9*si.gain*(si.pg||1)*(si.L&&si.L.length>1?.62+.38*v:.4+.6*v),si.att||.002,10,1),fl=lpf<15000?F(c,'lowpass',lpf,.4):null;if(fl)fl.connect(g);var into=fl||g;
   function add(sx,b,gain){
     var s=c.createBufferSource();s.buffer=b.buf;s.playbackRate.value=Math.pow(2,(m-b.m)/12)*(REF/440);s.detune.value=(Math.random()-.5)*5;
     if(sx.loop&&!b.buf._nl){s.loop=true;s.loopStart=b.buf._ls;s.loopEnd=b.buf._le;}
-    var gg=c.createGain();gg.gain.value=gain;s.connect(gg);gg.connect(fl);s.start(t);srcs.push(s);
+    if(gain>.999)s.connect(into);else{var gg=c.createGain();gg.gain.value=gain;s.connect(gg);gg.connect(into);}s.start(t);srcs.push(s);
   }
   var soft=si.soft&&SI[si.soft]&&SI[si.soft].ready?SI[si.soft]:null;
   if(si.L&&si.L.length>1){
@@ -3653,6 +3657,8 @@ if(A.c===null&&0){}
   }else if(rec&&rec.data&&rec.data.tracks&&rec.data.tracks.length){try{applyProject(rec.data,audFromRecord(rec));ok=true;}catch(e){}}
   if(!ok)starter();
   HIST.list=[];HIST.idx=-1;commitHist();
+  /* fetch and decode every sound the song uses straight away, so the first notes are not late or silent */
+  setTimeout(function(){try{S.tracks.forEach(loadTrackSamples);loadDrumKits();}catch(e){}},250);
   if(shared&&shared!=='old'&&ok){
     markDirty();
     openModal('<h3>A song for you</h3><p class="hint">“'+esc(S.name)+'” was shared with you. Press Play to hear it, then change anything you like. It will not change the original.</p><div class="row" style="justify-content:flex-end"><button data-x="close">Look around</button><button class="primary" data-x="play">Play it</button></div>',
