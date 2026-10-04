@@ -844,3 +844,4 @@ body.calm .vz-head,body.calm .vz-pipe.lit,body.calm .vz-bar.lit{filter:none}
 @media (max-width:1400px){#bDisp span{display:none}#bDisp.tool{width:38px;height:36px;padding:0}.lcd-cell.lvl{display:none}}
 .morep{z-index:200}
 .clearbtn{background:rgba(217,88,58,.14)!important;color:#f0a08a!important;border:1px solid rgba(217,88,58,.35)!important}
+.ver{font-size:10px;color:var(--wood-muted);opacity:.6;font-family:var(--mono)}@media (max-width:1240px){.ver{display:none}}

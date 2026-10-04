@@ -50,6 +50,7 @@
       <button class="tog" id="tMon" aria-pressed="false" title="Hear myself: your voice in your headphones while recording" aria-label="Hear myself" data-ic="phones"><span>Hear myself</span></button>
     </div>
     <div class="spacer-flex"></div>
+    <span class="ver" title="Version of Jam Room you are using">v@@BUILD@@</span>
     <button id="bDisp" class="tool" data-ic="eye" title="Display: comfort colours, text size, calm motion"><span>Display</span></button>
     <button id="bMenu" class="tool primary-soft" data-ic="share"><span>Save &amp; share</span></button>
   </div>
@@ -2272,7 +2273,7 @@ function openDisplay(){
       '<div class="dsp"><div class="dspr"><div><b>Comfort colours</b><span>Softer contrast and warmer whites for long sessions</span></div><button class="tog" data-d="comfort" aria-pressed="'+!!DISP.comfort+'">'+(DISP.comfort?'On':'Off')+'</button></div>'+
       '<div class="dspr"><div><b>Text size</b><span>Bigger labels and buttons</span></div><div class="seg2">'+[['n','Normal'],['l','Large'],['xl','Extra large']].map(function(o){return'<button data-t="'+o[0]+'" aria-pressed="'+(DISP.text===o[0])+'">'+o[1]+'</button>';}).join('')+'</div></div>'+
       '<div class="dspr"><div><b>Calm motion</b><span>Fewer animations and glows</span></div><button class="tog" data-d="calm" aria-pressed="'+!!DISP.calm+'">'+(DISP.calm?'On':'Off')+'</button></div></div>'+
-      '<div class="row" style="justify-content:flex-end"><button class="primary" data-x="close">Done</button></div>';
+      '<div class="row" style="justify-content:space-between"><span class="hint">Version @@BUILD@@</span><button class="primary" data-x="close">Done</button></div>';
   }
   openModal('<div></div>',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.x==='close'){closeModal();return;}
     if(b.dataset.d){DISP[b.dataset.d]=!DISP[b.dataset.d];applyDisp();draw();renderDock();return;}

@@ -9,5 +9,7 @@ self.addEventListener('fetch',function(e){
     e.respondWith(caches.open(PACKS).then(function(c){return c.match(e.request).then(function(hit){return hit||fetch(e.request).then(function(r){if(r.ok)c.put(e.request,r.clone());return r;});});}));
     return;
   }
-  e.respondWith(fetch(e.request).then(function(r){if(r.ok){var cp=r.clone();caches.open(PAGE).then(function(c){c.put(e.request,cp);});}return r;}).catch(function(){return caches.match(e.request,{ignoreSearch:true}).then(function(h){return h||caches.match('index.html');});}));
+  /* always ask the network for the newest page (not the browser's short-term copy) */
+  var fresh=e.request.mode==='navigate'||/\/(index\.html)?$/.test(u.pathname);
+  e.respondWith(fetch(fresh?new Request(e.request,{cache:'no-store'}):e.request).then(function(r){if(r.ok){var cp=r.clone();caches.open(PAGE).then(function(c){c.put(e.request,cp);});}return r;}).catch(function(){return caches.match(e.request,{ignoreSearch:true}).then(function(h){return h||caches.match('index.html');});}));
 });
