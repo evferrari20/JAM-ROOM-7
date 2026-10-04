@@ -97,3 +97,49 @@ canvas.tl{width:100%;height:70px;border-radius:8px;display:block}
 
 .lptop{gap:6px}.lptop select{padding-right:22px}
 @media (max-width:1300px){.lpt{max-width:150px}.tempo input{width:70px}}
+
+/* ===== Orchestra ===== */
+body.mode-orch .main,body.mode-orch .dock,body.mode-orch .bar2,body.mode-orch .transport,body.mode-orch .tools{display:none!important}
+body.mode-orch #orch{display:flex!important}
+.orch{flex:1;min-height:0;flex-direction:column;background:var(--bg2)}
+.otop{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--woodbg);border-bottom:1px solid #1d0b06;color:var(--wood-ink);flex-wrap:wrap;row-gap:6px}
+.otop button,.otop select,.otop input{background:rgba(20,8,4,.38);color:var(--wood-ink);border:1px solid rgba(255,220,180,.07)}
+.otop select{background-color:rgba(12,5,2,.45)}
+.otop .round{width:40px;height:40px;border:0}
+.otop .play{background:linear-gradient(180deg,#7cc39d,#4f9a74);color:#06130c}
+.otop .rec{background:linear-gradient(180deg,#e2714f,#b9452a);color:#fff3ee}
+.otop .rec.on{animation:recpulse 1.2s ease-in-out infinite}
+.otop .primary-soft{background:rgba(212,166,94,.22);color:#f1cf95;border-color:rgba(212,166,94,.4)}
+.otop .tsep{width:1px;height:22px;background:rgba(255,220,180,.14)}
+.omini{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.07em;color:var(--wood-muted)}
+.omini input{width:58px;padding:5px 6px;text-align:center;font-family:var(--mono)}
+.obody{flex:1;min-height:0;display:flex;overflow:auto;background:#0c1712}
+.orows{flex:none;width:250px;background:var(--panel);border-right:1px solid var(--line);align-self:flex-start;min-height:100%}
+.osec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--sc);padding:8px 10px 3px;border-top:1px solid var(--line)}
+.orh{display:grid;grid-template-columns:6px 1fr auto auto auto;align-items:center;gap:6px;height:34px;padding:0 8px 0 0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.03)}
+.orh i{width:4px;height:100%;background:var(--sc)}
+.orh b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orh span{font-size:11px;color:var(--muted)}
+.orh select{padding:2px 20px 2px 6px;font-size:11.5px;background-position:right 6px center}
+.orh .tog.sm{width:24px;height:24px;min-height:24px;padding:0;font-size:10.5px;font-weight:800;background:transparent;border:1px solid var(--line2);color:var(--muted)}
+.orh .tog.sm[aria-pressed="true"]{background:var(--brass);color:#1b1006;border-color:var(--brass)}
+.orh.sel{background:var(--panel2)}.orh.sk{height:44px;border-bottom:1px solid var(--line)}
+.otl{flex:1;min-width:0;position:relative}
+.otl canvas{display:block}
+.olanes{flex:none;display:grid;grid-template-columns:250px 1fr;grid-template-rows:56px 56px;border-top:1px solid var(--line);background:var(--panel)}
+.olanes canvas{width:100%;height:56px;display:block;touch-action:none;cursor:crosshair;border-bottom:1px solid var(--line)}
+.olab{display:flex;flex-direction:column;justify-content:center;padding:0 12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.olab b{font-size:12.5px}.olab span{font-size:11px;color:var(--muted)}
+.okb{position:relative;height:96px;flex:none;background:#140805;border-top:5px solid #0f2a1f;touch-action:none;user-select:none;-webkit-user-select:none}
+.ok{position:absolute;top:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.ok.w{height:100%;background:linear-gradient(180deg,#e9e0c8,#f6efdd 12%,#f3ead6 82%,#ddd1b4);border-radius:0 0 4px 4px;box-shadow:inset -1px 0 0 #b8aa88;z-index:1}
+.ok.b{height:60%;background:linear-gradient(180deg,#0e0b09,#2a2420 82%,#141110);border-radius:0 0 3px 3px;z-index:2}
+.ok em{font-style:normal;font-size:9.5px;font-weight:700;color:#8b7556}
+.ok.on.w{background:linear-gradient(180deg,#c9ead6,#79bd98)}.ok.on.b{background:linear-gradient(180deg,#1f4d39,#3f8a64)}
+.oscore{flex:1;overflow:auto;background:#f6f1e4}
+.oscore .paper{padding:10px}
+.clist{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:50vh;overflow:auto}
+.clist button{flex-direction:column;align-items:flex-start;text-align:left;white-space:normal;background:var(--bg2);border:1px solid var(--line);padding:9px 11px}
+.clist button span{font-size:11.5px;color:var(--muted);font-weight:500}
+.steps2{margin:0;padding-left:20px;color:var(--ink2);line-height:1.6}.steps2 li{margin:6px 0}
+@media (max-width:900px){.orows,.olanes{grid-template-columns:150px 1fr}.orows{width:150px}.orh select{display:none}}

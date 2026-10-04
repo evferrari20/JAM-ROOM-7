@@ -31,7 +31,7 @@
 <header class="top">
   <div class="bar">
     <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--wood)"/><path d="M7 23V10M11.5 23V7M16 23V12M20.5 23V8M25 23v-9" stroke="var(--brass)" stroke-width="2.4" stroke-linecap="round"/></svg><span>Jam Room</span></div>
-    <div class="modes" role="tablist" aria-label="Section"><button data-mode="studio" aria-pressed="true" data-ic="studio"><span>Studio</span></button><button data-mode="learn" aria-pressed="false" data-ic="learn"><span>Learn</span></button></div>
+    <div class="modes" role="tablist" aria-label="Section"><button data-mode="studio" aria-pressed="true" data-ic="studio"><span>Studio</span></button><button data-mode="orch" aria-pressed="false" data-ic="violin"><span>Orchestra</span></button><button data-mode="learn" aria-pressed="false" data-ic="learn"><span>Learn</span></button></div>
     <div class="transport">
       <button id="bPlay" class="round play" aria-label="Play"></button>
       <button id="bRec" class="round rec" aria-label="Record"></button>
@@ -96,6 +96,7 @@
 
 <footer class="dock" id="dock"></footer>
 <section class="learn" id="learn" hidden></section>
+<section class="orch" id="orch" hidden></section>
 
 <input type="file" id="file" accept=".json,application/json" hidden>
 <div class="toast" id="toast" role="status"></div>
@@ -654,8 +655,9 @@ var KITS={'Studio':{label:'Acoustic studio',bank:'kit',sample:1,punch:1,rate:1,g
  'CR8000':{label:'Roland CR-8000',bank:'kit_cr8000',sample:1,rate:1,gain:.85,lp:20000,kt:1,kd:1,sd:1,pg:MPG,names:['Kick','Snare','Clap','Hi-hat','Open hat','Tom','Rimshot','Cymbal','Low tom','Claves','Conga','Cowbell']},
  'Drumtraks':{label:'Drumtraks',bank:'kit_drumtraks',sample:1,rate:1,gain:.85,lp:20000,kt:1,kd:1,sd:1,pg:MPG,names:['Kick','Snare','Clap','Hi-hat','Open hat','Tom','Rimshot','Crash','Low tom','Cabasa','Tambourine','Cowbell']},
  'RZ1':{label:'Casio RZ-1',bank:'kit_rz1',sample:1,rate:1,gain:.85,lp:20000,kt:1,kd:1,sd:1,pg:MPG,names:['Kick','Snare','Clap','Hi-hat','Open hat','Tom','Clave','Crash','Low tom','Ride','Mid tom','Cowbell']},
+ 'Orchestra':{label:'Orchestral percussion',bank:'kit_orch',sample:1,rate:1,gain:.9,lp:20000,kt:1,kd:1,sd:1,pg:[1,1,1,1,1,1,1,1,1,1,1,1],names:['Bass drum','Snare','Crash cymbals','Suspended cymbal','Triangle','Gong','Tambourine','Rim','Crash','Low tom','Shaker','Cowbell']},
  'Hand':{label:'Hand percussion',bank:'kit_hand',sample:1,rate:1,gain:.85,lp:20000,kt:1,kd:1,sd:1,pg:[1.1,.85,.75,.6,.6,.8,.6,.5,.85,.55,.75,.55],names:['Cajón bass','Cajón slap','Claps','Shaker','Tambourine','Conga high','Claves','Sleigh bells','Conga low','Cabasa','Bongo','Cowbell']}};
-var KIT_ORDER=['Studio','Tight','Lo-fi','808','Linn','CR8000','Drumtraks','RZ1','Hand'];
+var KIT_ORDER=['Studio','Tight','Lo-fi','808','Linn','CR8000','Drumtraks','RZ1','Hand','Orchestra'];
 function drumNames(t){var k=t&&KITS[t.kit];return(k&&k.names)||DRUM_NAMES;}
 var BEATS={
  'Rock':{0:[0,8,10],1:[4,12],3:[0,2,4,6,8,10,12,14]},
@@ -2027,7 +2029,8 @@ var SHP_KIT={'808':['kick','snare','hands','hat','openhat','tom','rim','cymbal',
  'Drumtraks':['kick','snare','hands','hat','openhat','tom','rim','cymbal','floor','cabasa','tamb','cowbell'],
  'CR8000':['kick','snare','hands','hat','openhat','tom','rim','cymbal','floor','claves','conga','cowbell'],
  'RZ1':['kick','snare','hands','hat','openhat','tom','claves','cymbal','floor','cymbal','tom','cowbell'],
- 'Hand':['cajon','cajon2','hands','egg','tamb','conga','claves','bells','conga','cabasa','bongo','cowbell']};
+ 'Hand':['cajon','cajon2','hands','egg','tamb','conga','claves','bells','conga','cabasa','bongo','cowbell'],
+ 'Orchestra':['kick','snare','cymbal','cymbal','bells','cymbal','tamb','rim','cymbal','floor','shaker','cowbell']};
 var PAR={kick:'xMidYMid meet',hands:'xMidYMid meet',tamb:'xMidYMid meet',cowbell:'xMidYMid meet',conga:'xMidYMid meet',bongo:'xMidYMid meet',cajon:'xMidYMid meet',cajon2:'xMidYMid meet',shaker:'xMidYMid meet',egg:'xMidYMid meet',maracas:'xMidYMid meet',cabasa:'xMidYMid meet',claves:'xMidYMid meet',bells:'xMidYMid meet'};
 var BOXT={cajon:1,cajon2:1,cabasa:1};
 function _lugs(n,r,cx,cy,sz){var o='';for(var k=0;k<n;k++){var a=k/n*Math.PI*2;o+='<circle cx="'+(cx+r*Math.cos(a)).toFixed(1)+'" cy="'+(cy+r*Math.sin(a)).toFixed(1)+'" r="'+sz+'" fill="url(#gChrome)" stroke="#59646a" stroke-width=".6"/>';}return o;}
@@ -2097,6 +2100,7 @@ function midiLabel(){
 }
 /*@include js/viz.js*/
 /*@include js/learn.js*/
+/*@include js/orch.js*/
 function renderDock(){
   recomputeKeys();
   var kt=keyTrack(),host=$('dock'),drumMode=kt&&kt.kind==='drum',h='';
@@ -2174,6 +2178,7 @@ function bindMidi(){
 function onMidi(e){
   var d=e.data,st=d[0]&0xf0,n=d[1],vel=d[2],kt=keyTrack();
   if(MODE==='learn'){LEARN.midi(st,n,vel);return;}
+  if(MODE==='orch'){ORCH.midi(st,n,vel);return;}
   if(st===0x90&&vel>0){
     if(!kt)return;
     if(kt.kind==='drum'){var pi=GM_DRUM[n]!=null?GM_DRUM[n]:((n%8)+8)%8;pressStart('m'+n,[pi],document.querySelector('.pad[data-m="'+pi+'"]'),Math.max(.25,vel/127),true);}
@@ -2201,6 +2206,7 @@ document.addEventListener('keydown',function(e){
   var tg=e.target.tagName;if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA'||e.metaKey||e.ctrlKey||e.altKey)return;
   if($('modal').classList.contains('show'))return;
   if(MODE==='learn'){LEARN.key(e,true);return;}
+  if(MODE==='orch'){ORCH.key(e,true);return;}
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'){if(!e.repeat)susOn();return;}
   if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(P.playing)stop();else start(false);}return;}
   if(e.code==='Escape'){stop();return;}
@@ -2215,6 +2221,7 @@ document.addEventListener('keydown',function(e){
 });
 document.addEventListener('keyup',function(e){
   if(MODE==='learn'){LEARN.key(e,false);return;}
+  if(MODE==='orch'){ORCH.key(e,false);return;}
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'){susOff();return;}
   pressEnd('k'+e.code);
 });

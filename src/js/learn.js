@@ -50,7 +50,13 @@ var LEARN=(function(){
   /* ---------- mode switch ---------- */
   function setMode(m){
     if(m===MODE)return;
-    if(m==='learn'){
+    if(MODE==='orch')ORCH.leave();
+    if(MODE==='learn')stopPlayer();
+    document.body.classList.remove('mode-learn','mode-orch');
+    if(m==='orch'){
+      if(P.playing)stop();Object.keys(down).forEach(function(p){pressEnd(p,true);});
+      MODE='orch';document.body.classList.add('mode-orch');ORCH.enter();osmd().catch(function(){});
+    }else if(m==='learn'){
       if(P.playing)stop();
       MODE='learn';document.body.classList.add('mode-learn');
       Object.keys(down).forEach(function(p){pressEnd(p,true);});
@@ -58,7 +64,7 @@ var LEARN=(function(){
       if(!built)build();
       if(P2)showPlayer();else showLibrary();
     }else{
-      stopPlayer();MODE='studio';document.body.classList.remove('mode-learn');renderDock();if(R)R.resize();
+      MODE='studio';renderDock();if(R)R.resize();
     }
     document.querySelectorAll('.modes [data-mode]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.mode===MODE);});
   }
@@ -450,5 +456,5 @@ var LEARN=(function(){
     if(e.target.id==='lpView'&&e.type==='change'){P.view=e.target.value;var mm=view.querySelector('.lpmain');mm.className='lpmain v-'+P.view;layout();if(P.osmd){try{P.osmd.render();P.osmd.cursor.show();moveCursor(true);}catch(er){}}}
   }
   window.__learnState=function(){return P2;};window.__learnOpen=openSong;window.__learnPress=press;window.__learnRelease=release;
-  return{setMode:setMode,key:key,midi:midi,open:function(){setMode('learn');},songs:idx,openSong:function(id){setMode('learn');openSong(id);},state:function(){return P2;},press:press,release:release};
+  return{setMode:setMode,key:key,midi:midi,loadData:loadSong,osmd:osmd,open:function(){setMode('learn');},songs:idx,openSong:function(id){setMode('learn');openSong(id);},state:function(){return P2;},press:press,release:release};
 })();

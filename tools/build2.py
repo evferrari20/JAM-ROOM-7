@@ -495,7 +495,10 @@ def kitfiles(repo, folder, layer_re=r'_vl(\d+)', rr_re=r'_rr(\d+)', name_re=None
         f = p.split('/')[-1]
         if name_re and not re.search(name_re, f): continue
         l = re.search(layer_re, f); r = re.search(rr_re, f)
-        out[(int(l.group(1)) if l else 1, int(r.group(1)) if r else 1)] = p
+        if l:
+            g = l.group(l.lastindex or 0); lv = int(g) if g.isdigit() else (l.lastindex or 1)
+        else: lv = 1
+        out[(lv, int(r.group(1)) if r else 1)] = p
     return out
 
 
@@ -537,6 +540,30 @@ def kit():
     old = clips_from_pack('kit', 2)
     pads[2] = old
     finish('kit', {k: v for k, v in pads.items() if v}, q=4, peak=.9)
+
+
+@inst
+def kit_orch():
+    """Orchestral percussion (VSCO 2 / VSCO 1): bass drum, snare, clash cymbals, suspended cymbal, triangle, gong, tambourine"""
+    V = 'VSCO-2-CE'; P = 'Percussion'
+    def named(folder, name_re, layer_re=r'_v(\d+)', dur=1.5, layers=3, rrs=2):
+        return kit_pad(V, [(folder, 1)], name_re=name_re, layer_re=layer_re, dur=dur, layers=layers, rrs=rrs)
+    pads = {
+        0: named(P, r'^BDrumNewhit', dur=2.2),
+        1: named(P, r'^Snare2-HitSN', dur=1.0),
+        2: kit_pad(V, [('VSCO 1 Percussion/varMetal/Cymbals/clash', 1)], name_re=r'crash_hit_(pp|mp|ff|fff)_loose\.wav$',
+                   layer_re=r'crash_hit_(?:(pp)|(mp)|(ff)|(fff))_', layers=3, rrs=1, dur=4.0),
+        4: named(P, r'^Triangle3-Hit_', dur=3.0, layers=2),
+        6: named(P, r'^Tamb1-Hit', dur=.8, layers=2),
+    }
+    sus = [p for p in tree(V) if re.search(r'Cymbals/susp/susp_hit_hardmall_(mf|f)\.wav$', p)]
+    gong = [p for p in tree(V) if re.search(r'Gong/gong/hit_(full1|light1)\.mp3$', p)]
+    for pad, files, dur in ((3, sus, 5.0), (5, gong, 7.0)):
+        pick = sorted(files)[:2]
+        if not pick: continue
+        fetch(V, pick)
+        pads[pad] = [(0, i, shape(load(os.path.join(SRC, V, f), 1), dur, thr=.02, fadein=.0005, fadeout=1.5)) for i, f in enumerate(pick)]
+    finish('kit_orch', {k: v for k, v in pads.items() if v}, q=4, peak=.9)
 
 
 def clips_from_pack(pid, key):
