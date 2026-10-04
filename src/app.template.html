@@ -2499,7 +2499,8 @@ function renderEditor(){
     '<button data-r="all" title="Select every note (Ctrl+A)">Select all notes</button>'+
     '<label class="il">Tidy strength <select id="tidyAmt" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select></label>'+
     (t._undo?'<button id="undoTidy">Undo tidy</button>':'')+
-    '<button id="clearNotes" class="warn">Clear all notes</button></div></details></div>';
+    '</div></details>'+
+    '<button id="clearNotes" class="clearbtn" title="Remove every note in this track (tap twice; Undo brings them back)">Clear notes</button></div>';
   host.innerHTML=head+sndPanelHTML(t)+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+'<div class="rollwrap">'+rollSelHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+
     '<p class="hint ehint">'+(drums?'Tap the grid to add a hit · tap a hit to select · double-tap to remove · drag to move.':'Tap to add a note · tap to select · double-tap to remove · drag to move · drag a selected note’s handle to change its length.')+'</p>';
   mountRoll($('roll'),t);mountAuto(t);if(drums&&DRUMMERUI.on)mountDrummer(t);

@@ -336,3 +336,11 @@ window.addEventListener('keydown',function(e){
 },true);
 /* "More" menus close when you tap anywhere else */
 document.addEventListener('click',function(e){document.querySelectorAll('details.more[open]').forEach(function(d){if(!d.contains(e.target))d.removeAttribute('open');});});
+
+/* menus open over everything: place them on screen so they are never cut off by a scrolling panel */
+document.addEventListener('toggle',function(e){
+  var d=e.target;if(!d.matches||!d.matches('details.more')||!d.open)return;var p=d.querySelector('.morep'),sm=d.querySelector('summary');if(!p||!sm)return;
+  var r=sm.getBoundingClientRect();p.style.position='fixed';p.style.right='auto';p.style.bottom='auto';p.style.top='0';p.style.left='0';
+  var w=p.offsetWidth,h=p.offsetHeight,x=Math.min(window.innerWidth-w-8,Math.max(8,r.right-w)),y=r.bottom+6;if(y+h>window.innerHeight-8)y=Math.max(8,r.top-h-6);
+  p.style.left=x+'px';p.style.top=y+'px';
+},true);
