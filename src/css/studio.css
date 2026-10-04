@@ -827,3 +827,18 @@ body.orchmode #bStart,body.orchmode #bLoops,body.orchmode .adds{display:none}
 .wk.on .kk.kl{color:#0b2a1c}
 .midist{font-size:12px;font-weight:700;color:var(--wood-muted);white-space:nowrap}.midist.on{color:#9fe0bc}
 .bk .kk.nn,.bk .kk.kl{display:block;text-align:center}
+/* ---------- Display settings ---------- */
+.dsp{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.dspr{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.dspr b{display:block;font-size:14.5px}.dspr span{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.dspr .tog{min-width:64px}
+body.eye-comfort{--ink:#d8d0bd;--ink2:#b8b09e;--muted:#8f9c92;--bg:#111c17;--bg2:#14211b;--panel:#18271f;--panel2:#1d2f26;--line:#2a4136;--accent:#79b394;--roll-bg:#111c17;--roll-cell:#1a2b23}
+body.eye-comfort .wk{filter:brightness(.9) sepia(.12)}
+body.eye-comfort .vz3,body.eye-comfort .viz{filter:brightness(.92)}
+body.txt-l button,body.txt-l select,body.txt-l input,body.txt-l label,body.txt-l .hint,body.txt-l summary{font-size:15px!important}
+body.txt-l .tcard,body.txt-l .mbox{font-size:15.5px}
+body.txt-xl button,body.txt-xl select,body.txt-xl input,body.txt-xl label,body.txt-xl .hint,body.txt-xl summary{font-size:16.5px!important}
+body.txt-xl .tcard,body.txt-xl .mbox{font-size:17px}
+body.calm *,body.calm *::before,body.calm *::after{animation:none!important;transition:none!important}
+body.calm .vz-head,body.calm .vz-pipe.lit,body.calm .vz-bar.lit{filter:none}
+@media (max-width:1400px){#bDisp span{display:none}#bDisp.tool{width:38px;height:36px;padding:0}.lcd-cell.lvl{display:none}}
