@@ -64,3 +64,32 @@ function openSound(t){
   box.onchange=function(e){if(e.target.dataset&&e.target.dataset.snd){renderTracks();later();}};
   draw();
 }
+/* ---------- the same controls as an always-available panel above the note grid (live while playing) ---------- */
+try{SND.open=localStorage.getItem('jr-sndp')!=='0';}catch(e){SND.open=true;}
+function sndPanelHTML(t){
+  if(!SND.open)return'';
+  var cur=soundName(t),st=stylesFor(t);
+  function chip(kind,name,on,tip){return'<button class="schip'+(on?' on':'')+'" data-'+kind+'="'+esc(name)+'" title="'+esc(tip||'')+'">'+esc(name)+'</button>';}
+  function sl(key,label,val,min,max,tip){return'<label class="ssl" title="'+esc(tip||'')+'"><span>'+label+'</span><input type="range" data-snd="'+key+'" min="'+min+'" max="'+max+'" step="0.01" value="'+val+'"></label>';}
+  return'<div class="sndpanel" id="sndPanel">'+
+    '<div class="sprow"><b class="splab">Effects</b>'+Object.keys(FX_PRESETS).map(function(p){return chip('sfx',p,!t.style&&cur===p,FX_PRESETS[p].d);}).join('')+'</div>'+
+    (st.length?'<div class="sprow"><b class="splab">Styles</b>'+st.map(function(n){return chip('sst',n,t.style===n,STYLES[n].d);}).join('')+'</div>':'')+
+    '<div class="spsl">'+sl('rev','Reverb',t.rev||0,0,1,'Room sound')+sl('echo','Echo',t.echo||0,0,1,'Echo on the shared echo bus')+
+      FXN.map(function(n){return sl('fx:'+n,FXLAB[n],t.fx[n]||0,0,1,FXTIP[n]);}).join('')+
+      '<button class="sm" data-x="sndoff" title="Turn every effect off">All off</button></div></div>';
+}
+function sndRefresh(t){var p=$('sndPanel');if(p)p.outerHTML=sndPanelHTML(t);var b=$('sndBtn');if(b){var nb=b.querySelector('b');if(nb)nb.textContent=soundName(t);}}
+function sndApplyKey(t,k,v){
+  if(k.slice(0,3)==='fx:'){var n=k.slice(3);fxSet(t,n,v);if(t.sb)t.sb.fx[n]=v-(macroDelta(t).fx[n]||0);}
+  else if(k==='rev'){if(t.sb)stripSet(t,'rev',v);else{t.rev=v;if(t.send)t.send.gain.value=v;}}
+  else if(k==='echo'){if(t.sb)stripSet(t,'echo',v);else{t.echo=v;if(t.dsend)t.dsend.gain.value=v;}}
+  markDirty();
+}
+$('editor').addEventListener('click',function(e){
+  var b=e.target.closest('#sndPanel button');if(!b)return;var t=selTrack();if(!t)return;
+  if(b.dataset.sfx){var p=FX_PRESETS[b.dataset.sfx];t.style=null;t.sb=null;FXN.forEach(function(n){fxSet(t,n,p[n]||0);});t.rev=p.rev!=null?p.rev:(t.kind==='voice'?.25:.15);applyMix(t);markDirty();renderTracks();sndRefresh(t);if(!P.playing)soundPreview(t);toast(b.dataset.sfx+': '+(p.d||''));return;}
+  if(b.dataset.sst){applyStyle(t,b.dataset.sst);renderTracks();sndRefresh(t);if(!P.playing)soundPreview(t);toast(b.dataset.sst+': '+STYLES[b.dataset.sst].d);return;}
+  if(b.dataset.x==='sndoff'){t.style=null;t.sb=null;FXN.forEach(function(n){fxSet(t,n,0);});markDirty();renderTracks();sndRefresh(t);toast('Effects off');}
+});
+$('editor').addEventListener('input',function(e){var k=e.target.dataset&&e.target.dataset.snd;if(!k||!e.target.closest('#sndPanel'))return;var t=selTrack();if(t)sndApplyKey(t,k,+e.target.value);var b=$('sndBtn');if(b&&t){var nb=b.querySelector('b');if(nb)nb.textContent=soundName(t);}});
+$('editor').addEventListener('change',function(e){if(e.target.dataset&&e.target.dataset.snd&&e.target.closest('#sndPanel')){renderTracks();var t=selTrack();if(t)sndRefresh(t);}});

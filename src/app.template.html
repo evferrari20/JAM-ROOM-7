@@ -2420,11 +2420,12 @@ function renderEditor(){
   if(ARR.on){renderArrange(host);return;}
   if(!t){host.innerHTML='<p class="hint">Add a track to get started.</p>';return;}
   if(t.kind==='voice'){
-    host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="sndBtn" class="sndbtn" title="Sound styles and effects for this track">'+IC.polish+'<span>Sound</span><b>'+esc(soundName(t))+'</b></button><button id="impBtn">Import a recording</button><button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+autoPanelHTML(t)+
+    host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="sndBtn" class="sndbtn'+(SND.open?' on':'')+'" aria-pressed="'+SND.open+'" title="Show or hide the effects for this track (they change the sound live)">'+IC.polish+'<span>Effects</span><b>'+esc(soundName(t))+'</b></button><button id="impBtn">Import a recording</button><button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+autoPanelHTML(t)+
       '<div class="microw"><button id="micBtn">Turn on microphone</button><select id="micSel" hidden aria-label="Choose microphone"></select><button id="liveTog" class="tog" aria-pressed="'+!!S.liveTune+'" title="Hear yourself auto-tuned in your headphones while you record. Adds a small delay.">Hear auto-tune live</button></div>'+
       '<div class="vrow"><label>Vocal sound <select id="polSel">'+Object.keys(POLISH).map(function(n){return'<option'+((t.polish||'Off')===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select></label><span class="hint" id="polTip">'+POLISH_TIP[t.polish||'Off']+'</span></div>'+
       '<p class="hint">Press the red record button to sing over your song for one pass. Use headphones so the microphone doesn\'t pick up the music. Each recording becomes a new take, so you can layer harmonies. No microphone access? Record on your phone and import the file.</p>'+
       '<div class="meter" aria-label="Microphone level"><i id="meterBar"></i></div><div id="takes" class="col"></div>';
+    var eh=host.querySelector('.ehead');if(eh)eh.insertAdjacentHTML('afterend',sndPanelHTML(t));
     var th=$('takes');micList();
     if(!t.takes.length)th.innerHTML='<p class="hint">No takes yet.</p>';
     t.takes.forEach(function(k){
@@ -2450,7 +2451,7 @@ function renderEditor(){
   var drums=t.kind==='drum';
   /* one toolbar row: what you use all the time stays visible, the rest sits under More */
   var head='<div class="etools" id="rtools"><div class="etitle"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="editor" aria-label="Help" title="What is this?">?</button></div>'+
-    '<button id="sndBtn" class="sndbtn" title="Sound styles and effects for this track">'+IC.polish+'<span>Sound</span><b>'+esc(soundName(t))+'</b></button>'+ORCH2.editorExtras(t)+
+    '<button id="sndBtn" class="sndbtn'+(SND.open?' on':'')+'" aria-pressed="'+SND.open+'" title="Show or hide the effects for this track (they change the sound live)">'+IC.polish+'<span>Effects</span><b>'+esc(soundName(t))+'</b></button>'+ORCH2.editorExtras(t)+
     rollToolsHTML(t);
   if(!drums)head+='<label class="il" title="How long new notes are. With notes selected, sets their length.">Note <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   head+='<span class="grow"></span>';
@@ -2467,7 +2468,7 @@ function renderEditor(){
     '<label class="il">Tidy strength <select id="tidyAmt" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select></label>'+
     (t._undo?'<button id="undoTidy">Undo tidy</button>':'')+
     '<button id="clearNotes" class="warn">Clear all notes</button></div></details></div>';
-  host.innerHTML=head+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+'<div class="rollwrap">'+rollSelHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+
+  host.innerHTML=head+sndPanelHTML(t)+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+'<div class="rollwrap">'+rollSelHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+
     '<p class="hint ehint">'+(drums?'Tap the grid to add a hit · tap a hit to select · double-tap to remove · drag to move.':'Tap to add a note · tap to select · double-tap to remove · drag to move · drag a selected note’s handle to change its length.')+'</p>';
   mountRoll($('roll'),t);mountAuto(t);if(drums&&DRUMMERUI.on)mountDrummer(t);
 }
@@ -2538,7 +2539,7 @@ $('editor').addEventListener('click',function(e){
   if(b.id==='micBtn'){if(mic){micOff();micList();}else{ensureMic().then(micList);}return;}
   if(b.id==='impBtn'){var inp=$('impFile');if(inp)inp.click();return;}
   if(b.id==='autoBtn'){autoToggle();return;}
-  if(b.id==='sndBtn'){openSound(t);return;}
+  if(b.id==='sndBtn'){SND.open=!SND.open;try{localStorage.setItem('jr-sndp',SND.open?'1':'0');}catch(er){}renderEditor();return;}
   if(b.id==='chBtn'){openChords();return;}
   if(b.id==='dmBtn'){DRUMMERUI.on=!DRUMMERUI.on;renderEditor();return;}
   if(b.id==='tidyBtn'){
