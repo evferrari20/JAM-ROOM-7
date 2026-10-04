@@ -781,12 +781,39 @@ function buildGraph(c){
   A.pre=c.createGain();A.pre.gain.value=.7;
   A.an=c.createAnalyser();A.an.fftSize=1024;
   A.trim=c.createGain();A.trim.gain.value=.9;
-  A.master.connect(A.hp);A.fl=F(c,'lowshelf',110,.7);A.fh=F(c,'highshelf',7500,.7);A.hp.connect(A.fl);A.fl.connect(A.fh);A.fh.connect(A.pre);A.pre.connect(A.comp);A.comp.connect(A.lim);A.lim.connect(A.trim);A.trim.connect(c.destination);A.trim.connect(A.an);A.out=A.trim;
+  A.master.connect(A.hp);A.fl=F(c,'lowshelf',110,.7);A.fm=F(c,'peaking',2500,.7);A.fh=F(c,'highshelf',8000,.7);A.hp.connect(A.fl);A.fl.connect(A.fm);A.fm.connect(A.fh);
+  /* stereo width (mid/side) and optional tape warmth, used by the mastering styles */
+  var sp=c.createChannelSplitter(2),mg=c.createChannelMerger(2),gl=c.createGain(),gr=c.createGain(),ml=c.createGain(),mr=c.createGain(),sl=c.createGain(),sr=c.createGain(),sn=c.createGain();
+  gl.gain.value=.5;gr.gain.value=.5;A.fh.connect(sp);sp.connect(gl,0);sp.connect(gr,1);
+  var mid=c.createGain(),side=c.createGain();gl.connect(mid);gr.connect(mid);gl.connect(side);sn.gain.value=-1;gr.connect(sn);sn.connect(side);
+  A.wd=c.createGain();A.wd.gain.value=1;side.connect(A.wd);
+  mid.connect(ml);mid.connect(mr);A.wd.connect(sl);sl.gain.value=1;A.wd.connect(sr);sr.gain.value=-1;
+  ml.connect(mg,0,0);sl.connect(mg,0,0);mr.connect(mg,0,1);sr.connect(mg,0,1);
+  A.sat=c.createWaveShaper();A.sat.oversample='2x';A.satDry=c.createGain();A.satWet=c.createGain();A.satWet.gain.value=0;
+  mg.connect(A.satDry);mg.connect(A.sat);A.sat.connect(A.satWet);A.satDry.connect(A.pre);A.satWet.connect(A.pre);A.sat.curve=tapeCurve();
+  /* safety stage: untouched below -1 dB, rounds off anything the limiter lets through instead of hard clipping (a crackle source) */
+  A.sci=c.createGain();A.sci.gain.value=.5;A.sc=c.createWaveShaper();A.sc.curve=safeCurve();
+  A.pre.connect(A.comp);A.comp.connect(A.lim);A.lim.connect(A.trim);A.trim.connect(A.sci);A.sci.connect(A.sc);A.sc.connect(c.destination);A.sc.connect(A.an);A.out=A.sc;
   A.rev=c.createConvolver();A.rev.buffer=makeIR(c,S.space);var ro=c.createGain();ro.gain.value=.8;A.rev.connect(ro);ro.connect(A.master);
+  /* shared echo (delay) bus for the per-track echo sends: tempo-synced, darker each repeat */
+  A.dly=c.createGain();A.dd=c.createDelay(2);A.dfb=c.createGain();A.dlp=F(c,'lowpass',3200,.5);A.dhp=F(c,'highpass',250,.5);var dout=c.createGain();
+  A.dd.delayTime.value=Math.min(1.9,.75*spb());A.dfb.gain.value=.36;dout.gain.value=.7;
+  A.dly.connect(A.dhp);A.dhp.connect(A.dd);A.dd.connect(A.dlp);A.dlp.connect(A.dfb);A.dfb.connect(A.dd);A.dlp.connect(dout);dout.connect(A.master);
   S.tracks.forEach(wireTrack);
   applyFin();
 }
-function applyFin(){if(!A||!A.fl)return;var on=!!S.fin;A.fl.gain.value=on?1.6:0;A.fh.gain.value=on?2.2:0;A.comp.threshold.value=on?-19:-16;A.comp.ratio.value=on?3:2.5;}
+/* mastering styles: [low shelf dB, presence dB, air dB, comp threshold, comp ratio, comp attack, width, warmth, output] */
+var MASTERS={off:{n:'Off',d:'No finishing',p:[0,0,0,-16,2.5,.01,1,0,1]},
+ balanced:{n:'Balanced',d:'Even and polished, a little fuller and clearer',p:[1.6,.5,2.2,-19,3,.01,1.05,0,1]},
+ warm:{n:'Warm',d:'Rounder lows, softer top, gentle tape glow',p:[2.4,-1.2,-1.5,-20,2.6,.02,1,.35,1]},
+ punchy:{n:'Punchy',d:'Tighter, harder hitting drums and bass',p:[2,1.2,1.5,-22,4,.004,1,.1,1.02]},
+ open:{n:'Open',d:'Airy, wide and spacious',p:[.8,.8,3.5,-18,2.2,.015,1.25,0,1]}};
+function mstName(){return S.mst||(S.fin?'balanced':'off');}
+function applyFin(){
+  if(!A||!A.fl)return;var m=MASTERS[mstName()]||MASTERS.off,p=m.p;
+  A.fl.gain.value=p[0];A.fm.gain.value=p[1];A.fh.gain.value=p[2];A.comp.threshold.value=p[3];A.comp.ratio.value=p[4];A.comp.attack.value=p[5];
+  if(A.wd)A.wd.gain.value=p[6];if(A.satWet){A.satWet.gain.value=p[7]*.5;A.satDry.gain.value=1-p[7]*.35;}A.trim.gain.value=.9*p[8];
+}
 function audible(t){return!t.mute&&(S.solo===null||S.solo.indexOf(t.id)>=0);}
 function applyGains(){if(!A.c)return;S.tracks.forEach(function(t){if(t.vn)t.vn.gain.setTargetAtTime(audible(t)?t.vol:0,A.c.currentTime,.015);});}
 function normSolo(){
@@ -816,6 +843,7 @@ var INST_FX={juno:{chorus:.7},junopad:{chorus:.8,phaser:.15}};
 function fxZero(){return{fuzz:0,squash:0,phaser:0,chorus:0,tape:0,echo:0};}
 function hasFx(t){return FXN.some(function(n){return t.fx[n]>.001;});}
 function fuzzCurve(){var n=1024,cv=new Float32Array(n),b=Math.tanh(.35);for(var i=0;i<n;i++){var x=i*2/(n-1)-1;cv[i]=(Math.tanh(x*7+.35)-b)*.9;}return cv;}
+function safeCurve(){var n=4097,cv=new Float32Array(n),k=.89,r=.1;for(var i=0;i<n;i++){var x=(i*2/(n-1)-1)*2,a=Math.abs(x);cv[i]=(a<=k?a:k+r*Math.tanh((a-k)/r))*(x<0?-1:1);}return cv;}
 function tapeCurve(){var n=512,cv=new Float32Array(n);for(var i=0;i<n;i++){var x=i*2/(n-1)-1;cv[i]=Math.tanh(1.8*x)/Math.tanh(1.8);}return cv;}
 function mix2(c){var i=c.createGain(),o=c.createGain(),d=c.createGain(),w=c.createGain();i.connect(d);d.connect(o);w.connect(o);d.gain.value=1;w.gain.value=0;return{i:i,o:o,d:d,w:w};}
 function stageFx(c,name){
@@ -865,17 +893,19 @@ function teardownFx(t){
 function rebuildFx(t){
   var c=A.c;teardownFx(t);
   if(!hasFx(t)){t.node.connect(t.vn);return;}
+  /* only the effects that are turned up get built: each one costs audio processing */
   var prev=t.node,st={},nodes=[],oscs=[];
-  FXN.forEach(function(n){var s2=stageFx(c,n);st[n]=s2;nodes=nodes.concat(s2.nodes);oscs=oscs.concat(s2.osc);prev.connect(s2.m.i);prev=s2.m.o;});
+  FXN.forEach(function(n){if(!(t.fx[n]>.001))return;var s2=stageFx(c,n);st[n]=s2;nodes=nodes.concat(s2.nodes);oscs=oscs.concat(s2.osc);prev.connect(s2.m.i);prev=s2.m.o;});
   prev.connect(t.vn);t.fxs=st;t.fxn=nodes;t.fxosc=oscs;
-  FXN.forEach(function(n){st[n].set(t.fx[n]);});
+  FXN.forEach(function(n){if(st[n])st[n].set(t.fx[n]);});
 }
 function fxSet(t,n,v){
   t.fx[n]=v;
   if(!A.c||!t.node)return;
-  if(!!t.fxs!==hasFx(t))rebuildFx(t);else if(t.fxs)t.fxs[n].set(v);
+  var have=!!(t.fxs&&t.fxs[n]),need=v>.001;
+  if(have!==need)rebuildFx(t);else if(have)t.fxs[n].set(v);
 }
-function fxTempo(){S.tracks.forEach(function(t){if(t.fxs&&t.fxs.echo&&t.fxs.echo.dl)t.fxs.echo.dl.delayTime.value=Math.min(1.9,.75*spb());});}
+function fxTempo(){S.tracks.forEach(function(t){if(t.fxs&&t.fxs.echo&&t.fxs.echo.dl)t.fxs.echo.dl.delayTime.value=Math.min(1.9,.75*spb());});if(A.dd)A.dd.delayTime.value=Math.min(1.9,.75*spb());}
 function applyInstFx(t){
   var d=INST_FX[t.inst];if(!d||hasFx(t))return;
   FXN.forEach(function(n){if(d[n]!=null)t.fx[n]=d[n];});
@@ -890,17 +920,35 @@ function applyPreset(t,name){
 }
 function wireTrack(t){
   var c=A.c;t.node=c.createGain();t.vn=c.createGain();t.vn.gain.value=audible(t)?t.vol:0;
-  t.send=c.createGain();t.send.gain.value=t.rev;
-  t.lo=c.createBiquadFilter();t.lo.type='lowshelf';t.lo.frequency.value=220;
-  t.hi=c.createBiquadFilter();t.hi.type='highshelf';t.hi.frequency.value=3200;
+  t.send=c.createGain();t.send.gain.value=t.rev;t.dsend=c.createGain();t.dsend.gain.value=t.echo||0;
+  t.lo=c.createBiquadFilter();t.lo.type='lowshelf';t.lo.frequency.value=t.eq?140:220;
+  t.mid=c.createBiquadFilter();t.mid.type='peaking';t.mid.frequency.value=1000;t.mid.Q.value=.8;
+  t.hi=c.createBiquadFilter();t.hi.type='highshelf';t.hi.frequency.value=t.eq?6000:3200;
   t.pn=c.createStereoPanner?c.createStereoPanner():c.createGain();
-  t.vn.connect(t.lo);t.lo.connect(t.hi);t.hi.connect(t.pn);t.pn.connect(A.master);t.pn.connect(t.send);t.send.connect(A.rev);t.an=c.createAnalyser();t.an.fftSize=512;t.pn.connect(t.an);
+  chainTrack(t);t.hi.connect(t.pn);t.pn.connect(A.master);t.pn.connect(t.send);t.send.connect(A.rev);t.pn.connect(t.dsend);t.dsend.connect(A.dly);t.an=c.createAnalyser();t.an.fftSize=512;t.pn.connect(t.an);
   applyMix(t);
   t.fxs=null;t.fxn=[];t.fxosc=[];rebuildFx(t);
   if(t.kind==='voice'){t.vin=c.createGain();t.pol=[];buildPolish(t);}
 }
-function applyMix(t){if(!t.lo)return;var tn=t.tone||0;t.lo.gain.value=-tn*7;t.hi.gain.value=tn*7;if(t.pn.pan)t.pn.pan.value=t.pan||0;}
-function unwireTrack(t){try{if(t.vin){t.vin.disconnect();(t.pol||[]).forEach(function(n){n.disconnect();});}}catch(e){}t.vin=null;t.pol=[];try{teardownFx(t);[t.vn,t.lo,t.hi,t.pn,t.send].forEach(function(n){if(n)n.disconnect();});}catch(e){}t.node=null;t.vn=null;t.send=null;t.lo=null;t.hi=null;t.pn=null;}
+/* volume -> (compressor, only when used) -> 3-band EQ -> pan */
+function chainTrack(t){
+  try{t.vn.disconnect();}catch(e){}if(t.cmp){try{t.cmp.disconnect();t.cmk.disconnect();}catch(e){}}
+  var want=(t.comp||0)>.01;
+  if(want&&!t.cmp){t.cmp=A.c.createDynamicsCompressor();t.cmk=A.c.createGain();}
+  if(!want){t.cmp=null;t.cmk=null;}
+  if(t.cmp){t.vn.connect(t.cmp);t.cmp.connect(t.cmk);t.cmk.connect(t.lo);}else t.vn.connect(t.lo);
+  t.lo.connect(t.mid);t.mid.connect(t.hi);
+}
+function applyMix(t){
+  if(!t.lo)return;
+  if(t.eq){t.lo.frequency.value=140;t.hi.frequency.value=6000;t.lo.gain.value=t.eq.l||0;t.mid.gain.value=t.eq.m||0;t.hi.gain.value=t.eq.h||0;}
+  else{var tn=t.tone||0;t.lo.gain.value=-tn*7;t.mid.gain.value=0;t.hi.gain.value=tn*7;}
+  if(!!t.cmp!==((t.comp||0)>.01))chainTrack(t);
+  if(t.cmp){var a=t.comp;t.cmp.threshold.value=-8-a*26;t.cmp.ratio.value=1.6+a*4.4;t.cmp.knee.value=10;t.cmp.attack.value=.012-a*.008;t.cmp.release.value=.18;t.cmk.gain.value=Math.pow(10,(a*8)/20);}
+  if(t.pn.pan)t.pn.pan.value=t.pan||0;
+  if(t.send)t.send.gain.value=t.rev;if(t.dsend)t.dsend.gain.value=t.echo||0;
+}
+function unwireTrack(t){try{if(t.vin){t.vin.disconnect();(t.pol||[]).forEach(function(n){n.disconnect();});}}catch(e){}t.vin=null;t.pol=[];try{teardownFx(t);[t.vn,t.cmp,t.cmk,t.lo,t.mid,t.hi,t.pn,t.send,t.dsend].forEach(function(n){if(n)n.disconnect();});}catch(e){}t.node=null;t.vn=null;t.send=null;t.dsend=null;t.cmp=null;t.cmk=null;t.lo=null;t.mid=null;t.hi=null;t.pn=null;}
 
 /* ---- synth building blocks ---- */
 function G(c,out,t,peak,a,d,s){
@@ -908,7 +956,7 @@ function G(c,out,t,peak,a,d,s){
   g.gain.setTargetAtTime(Math.max(peak*s,0.0001),t+a,Math.max(d,.01)/3);g.connect(out);g._t=t;g._a=a;return g;
 }
 function O(c,type,f,t,cents){var o=c.createOscillator();o.type=type;o.frequency.value=f;if(cents)o.detune.value=cents;o.start(t);return o;}
-function F(c,type,f,q){var n=c.createBiquadFilter();n.type=type;n.frequency.value=f;if(q!=null)n.Q.value=q;return n;}
+function F(c,type,f,q){var n=c.createBiquadFilter();n.type=type;n.frequency.value=Math.min(f,c.sampleRate*.49);if(q!=null)n.Q.value=q;return n;}
 function VIB(c,o,t,rate,depth,delay){var l=c.createOscillator();l.frequency.value=rate;var g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(depth,t+delay);l.connect(g);g.connect(o.detune);l.start(t);return l;}
 function NZ(c){if(!c._nb){var n=c.sampleRate*2,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=Math.random()*2-1;c._nb=b;}return c._nb;}
 function noise(c,t,dur){var s=c.createBufferSource();s.buffer=NZ(c);s.loop=true;s.start(t,Math.random());s.stop(t+dur);return s;}
@@ -2582,8 +2630,9 @@ $('addVoice').addEventListener('click',function(){addTrack('voice');});
 
 /* =============== modals =============== */
 var modalHandler=null;
-function openModal(html,handler){$('mBox').className='mbox';$('mBox').innerHTML=html;modalHandler=handler||null;$('modal').classList.add('show');}
-function closeModal(){$('modal').classList.remove('show');modalHandler=null;}
+var modalOnClose=null;
+function openModal(html,handler){modalOnClose=null;$('mBox').className='mbox';$('mBox').oninput=null;$('mBox').onchange=null;$('mBox').innerHTML=html;modalHandler=handler||null;$('modal').classList.add('show');}
+function closeModal(){var f=modalOnClose;modalOnClose=null;$('modal').classList.remove('show');modalHandler=null;if(f)f();}
 $('modal').addEventListener('click',function(e){if(e.target===$('modal')){closeModal();return;}if(modalHandler)modalHandler(e);});
 
 function isReal(id){return !!SD[id]||!!(SI[id]&&SI[id].deps);}
@@ -2660,8 +2709,8 @@ function openPicker(target){
 /* =============== saving, loading, exporting =============== */
 (async function(){try{if(window.claude&&claude.use)DL=await claude.use('downloads');}catch(e){DL=null;}})();
 function snapshot(){
-  return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,parts:S.parts,part:S.part,arr:S.arr,songMode:!!S.songMode,
-    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,
+  return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,arr:S.arr,songMode:!!S.songMode,
+    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,
       takes:t.takes.map(takeMeta),pd:pdMeta(t)};})};
 }
 function takeMeta(k){return{id:k.id,name:k.name,gain:k.gain,nudge:k.nudge,tune:k.tune,strength:k.strength,speed:k.speed,form:k.form||0,edits:k.edits||[],mute:k.mute,sr:k.sr};}
@@ -2699,7 +2748,7 @@ function applyProject(d,aud,opts){
   S.name=d.name||'My song';S.bpm=d.bpm||100;S.key=d.key||0;S.scale=SCALES[d.scale]?d.scale:'Major';S.bars=d.bars||4;
   S.loop=d.loop!==false;S.swing=+d.swing||0;S.space=SPACES[d.space]?d.space:'Studio';if(A.c)A.rev.buffer=makeIR(A.c,S.space);S.metro=!!d.metro;S.count=d.count!==false;S.liveTune=!!d.liveTune;
   S.master=d.master!=null?+d.master:.85;if(A.master)A.master.gain.value=S.master;
-  setRef(d.tune!=null?+d.tune:prefTune(),true);S.fin=!!d.fin;applyFin();
+  setRef(d.tune!=null?+d.tune:prefTune(),true);S.fin=!!d.fin;S.mst=d.mst||'';applyFin();
   S.parts=(d.parts&&d.parts.length)?d.parts.map(function(p){return{id:p.id,name:p.name};}):[{id:'p1',name:'Main'}];
   S.part=S.parts.some(function(p){return p.id===d.part;})?d.part:S.parts[0].id;
   S.arr=(d.arr||[S.part]).filter(function(id){return S.parts.some(function(p){return p.id===id;});});if(!S.arr.length)S.arr=[S.part];
@@ -2724,7 +2773,7 @@ function applyProject(d,aud,opts){
 }
 function audFromRecord(rec){var m={};Object.keys(rec.audio||{}).forEach(function(id){m[id]={sr:rec.audio[id].sr,f:i162f(new Int16Array(rec.audio[id].pcm))};});return m;}
 function starter(){
-  setRef(prefTune(),true);S.fin=false;applyFin();
+  setRef(prefTune(),true);S.fin=false;S.mst='';applyFin();
   S.parts=[{id:'p1',name:'Main'}];S.part='p1';S.arr=['p1'];S.songMode=false;
   S.solo=null;S.swing=0;if(S.space!=='Studio'){S.space='Studio';if(A.c)A.rev.buffer=makeIR(A.c,S.space);}S.tracks.forEach(unwireTrack);S.tracks=[];S.name='My song';S.bpm=100;S.key=0;S.scale='Major';S.bars=4;
   var d=mkTrack('drum');S.tracks.push(d);applyBeat(d,'Rock');
@@ -3149,60 +3198,17 @@ function soloToggle(id){
   if(S.solo===null)S.solo=[id];else{var i=S.solo.indexOf(id);if(i>=0)S.solo.splice(i,1);else S.solo.push(id);}
   syncSolo();
 }
-function mixSync(){
-  document.querySelectorAll('#mBox .mcol[data-id]').forEach(function(col){
-    var t=trackById(col.dataset.id);if(!t)return;
-    col.querySelector('[data-m=mute]').setAttribute('aria-pressed',t.mute);
-    col.querySelector('[data-m=solo]').setAttribute('aria-pressed',S.solo!==null&&S.solo.indexOf(t.id)>=0);
-    col.classList.toggle('quiet',!audible(t));
-  });
-}
-function openMixer(){
-  ensureAudio();
-  var cols=S.tracks.map(function(t){
-    return'<div class="mcol" data-id="'+t.id+'" style="--tc:'+t.color+'"><div class="mhead"><span aria-hidden="true">'+tIcon(t)+'</span><b title="'+esc(t.name)+'">'+esc(t.name)+'</b></div>'+
-      '<div class="mmeter" aria-hidden="true"><i></i></div>'+
-      '<label>Volume <span data-r="vol">'+Math.round(t.vol*100)+'</span><input type="range" data-m="vol" min="0" max="1" step="0.01" value="'+t.vol+'"></label>'+
-      '<label>Pan <span class="lr">L · R</span><input type="range" data-m="pan" min="-1" max="1" step="0.05" value="'+(t.pan||0)+'"></label>'+
-      '<label>Reverb<input type="range" data-m="rev" min="0" max="1" step="0.01" value="'+t.rev+'"></label>'+
-      '<div class="mbtns"><button class="tog" data-m="mute">Mute</button><button class="tog" data-m="solo">Solo</button></div></div>';
-  }).join('');
-  var master='<div class="mcol master"><div class="mhead"><span aria-hidden="true">'+IC.speaker+'</span><b>Master</b></div><div class="mmeter" aria-hidden="true"><i id="mmMaster"></i></div>'+
-    '<label>Volume <span data-r="mvol">'+Math.round(S.master*100)+'</span><input type="range" data-m="master" min="0" max="1.2" step="0.01" value="'+S.master+'"></label><p class="hint">If this meter turns red, lower your loudest tracks.</p></div>';
-  openModal('<h3>Mixer</h3><div class="mixer">'+cols+master+'</div><div class="row" style="justify-content:space-between"><span class="hint">Press play and balance by ear. Solo several tracks to hear just them.</span><button class="primary" data-x="close">Done</button></div>',function(e){
-    var b=e.target.closest('button');if(!b)return;
-    if(b.dataset.x==='close'){closeModal();return;}
-    var col=b.closest('.mcol'),t=col&&trackById(col.dataset.id);if(!t)return;
-    if(b.dataset.m==='mute'){t.mute=!t.mute;applyGains();renderHear();markDirty();}
-    if(b.dataset.m==='solo')soloToggle(t.id);
-    mixSync();
-  });
-  $('mBox').classList.add('wide');mixSync();mixMeters();
-}
 $('mBox').addEventListener('input',function(e){
   var m=e.target.dataset.m;if(!m)return;var v=+e.target.value;
   if(m==='master'){S.master=v;if(A.master)A.master.gain.value=v;var ml=$('mBox').querySelector('[data-r=mvol]');if(ml)ml.textContent=Math.round(v*100);markDirty();return;}
-  var col=e.target.closest('.mcol'),t=col&&trackById(col.dataset.id);if(!t)return;
-  if(m==='vol'){t.vol=v;applyGains();col.querySelector('[data-r=vol]').textContent=Math.round(v*100);}
-  if(m==='pan'){t.pan=v;applyMix(t);}
-  if(m==='rev'){t.rev=v;if(t.send)t.send.gain.value=v;}
+  var col=e.target.closest('.strip'),t=col&&trackById(col.dataset.id);if(!t)return;
+  if(m==='vol'){t.vol=v;applyGains();var sv=col.querySelector('[data-r=vol]');if(sv)sv.textContent=Math.round(v*100);}
   markDirty();
 });
-$('mBox').addEventListener('dblclick',function(e){var m=e.target.dataset&&e.target.dataset.m;if(m!=='pan')return;var col=e.target.closest('.mcol'),t=col&&trackById(col.dataset.id);if(!t)return;t.pan=0;e.target.value=0;applyMix(t);markDirty();});
+$('mBox').addEventListener('dblclick',function(e){var f=e.target.closest&&e.target.closest('.fader');if(!f)return;var col=f.closest('.strip');
+  if(f.dataset.m==='master'){f.value=1;f.dispatchEvent(new Event('input',{bubbles:true}));return;}
+  if(col&&col.dataset.id){f.value=.8;f.dispatchEvent(new Event('input',{bubbles:true}));}});
 function lvlBar(i,pk){if(!i)return;var db=20*Math.log10(pk+1e-6),h=Math.max(0,Math.min(100,(db+48)/48*100));i.style.height=h+'%';i.classList.toggle('hot',pk>.97);}
-function mixMeters(){
-  cancelAnimationFrame(MIX.raf);var b1=new Float32Array(512),b2=null;
-  (function fr(){
-    var box=document.querySelector('#mBox .mixer');
-    if(!box||!$('modal').classList.contains('show')){$('mBox').classList.remove('wide');renderTracks();return;}
-    box.querySelectorAll('.mcol[data-id]').forEach(function(col){
-      var t=trackById(col.dataset.id);if(!t||!t.an||!t.an.getFloatTimeDomainData)return;
-      t.an.getFloatTimeDomainData(b1);var pk=0;for(var j=0;j<b1.length;j++){var a=Math.abs(b1[j]);if(a>pk)pk=a;}lvlBar(col.querySelector('.mmeter i'),pk);
-    });
-    if(A.an&&A.an.getFloatTimeDomainData){var n=A.an.fftSize||1024;if(!b2||b2.length!==n)b2=new Float32Array(n);A.an.getFloatTimeDomainData(b2);var pk2=0;for(var q=0;q<b2.length;q++){var a2=Math.abs(b2[q]);if(a2>pk2)pk2=a2;}lvlBar($('mmMaster'),pk2);}
-    MIX.raf=requestAnimationFrame(fr);
-  })();
-}
 $('bMix').addEventListener('click',openMixer);
 
 /* =============== WAV export (renders faster than real time) =============== */
@@ -3219,8 +3225,8 @@ function encodeWav(buf){
   return new Blob([ab],{type:'audio/wav'});
 }
 async function offRender(oc,N,L,lead,song){
-  var saveA=A,saveLive=P.live,saveT0=P.T0,saveExp=P.exporting,saveMetro=S.metro,FL=['node','vn','send','lo','hi','pn','fxs','fxn','fxosc','vin','pol','an'];
-  var saved=S.tracks.map(function(t){var o={};FL.forEach(function(f){o[f]=t[f];});return o;});
+  var saveA=A,saveLive=P.live,saveT0=P.T0,saveExp=P.exporting,saveMetro=S.metro,FL=['node','vn','send','dsend','lo','mid','hi','cmp','cmk','pn','fxs','fxn','fxosc','vin','pol','an'];
+  var saved=S.tracks.map(function(t){var o={};FL.forEach(function(f){o[f]=t[f];t[f]=null;});return o;});
   try{
     A={c:oc,off:true};buildGraph(oc);
     P.exporting=true;S.metro=false;P.live=[];P.T0=lead;
@@ -3313,7 +3319,7 @@ var BASSI={ebass:1,jazzbass:1,slapbass:1,contrabass:1,sbass:1,subbass:1,sub808:1
 var PADI={strings:1,tronstrings:1,tronchoir:1,choir:1,oohs:1,synchoir:1,pad:1,junopad:1,organ:1,drawbar:1,harmonium:1,accordion:1,glasses:1,bowedvibe:1};
 var LEADI={flute:1,piccolo:1,recorder:1,oboe:1,clarinet:1,sax:1,tenorsax:1,trumpet:1,mutedtpt:1,trombone:1,horn:1,brass:1,violin:1,cello:1,panflute:1,shakuhachi:1,harmonica:1,ocarina:1,lead:1,tronflute:1,sitar:1,koto:1,shamisen:1};
 var COLORI={vibes:1,marimba:1,xylo:1,glock:1,celesta:1,musicbox:1,tubular:1,chimes:1,kalimba:1,steeldrum:1,bells:1,harp:1,dulcimer:1,harpsi:1,pizz:1,spluck:1};
-var ROLE_DB={vocal:-17,lead:-18,drums:-18.5,bass:-19.5,chords:-22,color:-24.5,pad:-26};
+/*@include js/mix.js*/
 var ROLE_LAB={vocal:'vocals',lead:'lead',drums:'drums',bass:'bass',chords:'chords',color:'color',pad:'pad'};
 function roleOf(t){if(t.kind==='voice')return'vocal';if(t.kind==='drum')return'drums';var i=t.inst;if(BASSI[i])return'bass';if(PADI[i])return'pad';if(LEADI[i])return'lead';if(COLORI[i])return'color';return'chords';}
 function levelOf(b,secs){
@@ -3336,41 +3342,6 @@ async function measureTracks(onProg){
     }
   }finally{S.solo=saveSolo;}
   return res;
-}
-async function polishMix(){
-  if(A.off)return;if(P.playing)stop();
-  var OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
-  if(!OC){toast('Polish needs a newer browser');return;}
-  if(!S.tracks.some(function(t){return t.notes.length||(t.takes&&t.takes.length);})){toast('Add some notes first, then polish');return;}
-  var c0=ensureAudio();
-  openModal('<h3>Polishing your mix…</h3><p class="hint" id="plMsg">Getting sounds ready</p>',function(){});
-  var before=S.tracks.map(function(t){return{t:t,vol:t.vol,pan:t.pan||0,rev:t.rev};}),mB=S.master,fB=!!S.fin;
-  function restore(){before.forEach(function(o){o.t.vol=o.vol;o.t.pan=o.pan;o.t.rev=o.rev;});S.master=mB;S.fin=fB;apply();}
-  function apply(){applyGains();S.tracks.forEach(function(t){applyMix(t);if(t.send)t.send.gain.value=t.rev;});if(A.master)A.master.gain.value=S.master;applyFin();renderTracks();markDirty();}
-  try{
-    await Promise.all(S.tracks.filter(function(t){return t.kind==='inst';}).map(function(t){return ensureSamples(t.inst);}).concat([loadDrumKits()]));
-    var jobs=[];S.tracks.forEach(function(t){allTakes(t).forEach(function(k){if(k.tune)jobs.push(tuneTake(k));});});
-    await Promise.all(jobs);S.tracks.forEach(function(t){allTakes(t).forEach(function(k){takeBuffer(k);});});
-    S.fin=false;applyFin();
-    var lev=await measureTracks(function(i,n){var m=$('plMsg');if(m)m.textContent='Listening to track '+i+' of '+n+'…';});
-    var raw={},mx=0;
-    S.tracks.forEach(function(t){var l=lev[t.id];if(l==null)return;var r=Math.max(.3,Math.min(3,Math.pow(10,(ROLE_DB[roleOf(t)]-l)/20)));raw[t.id]=t.vol*r;mx=Math.max(mx,raw[t.id]);});
-    var sc=mx>.95?.95/mx:1,side=0,PANS=[-.3,.3,-.42,.42,-.2,.2];
-    S.tracks.forEach(function(t){
-      var v=raw[t.id];if(v==null)return;t.vol=Math.round(Math.max(.06,Math.min(1,v*sc))*100)/100;
-      var r=roleOf(t);
-      if((r==='chords'||r==='pad'||r==='color')&&Math.abs(t.pan||0)<.05)t.pan=PANS[side++%PANS.length];
-      if(r==='bass')t.rev=Math.min(t.rev,.06);else if(r==='drums')t.rev=Math.min(t.rev,.22);
-    });
-    S.fin=true;S.solo=null;applyFin();
-    var m2=$('plMsg');if(m2)m2.textContent='Checking the finished mix…';
-    var L=LEN(),sp=spb(),sr=32000,oc=new OC(2,Math.ceil((.05+L*sp+1.2)*sr),sr),mb=await offRender(oc,1,L,.05,false),ml=levelOf(mb,.05+L*sp);
-    if(ml!=null)S.master=Math.round(Math.max(.45,Math.min(1,S.master*Math.pow(10,(-16-ml)/20)))*100)/100;
-    apply();
-    var rows=before.map(function(o){var t=o.t;return o.vol===t.vol&&o.pan===(t.pan||0)?'':'<div class="item"><span>'+esc(t.name)+'</span><small>'+ROLE_LAB[roleOf(t)]+'</small><span>'+Math.round(o.vol*100)+' → '+Math.round(t.vol*100)+'</span></div>';}).join('');
-    openModal('<h3>Mix polished</h3><p class="hint">Levels set by role, backing sounds spread left and right, low sounds kept dry, master set, plus a gentle finish (a fuller bottom and clearer top). Press play to hear it.</p><div class="list">'+(rows||'<p class="hint">Your levels were already well balanced.</p>')+'</div><p class="hint">Master volume '+Math.round(mB*100)+' → '+Math.round(S.master*100)+'. You can still fine-tune anything in the Mixer.</p><div class="row" style="justify-content:flex-end"><button data-x="undo">Undo polish</button><button class="primary" data-x="ok">Looks good</button></div>',
-      function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.x==='undo'){restore();closeModal();toast('Back to how it was');}else if(b.dataset.x==='ok')closeModal();});
-  }catch(e){restore();S.solo=null;closeModal();toast('Could not polish this song');}
 }
 $('bPolish').addEventListener('click',polishMix);
 
