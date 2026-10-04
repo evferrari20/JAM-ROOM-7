@@ -27,6 +27,8 @@ for id,v in D.items():
         for a in arr: lines.append(f'{id} {k} {b85(base64.b64decode(a))}')
 data='\n'.join(lines)+'\n'
 s=open('src/app.template.html').read()
+import re
+s=re.sub(r'/\*@include ([^*]+)\*/',lambda m:open('src/'+m.group(1).strip()).read(),s)
 a=s.index('<script type="application/json" id="smp">');b=s.index('</script>',a)+9
 s=s[:a]+'<script type="text/plain" id="smp">\n'+data+'</script>'+s[b:]
 # restore signalsmith etc: skel had <B64> only inside smp? check
