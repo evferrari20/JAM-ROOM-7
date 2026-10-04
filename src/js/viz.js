@@ -1,10 +1,25 @@
 /* =============== instrument view (visualizer) ===============
-   A strip above the keys: the note on a small grand staff, plus a simple drawing of the
-   instrument that lights up where that note is played. Piano, organ, fretboards, bowed
-   strings, harp, mallet bars and wind/voice outlines. Drums light the drawn kit instead. */
+   A strip above the keys: the note on a small grand staff, plus the instrument itself.
+   Normally that is a 3D cartoon model (js/vz3d.js, drawn with three.js) whose keys, strings,
+   valves or bars move as each note plays. In low-power mode, when 3D is switched off, or when
+   the browser cannot draw 3D, a flat drawing lights up instead. Drums light the drawn kit. */
 var VIZ=(function(){
-  var NS='http://www.w3.org/2000/svg',host=null,svg=null,kind='',tr=null,lit={},nid=0,want=true;
-  try{want=localStorage.getItem('jr-viz')!=='0';}catch(e){}
+  var NS='http://www.w3.org/2000/svg',host=null,svg=null,kind='',tr=null,lit={},nid=0,want=true,want3=true;
+  try{want=localStorage.getItem('jr-viz')!=='0';want3=localStorage.getItem('jr-viz3d')!=='0';}catch(e){}
+  /* ---- 3D: loaded the first time it is needed; one canvas reused for every track ---- */
+  var V3=null,st3=0,cv3=null,cap3=null;/* st3: 0 not loaded, 1 loading, 2 ready, -1 not possible here */
+  function use3(){return want3&&!LITE&&st3!==-1;}
+  function load3(){
+    if(st3)return;st3=1;
+    var src=document.getElementById('threesrc'),url;
+    try{url=(src&&src.textContent.length>1000)?URL.createObjectURL(new Blob([src.textContent],{type:'text/javascript'})):new URL('vendor/three.module.min.js',location.href).href;}catch(e){st3=-1;return;}
+    import(url).then(function(THREE){
+      cv3=document.createElement('canvas');cv3.className='vz3c';
+      V3=VZ3D(THREE,{nameChord:nameChord,noteNames:NOTE_NAMES}).view(cv3);V3.minMs=FRAME_MS;st3=2;
+      if(tr&&host&&host.isConnected&&want&&use3())mount(tr);
+    }).catch(function(e){st3=-1;V3=null;if(window.console)console.warn('3D instrument view unavailable',e);});
+  }
+  function is3(){return!!(V3&&host&&host.classList.contains('is3d'));}
   var FLATKEY={5:1,10:1,3:1,8:1,1:1};
   var LET=[0,0,1,1,2,3,3,4,4,5,5,6],SHARP=[0,1,0,1,0,0,1,0,1,0,1,0];
   function spell(m){
@@ -150,7 +165,9 @@ var VIZ=(function(){
     host=document.getElementById('viz');if(!host)return;tr=t;lit={};
     kind=pick(t);if(kind==='drum'){host.hidden=true;return;}
     host.hidden=!want;if(!want)return;
-    host.innerHTML='';VW=Math.max(1000,Math.min(1600,Math.round(host.clientWidth/Math.max(1,host.clientHeight)*120)||1000));X1=VW-12;
+    host.innerHTML='';host.classList.remove('is3d');svg=null;
+    if(use3()){if(!st3)setTimeout(load3,150);else if(st3===2&&mount3(t))return;}
+    VW=Math.max(1000,Math.min(1600,Math.round(host.clientWidth/Math.max(1,host.clientHeight)*120)||1000));X1=VW-12;
     svg=el('svg',{viewBox:'0 0 '+VW+' 120',preserveAspectRatio:'xMidYMid meet',class:'vz'},host);
     var st=el('g',{class:'vz-staff'},svg);drawStaff(st);
     var g=el('g',{class:'vz-inst'},svg);
@@ -158,10 +175,23 @@ var VIZ=(function(){
     var fx=kind==='piano'?drawPiano(g):kind==='organ'?drawOrgan(g):TUNE[kind]?drawNeck(g,kind):kind==='harp'?drawHarp(g):kind==='bars'?drawBars(g,t):drawWind(g,kind);
     svg._fx=fx;svg._fx2=el('g',{class:'vz-fx'},svg);
   }
+  function mount3(t){
+    try{
+      host.classList.add('is3d');
+      svg=el('svg',{viewBox:'0 0 176 120',preserveAspectRatio:'xMidYMid meet',class:'vz vz-st'},host);drawStaff(el('g',{class:'vz-staff'},svg));svg._fx=null;
+      svg.style.width=Math.round((host.clientHeight||118)*176/120)+'px';
+      var box=document.createElement('div');box.className='vz3';box.appendChild(cv3);
+      var n=document.createElement('span');n.className='vz3-n';n.textContent=INST_NAME[t.inst]||(t.kind==='voice'?'Voice':'');box.appendChild(n);
+      cap3=document.createElement('span');cap3.className='vz3-c';box.appendChild(cap3);host.appendChild(box);
+      V3.clear();V3.show(t.kind==='voice'?'voice':t.inst);V3.resize();
+      return true;
+    }catch(e){if(window.console)console.warn('3D instrument view failed',e);st3=-1;host.innerHTML='';host.classList.remove('is3d');svg=null;return false;}
+  }
   function ripple(x,y,big){
     if(LITE||VIS_PAUSE||!svg)return;var c=el('circle',{cx:x,cy:y,r:big?10:6,class:'vz-rip'},svg._fx2);setTimeout(function(){if(c.parentNode)c.parentNode.removeChild(c);},650);
   }
   function on(m,id){
+    if(is3()){lit[id]={m:m,p:null};V3.press(m,'n'+id,.8);if(cap3)cap3.textContent=V3.caption();drawHeads();return;}
     if(!svg||!svg._fx)return;var p=svg._fx(m);lit[id]={m:m,p:p};
     if(p){
       if(p.el)p.el.classList.add('lit');
@@ -175,6 +205,7 @@ var VIZ=(function(){
   }
   function off(id){
     var L=lit[id];if(!L)return;delete lit[id];var p=L.p;
+    if(V3&&!p)V3.release('n'+id);
     if(p){var still=Object.keys(lit).some(function(k){return lit[k].p&&(lit[k].p.el===p.el&&p.el||lit[k].p.str===p.str&&p.str);});
       if(!still){if(p.el)p.el.classList.remove('lit');if(p.str)p.str.classList.remove('lit','vib');}
       if(p.dot&&p.dot.parentNode)p.dot.parentNode.removeChild(p.dot);}
@@ -193,6 +224,8 @@ var VIZ=(function(){
     setTimeout(function(){var p=document.querySelector('#dock .kitset .pad[data-m="'+pi+'"]');if(!p||p.classList.contains('on'))return;p.classList.add('on','auto');setTimeout(function(){p.classList.remove('on','auto');},120);},d);
   }
   function toggle(){want=!want;try{localStorage.setItem('jr-viz',want?'1':'0');}catch(e){}return want;}
+  function toggle3(){want3=!want3;try{localStorage.setItem('jr-viz3d',want3?'1':'0');}catch(e){}if(!want3&&V3)V3.clear();return want3;}
   function clear(){Object.keys(lit).forEach(off);}
-  return{mount:mount,note:note,end:end,drum:drum,toggle:toggle,on:function(){return want;},clear:clear,spell:spell,staffY:staffY};
+  return{mount:mount,note:note,end:end,drum:drum,toggle:toggle,on:function(){return want;},clear:clear,spell:spell,staffY:staffY,
+    toggle3:toggle3,on3:function(){return want3&&!LITE&&st3!==-1;},can3:function(){return!LITE&&st3!==-1;},is3:is3,v3:function(){return V3;},st3:function(){return st3;}};
 })();

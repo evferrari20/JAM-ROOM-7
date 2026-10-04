@@ -40,3 +40,8 @@ Licences differ: check them before using the app for anything other than persona
 - MP3 files are made by **lamejs** (a JavaScript port of the LAME MP3 encoder, LGPL-3.0; see src/vendor/LAME-LICENSE.txt and
   lame.sourceforge.net). It is included unmodified as a separate file (vendor/lame.min.js on the website).
 
+
+# 3D instrument view
+- The moving instruments are drawn with **three.js** r170 (MIT licence, see src/vendor/THREE-LICENSE.txt and threejs.org),
+  included unmodified (vendor/three.module.min.js on the website).
+- Every instrument model is built in code for Jam Room (src/js/vz3d.js); no outside 3D models or images are used.

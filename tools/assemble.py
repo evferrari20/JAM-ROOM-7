@@ -60,6 +60,7 @@ def learn_blocks(inline):
         out += '\n<script type="text/plain" id="learndata">\n' + '\n'.join(lines) + '\n</script>'
         out += '\n<script type="text/plain" id="osmdsrc">' + open('src/vendor/opensheetmusicdisplay.min.js').read().replace('</script', '<\\/script') + '</script>'
         out += '\n<script type="text/plain" id="lamesrc">' + open('src/vendor/lame.min.js').read().replace('</script', '<\\/script') + '</script>'
+        out += '\n<script type="text/plain" id="threesrc">' + open('src/vendor/three.module.min.js').read().replace('</script', '<\\/script') + '</script>'
     return out
 
 
@@ -89,6 +90,7 @@ def main():
     for f in os.listdir('src/learn/songs'): shutil.copy('src/learn/songs/' + f, 'site/learn/' + f)
     shutil.copy('src/vendor/opensheetmusicdisplay.min.js', 'site/learn/osmd.min.js')
     os.makedirs('site/vendor'); shutil.copy('src/vendor/lame.min.js', 'site/vendor/lame.min.js')
+    shutil.copy('src/vendor/three.module.min.js', 'site/vendor/three.module.min.js')
     for n in ('index.html', 'jam-room.html', 'jam-room-share.html'): open('site/' + n, 'w').write(page)
     sw = open('src/sw.js').read().replace('@@BUILD@@', ver)
     open('site/sw.js', 'w').write(sw)

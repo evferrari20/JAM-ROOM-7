@@ -1197,7 +1197,7 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ch:{name:function(m){return nameChord(m);},shape:function(c){return guitarShape(c);},sug:function(c){return suggestNext(c).map(function(x){return chName(x[0])+': '+x[1];});},st:function(){return chState();}},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={viz:function(){return VIZ;},instIds:function(){return[].concat.apply([],INST_GROUPS.map(function(g){return g[1].map(function(x){return x[0];});}));},SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ch:{name:function(m){return nameChord(m);},shape:function(c){return guitarShape(c);},sug:function(c){return suggestNext(c).map(function(x){return chName(x[0])+': '+x[1];});},st:function(){return chState();}},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
@@ -2168,6 +2168,7 @@ function midiLabel(){
   if(!midiAcc)return'MIDI keyboard';var n=[];midiAcc.inputs.forEach(function(i){n.push(i.name);});
   return n.length?'MIDI: '+n[0]+(n.length>1?' +'+(n.length-1):''):'MIDI: none found';
 }
+/*@include js/vz3d.js*/
 /*@include js/viz.js*/
 /*@include js/learn.js*/
 /*@include js/orch.js*/
@@ -2194,6 +2195,7 @@ function renderDock(){
   if(!drumMode)h+='<span class="chnow" id="chNow" hidden title="The chord you are playing"></span>';
   h+='<button class="qh" data-help="keys" aria-label="Help" title="What is this?">?</button>';
   if(!drumMode)h+='<button class="tog" id="hViz" aria-pressed="'+VIZ.on()+'" title="Show the instrument and the note you play">Instrument view</button>';
+  if(!drumMode&&VIZ.on()&&VIZ.can3())h+='<button class="tog" id="hViz3" aria-pressed="'+VIZ.on3()+'" title="Show a moving 3D instrument (off: a flat drawing, lighter on slow computers)">3D</button>';
   h+='<span class="who">'+tIcon(kt)+' '+esc(kt.name)+'</span></div>';
   if(!drumMode)h+='<div class="viz" id="viz"></div>';
   if(drumMode){
@@ -2281,6 +2283,7 @@ $('dock').addEventListener('click',function(e){
   else if(b.id==='hMidi'){enableMidi();}
   else if(b.id==='hFocus'){document.body.classList.toggle('focus');renderDock();}
   else if(b.id==='hViz'){VIZ.toggle();renderDock();}
+  else if(b.id==='hViz3'){VIZ.toggle3();renderDock();}
 });
 $('dock').addEventListener('change',function(e){
   if(e.target.id==='hChord'){S.chordType=e.target.value;renderDock();}
@@ -3460,7 +3463,7 @@ function openOutput(){
          :'<p class="hint">'+(ios?'iPad and iPhone choose where sound plays, not the page. To switch between the speaker, headphones or a Bluetooth speaker: swipe down from the top-right corner to open Control Center, press and hold the music box, tap the AirPlay icon, then pick your iPad, headphones or speaker.':'This browser cannot choose the output device from inside the page. Use your computer’s sound menu (the speaker icon near the clock) to pick speakers or headphones, then tap Fix sound.')+'</p><div class="outlist" id="outList"></div>')+
     (ios?'<p class="hint">Sound plays through the speakers even when your iPad’s silent switch is on.</p>':'')+
     '<div class="sc-entry"><div><b>Hearing crackle?</b><p class="hint">A one-minute listening test that finds what causes it on this device.</p></div><button class="primary" data-x="sc">Run sound check</button></div>'+
-    '<label class="shl chk"><input type="checkbox" id="liteChk"'+(LITE?' checked':'')+'> Low-power sound <span class="hint">(fewer notes at once, shorter reverb, calmer animations; for slower computers)</span></label>'+
+    '<label class="shl chk"><input type="checkbox" id="liteChk"'+(LITE?' checked':'')+'> Low-power sound <span class="hint">(fewer notes at once, shorter reverb, calmer animations, flat instrument view; for slower computers)</span></label>'+
     '<label class="shl">Sound smoothness<select id="latSel">'+latOpts.map(function(o){return'<option value="'+o[0]+'"'+(o[0]===LAT?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label><p class="hint">If you hear crackling, choose Smooth. Changing this restarts Jam Room and saves your song first.</p>'+
     '<div class="row" style="justify-content:space-between"><span class="row"><button data-x="fix">Fix sound</button><button data-x="test">Play test sound</button></span><button class="primary" data-x="close">Done</button></div>',
   async function(e){
