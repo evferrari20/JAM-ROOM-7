@@ -1,6 +1,6 @@
 /* drawn drum kit: piece positions and labels */
 .kitset{--kh:250px;container-type:inline-size;position:relative;width:min(100%,calc(var(--kh)*2.368));aspect-ratio:900/380;margin:6px auto 0;-webkit-user-select:none;user-select:none}
-.dock.kb-s .kitset{--kh:190px}.dock.kb-m .kitset{--kh:250px}.dock.kb-l .kitset{--kh:310px}.dock.kb-xl .kitset{--kh:370px}
+.dock .kitset{--kh:calc(var(--kbh,140px) * 1.8)}
 body.focus .dock .kitset{--kh:min(56vh,430px)}
 .kitset .stands{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .kitset .pad.dz{position:absolute;display:block;padding:0;margin:0;border:0;background:none;box-shadow:none;height:auto;min-height:0;border-radius:50%;overflow:visible;font-size:clamp(9px,1.9cqw,15px);color:inherit;touch-action:none}
@@ -25,7 +25,7 @@ body.focus .dock .kitset{--kh:min(56vh,430px)}
 .t-tamb .dzl{color:#3a2a14}
 
 /* kit tuning */
-.dock.kb-s .kitset{--kh:220px}.dock.kb-m .kitset{--kh:300px}.dock.kb-l .kitset{--kh:360px}.dock.kb-xl .kitset{--kh:420px}
+.dock .kitset{--kh:calc(var(--kbh,150px) * 1.95)}
 body.focus .dock .kitset{--kh:min(60vh,470px)}
 .t-cowbell .dzl,.t-tamb .dzl,.t-shaker .dzl,.t-maracas .dzl,.t-egg .dzl,.t-cabasa .dzl,.t-claves .dzl,.t-bells .dzl{inset:auto;left:50%;top:100%;transform:translateX(-50%);padding:0;margin-top:1px;color:var(--ink);text-shadow:0 1px 2px rgba(0,0,0,.8);justify-content:flex-start}
 .t-rim .dzl{font-size:.85em}

@@ -13,31 +13,29 @@ function theme(){
   TH={bg:g('--roll-bg'),black:g('--roll-black'),scale:g('--roll-scale'),root:g('--roll-root'),cell:g('--roll-cell'),beat:g('--roll-beat'),bar:g('--roll-bar'),head:g('--roll-head'),panel:g('--panel'),ink:g('--ink'),muted:g('--muted'),brass:g('--brass')};return TH;
 }
 function rollToolsHTML(t){
-  var drums=t.kind==='drum';
-  return'<div class="rtools" id="rtools">'+
-    '<div class="seg2 rmode"><button data-rm="edit" aria-pressed="'+(ROLL.mode==='edit')+'" title="Tap to add notes, drag notes to move them">'+IC.pencil+' Edit</button><button data-rm="select" aria-pressed="'+(ROLL.mode==='select')+'" title="Drag a box around notes to select them">'+IC.marquee+' Select</button></div>'+
+  return'<div class="seg2 rmode"><button data-rm="edit" aria-pressed="'+(ROLL.mode==='edit')+'" title="Tap to add notes, drag notes to move them">'+IC.pencil+' Edit</button><button data-rm="select" aria-pressed="'+(ROLL.mode==='select')+'" title="Drag a box around notes to select them">'+IC.marquee+' Select</button></div>'+
     '<label class="il" title="Notes snap to this grid when you move or stretch them">Grid <select id="rGrid">'+[[.125,'1/32'],[.25,'1/16'],[.5,'1/8'],[1,'1/4'],[1/3,'1/8 triplet']].map(function(o){return'<option value="'+o[0]+'"'+(Math.abs(ROLL.grid-o[0])<1e-6?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>'+
-    '<span class="zoom"><button data-r="zo" aria-label="Zoom out" title="Zoom out">−</button><button data-r="zi" aria-label="Zoom in" title="Zoom in">+</button></span>'+
-    '<button data-r="vel" class="tog" aria-pressed="'+ROLL.vel+'" title="Show a lane under the notes for how hard each note is played">Velocity</button>'+
-    '<span class="rsep"></span>'+
-    '<button data-r="all" title="Select every note (Ctrl+A)">Select all</button>'+
-    '<span class="rsel" id="rSelN"></span>'+
-    '<button data-r="copy" data-need="sel" title="Copy (Ctrl+C)">Copy</button>'+
-    '<button data-r="cut" data-need="sel" title="Cut (Ctrl+X)">Cut</button>'+
-    '<button data-r="paste" data-need="clip" title="Paste at the marker in the bar ruler (Ctrl+V). Tap the ruler to move the marker.">Paste</button>'+
-    '<button data-r="dup" data-need="sel" title="Copy the selected notes right after themselves (Ctrl+D)">Duplicate</button>'+
-    '<button data-r="del" data-need="sel" title="Delete selected notes (Delete key)">Delete</button>'+
-    (drums?'':'<span class="tpose" title="Transpose: move the selected notes (or every note, if none are selected) up or down. With Scale lock on, single steps stay in the key."><span class="hint">Transpose</span><button data-r="t-12" aria-label="Down an octave">−8va</button><button data-r="t-1" aria-label="Down one step">−1</button><button data-r="t1" aria-label="Up one step">+1</button><button data-r="t12" aria-label="Up an octave">+8va</button></span>')+
-  '</div>';
+    '<span class="zoom" title="Zoom"><button data-r="zo" aria-label="Zoom out">−</button><button data-r="zi" aria-label="Zoom in">+</button></span>';
+}
+/* floats over the top of the grid only while notes are selected (or something is copied) */
+function rollSelHTML(t){
+  var drums=t.kind==='drum';
+  return'<div class="selbar" id="rsel" hidden><span class="rsel" id="rSelN"></span>'+
+    (drums?'':'<span class="sgp" title="Length of the selected notes, one grid step at a time"><button data-r="len-" data-need="sel">Shorter</button><button data-r="len+" data-need="sel">Longer</button></span>'+
+    '<span class="sgp tpose" title="Move the selected notes up or down. With Scale lock on, single steps stay in the key."><button data-r="t-12" data-need="sel" aria-label="Down an octave">−8va</button><button data-r="t-1" data-need="sel" aria-label="Down one step">−1</button><button data-r="t1" data-need="sel" aria-label="Up one step">+1</button><button data-r="t12" data-need="sel" aria-label="Up an octave">+8va</button></span>')+
+    '<span class="sgp"><button data-r="copy" data-need="sel" title="Copy (Ctrl+C)">Copy</button><button data-r="cut" data-need="sel" title="Cut (Ctrl+X)">Cut</button><button data-r="paste" data-need="clip" title="Paste at the marker in the bar ruler (Ctrl+V). Tap the ruler to move the marker.">Paste</button><button data-r="dup" data-need="sel" title="Copy the selected notes right after themselves (Ctrl+D)">Duplicate</button><button data-r="del" data-need="sel" class="warn" title="Delete (Delete key)">Delete</button></span>'+
+    '<button data-r="none" class="ib" aria-label="Done" title="Deselect (Esc)">✕</button></div>';
 }
 function mountRoll(host,t){
-  var drums=t.kind==='drum',Gw=drums?76:48,HDR=22,cw0=drums?30:22,rh=drums?30:18,hi=96,lo=36,rows=drums?DRUM_NAMES.length:(hi-lo+1);
+  var drums=t.kind==='drum',touch=window.matchMedia&&matchMedia('(pointer:coarse)').matches,Gw=drums?76:48,HDR=24,cw0=(drums?30:22)*(touch?1.2:1),rh=drums?(touch?34:30):(touch?24:18),hi=96,lo=36,rows=drums?DRUM_NAMES.length:(hi-lo+1);
   var cw=cw0*ROLL.zoom;
   host.innerHTML='<div class="spacer"><canvas></canvas></div>';
   var sp=host.firstChild,cv=sp.firstChild,g=cv.getContext('2d');
   var lane=$('vlane'),vc=lane&&lane.querySelector('canvas'),vg=vc&&vc.getContext('2d'),VH=58;
   var drag=null,vdrag=null,lastTap={n:null,t:0},box=null;
   R={t:t,draw:draw,resize:size,sel:new Set(),cursor:0};
+  /* the grid fills whatever height is left, so redraw whenever that changes (window, dock or panel resize) */
+  if(window.ResizeObserver){if(ROLL.ro)ROLL.ro.disconnect();var lastH=0;ROLL.ro=new ResizeObserver(function(){if(host.clientHeight!==lastH){lastH=host.clientHeight;size();}});ROLL.ro.observe(host);}
   function steps(){return S.bars*16;}
   function L(){return LEN();}
   function size(){
@@ -51,7 +49,8 @@ function mountRoll(host,t){
   function rect(n){return{x:Gw+n.s*4*cw,y:HDR+rowOf(n)*rh,w:Math.max(drums?cw-2:5,n.d*4*cw-2),h:rh-2};}
   function hit(x,y){
     for(var i=t.notes.length-1;i>=0;i--){var n=t.notes[i],r=rect(n);
-      if(x>=r.x&&x<=r.x+r.w+1&&y>=r.y&&y<=r.y+r.h+1){var edge=!drums&&x>r.x+r.w-Math.min(12,Math.max(5,r.w*.3));return{n:n,edge:edge};}}
+      var on=R.sel.has(n),grab=on?(touch?22:14):0;
+      if(x>=r.x&&x<=r.x+r.w+1+grab&&y>=r.y-(on?4:0)&&y<=r.y+r.h+1+(on?4:0)){var edge=!drums&&(x>r.x+r.w-Math.min(12,Math.max(5,r.w*.3))||x>r.x+r.w);return{n:n,edge:edge};}}
     return null;
   }
   function pt(e,el){var b=(el||cv).getBoundingClientRect();return{x:e.clientX-b.left+host.scrollLeft,y:e.clientY-b.top+host.scrollTop,vx:e.clientX-b.left,vy:e.clientY-b.top};}
@@ -82,7 +81,9 @@ function mountRoll(host,t){
       g.fillStyle=t.color;g.globalAlpha=.5+.5*(n.v==null?.8:n.v);
       g.beginPath();if(g.roundRect)g.roundRect(x+1,y+1,wd,rc.h,4);else g.rect(x+1,y+1,wd,rc.h);g.fill();g.globalAlpha=1;
       if(on){g.lineWidth=2;g.strokeStyle=C.ink;g.stroke();
-        if(!drums&&wd>10){g.fillStyle='rgba(10,19,15,.55)';g.fillRect(x+wd-4,y+5,1.5,rc.h-8);g.fillRect(x+wd-7,y+5,1.5,rc.h-8);}}
+        /* length handle: a tab on the right end you can grab and drag */
+        if(!drums){var hx=x+wd-1,hw=touch?12:9;g.fillStyle=C.ink;g.beginPath();if(g.roundRect)g.roundRect(hx,y+1,hw,rc.h,[0,4,4,0]);else g.rect(hx,y+1,hw,rc.h);g.fill();
+          g.fillStyle='rgba(10,19,15,.7)';g.fillRect(hx+hw/2-2,y+5,1.5,rc.h-8);g.fillRect(hx+hw/2+1,y+5,1.5,rc.h-8);}}
       if(!drums&&wd>=30&&rh>=16){g.fillStyle='rgba(7,19,13,.78)';g.font='700 10px system-ui, sans-serif';g.textBaseline='middle';g.textAlign='left';g.fillText(NOTE_NAMES[n.m%12]+(Math.floor(n.m/12)-1),x+5,y+rh/2);}
     });
     if(box){g.fillStyle='rgba(212,166,94,.12)';g.strokeStyle=C.brass;g.lineWidth=1;g.setLineDash([4,3]);
@@ -114,8 +115,8 @@ function mountRoll(host,t){
     });
     vg.globalAlpha=1;vg.fillStyle=C.panel;vg.fillRect(0,0,Gw,h);vg.fillStyle=C.muted;vg.font='600 10px system-ui, sans-serif';vg.textBaseline='middle';vg.textAlign='left';vg.fillText('Velocity',6,h/2-6);vg.font='500 9px system-ui, sans-serif';vg.fillText('loud ↑',6,h/2+7);
   }
-  function selCount(){var el=$('rSelN');if(el)el.textContent=R.sel.size?R.sel.size+' selected':'';
-    var tb=$('rtools');if(tb)tb.querySelectorAll('[data-need]').forEach(function(b){b.disabled=b.dataset.need==='sel'?!R.sel.size:!CLIP;});}
+  function selCount(){var el=$('rSelN');if(el)el.textContent=R.sel.size?R.sel.size+' note'+(R.sel.size>1?'s':'')+' selected':'Copied: tap the ruler to place, then Paste';
+    var bar=$('rsel');if(bar){bar.hidden=!R.sel.size&&!CLIP;bar.querySelectorAll('[data-need]').forEach(function(b){b.disabled=b.dataset.need==='sel'?!R.sel.size:!CLIP;});}}
   R.update=function(){selCount();draw();};
   /* ---------- grid gestures ---------- */
   cv.addEventListener('pointerdown',function(e){
@@ -286,14 +287,21 @@ function rollTranspose(k){
   toast(clamped?'Some notes are already at the edge of the keyboard':what+' moved '+(oct?(k>0?'up an octave':'down an octave'):(k>0?'up':'down')+(S.lock?' one step in the key':' a semitone')));
   if(list.length)preview(R.t,list[0].m);
 }
+function rollLen(k){
+  var list=rollSelList();if(!list.length)return;var gr=ROLL.grid,LL=LEN();
+  list.forEach(function(n){n.d=Math.round(Math.max(gr,Math.min(LL-n.s,n.d+k*gr))*10000)/10000;});R.t._undo=null;markDirty();R.update();
+  var d=list[0].d,lab=d>=4?(d/4)+' bar'+(d>4?'s':''):d>=1?(d+' beat'+(d>1?'s':'')):('1/'+Math.round(4/d));toast((k>0?'Longer':'Shorter')+': '+lab);
+}
 function rollSelectAll(){if(!R)return;R.sel=new Set(R.t.notes);R.update();}
 function rollDelete(){var list=rollSelList();if(!list.length)return;R.removeNotes(list);R.update();toast('Deleted '+list.length+' note'+(list.length>1?'s':''));}
 $('editor').addEventListener('click',function(e){
-  var b=e.target.closest('#rtools button');if(!b||!R)return;
+  var b=e.target.closest('#rtools button,#rsel button');if(!b||!R)return;
   if(b.dataset.rm){ROLL.mode=b.dataset.rm;b.parentNode.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b);});toast(ROLL.mode==='select'?'Select mode: drag a box around notes. Drag selected notes to move them.':'Edit mode: tap to add notes, drag notes to move them');return;}
   var r=b.dataset.r;
   if(r==='vel'){ROLL.vel=!ROLL.vel;rollPrefs();b.setAttribute('aria-pressed',ROLL.vel);var vl=$('vlane');if(vl)vl.hidden=!ROLL.vel;var rl=$('roll');if(rl)rl.classList.toggle('withvel',ROLL.vel);R.resize();return;}
   if(r==='zi')rollZoom(1);else if(r==='zo')rollZoom(-1);
+  else if(r==='none'){R.sel.clear();if(!R.sel.size&&CLIP&&e.target.closest('#rsel'))CLIP=null;R.update();}
+  else if(r==='len-'||r==='len+')rollLen(r==='len+'?1:-1);
   else if(r==='all')rollSelectAll();else if(r==='copy')rollCopy(false);else if(r==='cut')rollCopy(true);
   else if(r==='paste')rollPaste();else if(r==='dup')rollDuplicate();else if(r==='del')rollDelete();
   else if(r&&r.charAt(0)==='t')rollTranspose(+r.slice(1));
@@ -326,3 +334,5 @@ window.addEventListener('keydown',function(e){
     rollTranspose((up?1:-1)*(e.shiftKey?12:1));
   }
 },true);
+/* "More" menus close when you tap anywhere else */
+document.addEventListener('click',function(e){document.querySelectorAll('details.more[open]').forEach(function(d){if(!d.contains(e.target))d.removeAttribute('open');});});

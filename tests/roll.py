@@ -49,7 +49,7 @@ async def main():
         print('transpose',before,'->',await pg.evaluate('()=>[...__jr.roll().sel].map(n=>n.m).join(",")'),'oct still',await pg.evaluate('()=>__jr.S.oct'))
         # velocity lane: drag up on first selected note's stem
         await pg.keyboard.press('Control+a')
-        await pg.click('#rtools [data-r=vel]');await pg.evaluate('()=>document.getElementById("vlane").scrollIntoView({block:"center"})');await pg.wait_for_timeout(200)
+        await pg.click('#rtools details.more summary');await pg.click('#rtools [data-r=vel]');await pg.evaluate('()=>document.getElementById("vlane").scrollIntoView({block:"center"})');await pg.wait_for_timeout(200)
         geo['sl']=await pg.evaluate('()=>document.getElementById("roll").scrollLeft')
         lane=await (await pg.query_selector('#vlane canvas')).bounding_box()
         sx=lane['x']+Gw+1*4*cw-geo['sl']+3

@@ -43,6 +43,22 @@
       <button id="bUndo" class="ib" aria-label="Undo" title="Undo (Ctrl+Z)" disabled><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
       <button id="bRedo" class="ib" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     </div>
+    <div class="seg" role="group" aria-label="Playback options">
+      <button class="tog" id="tMetro" aria-pressed="false" title="Metronome click" aria-label="Metronome" data-ic="metro"><span>Click</span></button>
+      <button class="tog" id="tCount" aria-pressed="true" title="Count-in: 4 clicks before recording" aria-label="Count-in" data-ic="count"><span>Count-in</span></button>
+      <button class="tog" id="tLoop" aria-pressed="true" title="Loop playback" aria-label="Loop" data-ic="loop"><span>Loop</span></button>
+      <button class="tog" id="tMon" aria-pressed="false" title="Hear myself: your voice in your headphones while recording" aria-label="Hear myself" data-ic="phones"><span>Hear myself</span></button>
+    </div>
+    <div class="spacer-flex"></div>
+    <button id="bMenu" class="tool primary-soft" data-ic="share"><span>Save &amp; share</span></button>
+  </div>
+  <div class="bar bar2">
+    <label>Key <select id="key" aria-label="Key"></select></label>
+    <label>Scale <select id="scale" aria-label="Scale"></select></label>
+    <label>Length <select id="bars" aria-label="Song length in bars"></select></label>
+    <label title="Swing shifts every other 16th note late for a laid-back groove">Feel <select id="feel"><option value="0">Straight</option><option value="0.12">Light swing</option><option value="0.25">Swing</option><option value="0.38">Heavy swing</option></select></label>
+    <label title="The room your reverb simulates">Space <select id="space"><option>Room</option><option>Studio</option><option>Hall</option><option>Plate</option><option>Cathedral</option></select></label>
+    <button id="bTune" class="chip" title="Reference pitch: the frequency of the note A. Tap to change it.">A = 440 Hz</button>
     <div class="spacer-flex"></div>
     <div class="tools" id="tools">
       <button id="bStart" class="tool" title="Start a new song from a vibe" data-ic="wand"><span>Starter</span></button>
@@ -54,22 +70,6 @@
       <button id="bOut" class="ib" title="Sound output and sound check" aria-label="Sound output" data-ic="speaker"></button>
       <button id="bFull" class="ib" title="Full screen" aria-label="Full screen" data-ic="full"></button>
       <button id="bGuide" class="ib" title="How everything works" aria-label="Guide" data-ic="help"></button>
-      <button id="bMenu" class="tool primary-soft" data-ic="share"><span>Save &amp; share</span></button>
-    </div>
-  </div>
-  <div class="bar bar2">
-    <label>Key <select id="key" aria-label="Key"></select></label>
-    <label>Scale <select id="scale" aria-label="Scale"></select></label>
-    <label>Length <select id="bars" aria-label="Song length in bars"></select></label>
-    <label title="Swing shifts every other 16th note late for a laid-back groove">Feel <select id="feel"><option value="0">Straight</option><option value="0.12">Light swing</option><option value="0.25">Swing</option><option value="0.38">Heavy swing</option></select></label>
-    <label title="The room your reverb simulates">Space <select id="space"><option>Room</option><option>Studio</option><option>Hall</option><option>Plate</option><option>Cathedral</option></select></label>
-    <button id="bTune" class="chip" title="Reference pitch: the frequency of the note A. Tap to change it.">A = 440 Hz</button>
-    <div class="spacer-flex"></div>
-    <div class="seg" role="group" aria-label="Playback options">
-      <button class="tog" id="tMetro" aria-pressed="false" title="Metronome click" aria-label="Metronome" data-ic="metro"><span>Click</span></button>
-      <button class="tog" id="tCount" aria-pressed="true" title="Count-in: 4 clicks before recording" aria-label="Count-in" data-ic="count"><span>Count-in</span></button>
-      <button class="tog" id="tLoop" aria-pressed="true" title="Loop playback" aria-label="Loop" data-ic="loop"><span>Loop</span></button>
-      <button class="tog" id="tMon" aria-pressed="false" title="Hear myself: your voice in your headphones while recording" aria-label="Hear myself" data-ic="phones"><span>Hear myself</span></button>
     </div>
   </div>
 </header>
@@ -836,18 +836,31 @@ function ensureHeard(t){
 }
 
 /* ---- per-track effects: fuzz, squash, phaser, chorus, tape, echo ---- */
-var FXN=['fuzz','squash','phaser','chorus','tape','echo'];
-var FXLAB={fuzz:'Fuzz',squash:'Squash',phaser:'Phaser',chorus:'Chorus',tape:'Tape',echo:'Echo'};
-var FXTIP={fuzz:'Gritty fuzz pedal',squash:'Heavy compression for fat drums',phaser:'Swirling phase sweep',chorus:'Wide, shimmery doubling',tape:'Warm, wobbly tape saturation',echo:'Tempo-synced tape echo'};
+var FXN=['fuzz','crush','squash','wah','phaser','chorus','trem','tape','echo'];
+var FXLAB={fuzz:'Fuzz',crush:'Lo-fi crush',squash:'Squash',wah:'Auto-wah',phaser:'Phaser',chorus:'Chorus',trem:'Tremolo',tape:'Tape',echo:'Tape echo'};
+var FXTIP={fuzz:'Gritty fuzz pedal',crush:'Crunchy, low-resolution retro sound',squash:'Heavy compression for fat drums',wah:'A filter that sweeps open and closed in time with the song',phaser:'Swirling phase sweep',chorus:'Wide, shimmery doubling',trem:'Volume pulsing in time with the song, like a vintage amp',tape:'Warm, wobbly tape saturation',echo:'Tempo-synced tape echo'};
+/* ready-made effect chains: d = what it sounds like; numbers are effect amounts 0..1, rev = reverb send */
 var FX_PRESETS={
- 'Psychedelic guitar':{fuzz:.6,phaser:.55,echo:.35,tape:.3,rev:.35},
- 'Dreamy synth':{chorus:.85,phaser:.25,echo:.3,tape:.2,rev:.45},
- 'Squashed drums':{squash:.85,tape:.4,fuzz:.1,rev:.08},
- 'Dizzy vocals':{phaser:.5,echo:.45,chorus:.3,tape:.25,rev:.35},
- 'No effects':{}
+ 'Dreamy synth':{d:'Floating chorus, soft echoes and a big space',chorus:.85,phaser:.25,echo:.3,tape:.2,rev:.45},
+ 'Psychedelic guitar':{d:'Fuzz, swirling phaser and tape echo',fuzz:.6,phaser:.55,echo:.35,tape:.3,rev:.35},
+ 'Squashed drums':{d:'Fat, pumping and crunchy',squash:.85,tape:.4,fuzz:.1,rev:.08},
+ 'Dizzy vocals':{d:'Phased, echoing and wide',phaser:.5,echo:.45,chorus:.3,tape:.25,rev:.35},
+ 'Lo-fi cassette':{d:'Wobbly, dusty and warm',tape:.85,crush:.3,rev:.18},
+ '8-bit arcade':{d:'Crunchy retro game console',crush:.9,rev:.06},
+ 'Vintage tremolo':{d:'Amp tremolo pulsing in time',trem:.6,tape:.25,rev:.25},
+ 'Funky wah':{d:'Quacky auto-wah that moves with the beat',wah:.75,squash:.2,rev:.1},
+ 'Underwater':{d:'Muffled, swirling and far away',wah:.45,chorus:.6,tape:.4,rev:.5},
+ 'Shoegaze wall':{d:'A huge fuzzy wash of sound',fuzz:.45,chorus:.6,echo:.4,rev:.75},
+ 'Space echo':{d:'Long tape echoes trailing off',echo:.7,tape:.35,rev:.4},
+ 'Slapback':{d:'Quick 50s rock and roll echo',echo:.32,rev:.12},
+ 'Ambient shimmer':{d:'Slow, glassy and endless',chorus:.5,phaser:.2,echo:.45,rev:.85},
+ 'Old radio':{d:'Thin and crunchy, like a tiny speaker',crush:.35,fuzz:.15,rev:.04},
+ 'Helicopter':{d:'Fast, choppy tremolo',trem:1,rev:.2},
+ 'Big and wide':{d:'Spacious chorus and a large hall',chorus:.4,rev:.6},
+ 'No effects':{d:'Clean, with just a little room'}
 };
 var INST_FX={juno:{chorus:.7},junopad:{chorus:.8,phaser:.15}};
-function fxZero(){return{fuzz:0,squash:0,phaser:0,chorus:0,tape:0,echo:0};}
+function fxZero(){var o={};FXN.forEach(function(n){o[n]=0;});return o;}
 function hasFx(t){return FXN.some(function(n){return t.fx[n]>.001;});}
 function fuzzCurve(){var n=1024,cv=new Float32Array(n),b=Math.tanh(.35);for(var i=0;i<n;i++){var x=i*2/(n-1)-1;cv[i]=(Math.tanh(x*7+.35)-b)*.9;}return cv;}
 function safeCurve(){var n=4097,cv=new Float32Array(n),k=.89,r=.1;for(var i=0;i<n;i++){var x=(i*2/(n-1)-1)*2,a=Math.abs(x);cv[i]=(a<=k?a:k+r*Math.tanh((a-k)/r))*(x<0?-1:1);}return cv;}
@@ -878,6 +891,21 @@ function stageFx(c,name){
       m.i.connect(d2);d2.connect(pn);pn.connect(m.w);extra.push(d2,pn);lfo(p[1],.0028,d2.delayTime);
     });
     set=function(a){m.d.gain.value=1;m.w.gain.value=a*.75;};
+  }else if(name==='trem'){
+    /* volume pulsing on 8th notes (16ths when turned all the way up) */
+    var tg=c.createGain(),tl=c.createOscillator(),td=c.createGain();tl.type='sine';
+    m.i.connect(tg);tg.connect(m.w);tl.connect(td);td.connect(tg.gain);tl.start();osc.push(tl);extra.push(tg,td);
+    set=function(a){var rate=(a>.85?4:2)/spb();tl.frequency.value=rate;tg.gain.value=1-a*.45;td.gain.value=a*.45;m.d.gain.value=0;m.w.gain.value=1;};
+    dl={trem:tl};
+  }else if(name==='wah'){
+    var wf=F(c,'lowpass',900,7),wl=c.createOscillator(),wd=c.createGain(),wo=c.createGain();
+    m.i.connect(wf);wf.connect(wo);wo.connect(m.w);wl.frequency.value=1/spb();wd.gain.value=700;wl.connect(wd);wd.connect(wf.frequency);wl.start();osc.push(wl);extra.push(wf,wd,wo);wo.gain.value=.8;
+    set=function(a){wf.frequency.value=500+a*700;wd.gain.value=300+a*900;m.d.gain.value=1-a*.8;m.w.gain.value=a*1.1;};
+    dl={wah:wl};
+  }else if(name==='crush'){
+    var cw=c.createWaveShaper(),cl=F(c,'lowpass',6000,.7),cg=c.createGain();cg.gain.value=.9;
+    m.i.connect(cw);cw.connect(cl);cl.connect(cg);cg.connect(m.w);extra.push(cw,cl,cg);
+    set=function(a){var steps=Math.round(64-a*58),n=2048,cv=new Float32Array(n);for(var i=0;i<n;i++){var x=i*2/(n-1)-1;cv[i]=Math.round(x*steps)/steps;}cw.curve=cv;cl.frequency.value=9000-a*6500;m.d.gain.value=Math.cos(a*Math.PI/2);m.w.gain.value=Math.sin(a*Math.PI/2);};
   }else if(name==='tape'){
     var pg=c.createGain(),ws2=c.createWaveShaper(),lp2=F(c,'lowpass',8000,.5),d3=c.createDelay(.05),og=c.createGain();
     pg.gain.value=2.2;og.gain.value=.55;ws2.curve=tapeCurve();d3.delayTime.value=.006;
@@ -912,7 +940,7 @@ function fxSet(t,n,v){
   var have=!!(t.fxs&&t.fxs[n]),need=v>.001;
   if(have!==need)rebuildFx(t);else if(have)t.fxs[n].set(v);
 }
-function fxTempo(){S.tracks.forEach(function(t){if(t.fxs&&t.fxs.echo&&t.fxs.echo.dl)t.fxs.echo.dl.delayTime.value=Math.min(1.9,.75*spb());});if(A.dd)A.dd.delayTime.value=Math.min(1.9,.75*spb());}
+function fxTempo(){S.tracks.forEach(function(t){if(!t.fxs)return;if(t.fxs.echo&&t.fxs.echo.dl)t.fxs.echo.dl.delayTime.value=Math.min(1.9,.75*spb());if(t.fxs.trem)t.fxs.trem.set(t.fx.trem||0);if(t.fxs.wah&&t.fxs.wah.dl)t.fxs.wah.dl.wah.frequency.value=1/spb();});if(A.dd)A.dd.delayTime.value=Math.min(1.9,.75*spb());}
 function applyInstFx(t){
   var d=INST_FX[t.inst];if(!d||hasFx(t))return;
   FXN.forEach(function(n){if(d[n]!=null)t.fx[n]=d[n];});
@@ -2147,8 +2175,12 @@ function kitHTML(kt,dk){
 }
 var KLAB='notes';try{var _kl=localStorage.getItem('jr-klab');if(_kl==='keys'||_kl==='none')KLAB=_kl;}catch(e){}
 var SHN=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],FLN=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+/* keyboard size: a height in pixels (drag the handle, or pick a size); key width follows the height */
+var KB_PRESET={s:104,m:140,l:190,xl:250};
+function kbH(){var h=S.kbh||KB_PRESET[S.kbsize]||(matchMedia('(pointer:coarse)').matches?150:136);return Math.max(84,Math.min(Math.round(window.innerHeight*.5),h));}
+function kbKeyW(){return Math.max(26,Math.min(84,kbH()*.31));}
 function kbHTML(width){
-  var wk=Math.max(7,Math.min(29,Math.floor(width/({s:34,m:42,l:54,xl:68}[S.kbsize]||42)))),base=12*(S.oct+1),W=[0,2,4,5,7,9,11],wh='',bl='';
+  var wk=Math.max(7,Math.min(36,Math.floor(width/kbKeyW()))),base=12*(S.oct+1),W=[0,2,4,5,7,9,11],wh='',bl='';
   for(var i=0;i<wk;i++){
     var oc=Math.floor(i/7),d=W[i%7],m=base+oc*12+d,lab=KM.labels[m],inner='';
     if(KLAB==='notes')inner='<i class="kk nn">'+SHN[m%12]+(d===0?'<sub>'+(S.oct+oc)+'</sub>':'')+'</i>';
@@ -2176,26 +2208,30 @@ function renderDock(){
   recomputeKeys();
   var kt=keyTrack(),host=$('dock'),drumMode=kt&&kt.kind==='drum',h='';
   if(!kt){host.innerHTML='<p class="hint">Add an instrument or drums to start playing.</p>';return;}
-  h+='<div class="hrow">';
+  h+='<div class="dgrip" id="dGrip" title="Drag to make the keyboard bigger or smaller" aria-hidden="true"><i></i></div><div class="hrow">';
   if(!drumMode){
-    h+='<button class="tog" id="hLock" aria-pressed="'+S.lock+'" title="When on, the black keys that are outside the key are moved to a nearby note. Turn off to play every note.">Scale lock</button>';
     h+='<button id="oDn" aria-label="Octave down" title="Arrow down">Octave −</button><button id="oUp" aria-label="Octave up" title="Arrow up">Octave +</button>';
-    h+='<label>Keys <select id="hKeys" title="How the computer keyboard plays"><option value="piano"'+(S.keymode==='piano'?' selected':'')+'>Piano (2 rows)</option><option value="scale"'+(S.keymode==='scale'?' selected':'')+'>Scale + chords</option></select></label>';
     h+='<label title="Play with a piano keyboard, or with chord strips like on a tablet">Play <select id="hPlay"><option value="keys"'+(S.playmode!=='strips'?' selected':'')+'>Keyboard</option><option value="strips"'+(S.playmode==='strips'?' selected':'')+'>Chord strips</option></select></label>';
     var apf=apFamily(kt);h+='<label title="Hold a chord and the instrument plays a pattern in time with the song">Autoplay <select id="hAP"><option value="0">Off</option>'+(apf?AP_PATS[apf].map(function(p,i){return'<option value="'+(i+1)+'"'+(AP.mode===i+1?' selected':'')+'>'+(i+1)+' · '+p[0]+'</option>';}).join(''):'')+'</select></label>';
+  }
+  h+='<label>Size <select id="hSize" title="Make the keyboard bigger or smaller (or drag the handle above it)">'+[['s','Small'],['m','Medium'],['l','Large'],['xl','Huge']].map(function(o){return'<option value="'+o[0]+'"'+(!S.kbh&&S.kbsize===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+(S.kbh?'<option selected disabled>Custom</option>':'')+'</select></label>';
+  if(!drumMode)h+='<button class="tog" id="hViz" aria-pressed="'+VIZ.on()+'" title="Show the instrument and the note you play">Instrument view</button>';
+  if(!drumMode&&VIZ.on()&&VIZ.can3())h+='<button class="tog" id="hViz3" aria-pressed="'+VIZ.on3()+'" title="Show a moving 3D instrument (off: a flat drawing, lighter on slow computers)">3D</button>';
+  h+='<button class="tog" id="hFocus" aria-pressed="'+document.body.classList.contains('focus')+'" title="Hide the song editor so the keyboard fills the screen">Focus</button>';
+  /* less-used keyboard settings live in one menu */
+  h+='<details class="more kbmore"><summary>Settings</summary><div class="morep">';
+  if(!drumMode){
+    h+='<button class="tog" id="hLock" aria-pressed="'+S.lock+'" title="When on, the black keys that are outside the key are moved to a nearby note. Turn off to play every note.">Scale lock</button>';
+    h+='<label>Keys <select id="hKeys" title="How the computer keyboard plays"><option value="piano"'+(S.keymode==='piano'?' selected':'')+'>Piano (2 rows)</option><option value="scale"'+(S.keymode==='scale'?' selected':'')+'>Scale + chords</option></select></label>';
     h+='<label>Chords <select id="hChord"><option value="triad"'+(S.chordType==='triad'?' selected':'')+'>Triads</option><option value="7th"'+(S.chordType==='7th'?' selected':'')+'>7ths</option></select></label>';
   }
   h+='<label>Labels <select id="hLab" title="What to write on the keys and drums"><option value="notes"'+(KLAB==='notes'?' selected':'')+'>'+(drumMode?'Drum names':'Note names')+'</option><option value="keys"'+(KLAB==='keys'?' selected':'')+'>'+(drumMode?'Names + computer keys':'Computer keys')+'</option><option value="none"'+(KLAB==='none'?' selected':'')+'>'+(drumMode?'Names only':'None')+'</option></select></label>';
   h+='<label title="Off keeps exactly what you play. Turn on to line notes up to the beat as you record.">Auto-snap <select id="hQuant">'+[[0,'Off'],[4,'1/16'],[2,'1/8'],[1,'1/4']].map(function(o){return'<option value="'+o[0]+'"'+(S.quant===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   h+='<button id="hMidi" title="Use a USB or Bluetooth MIDI keyboard (Chrome or Edge)">'+esc(midiLabel())+'</button>';
-  h+='<label>Size <select id="hSize" title="Make the keyboard bigger or smaller">'+[['s','Small'],['m','Medium'],['l','Large'],['xl','Huge']].map(function(o){return'<option value="'+o[0]+'"'+(S.kbsize===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
-  h+='<button class="tog" id="hFocus" aria-pressed="'+document.body.classList.contains('focus')+'" title="Hide the song editor so the keyboard fills the screen">Focus</button>';
-  h+='<span class="vtip" title="On a touchscreen, tap low on a key or pad for loud and high for soft. With a Surface Pen, press harder for louder.">Press harder for louder</span>';
+  h+='<p class="hint">On a touchscreen, tap low on a key for loud and high for soft. With a Surface Pen, press harder for louder.</p></div></details>';
   h+='<span class="susb" id="susB"'+(sustain?'':' hidden')+'>Sustain</span>';
   if(!drumMode)h+='<span class="chnow" id="chNow" hidden title="The chord you are playing"></span>';
   h+='<button class="qh" data-help="keys" aria-label="Help" title="What is this?">?</button>';
-  if(!drumMode)h+='<button class="tog" id="hViz" aria-pressed="'+VIZ.on()+'" title="Show the instrument and the note you play">Instrument view</button>';
-  if(!drumMode&&VIZ.on()&&VIZ.can3())h+='<button class="tog" id="hViz3" aria-pressed="'+VIZ.on3()+'" title="Show a moving 3D instrument (off: a flat drawing, lighter on slow computers)">3D</button>';
   h+='<span class="who">'+tIcon(kt)+' '+esc(kt.name)+'</span></div>';
   if(!drumMode)h+='<div class="viz" id="viz"></div>';
   if(drumMode){
@@ -2209,9 +2245,18 @@ function renderDock(){
     h+='</div>'+kbHTML(host.clientWidth-20);
     }
   }
-  host.className='dock kb-'+S.kbsize;host.innerHTML=h;
+  host.className='dock'+(kbH()>=180?' kb-l':'');host.style.setProperty('--kbh',kbH()+'px');host.innerHTML=h;
   VIZ.mount(kt);
 }
+/* drag the handle on top of the keyboard to resize it (up = bigger) */
+$('dock').addEventListener('pointerdown',function(e){
+  var g=e.target.closest('#dGrip');if(!g)return;e.preventDefault();
+  var dock=$('dock'),y0=e.clientY,h0=kbH(),cur=h0;g.setPointerCapture(e.pointerId);dock.classList.add('sizing');
+  function mv(ev){cur=Math.max(84,Math.min(Math.round(window.innerHeight*.5),h0+(y0-ev.clientY)));dock.style.setProperty('--kbh',cur+'px');}
+  function up(){g.removeEventListener('pointermove',mv);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);dock.classList.remove('sizing');
+    if(Math.abs(cur-h0)>2){S.kbh=cur;try{localStorage.setItem('jr-kbh',String(cur));}catch(er){}renderDock();}}
+  g.addEventListener('pointermove',mv);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);
+});
 /* how hard: Surface Pen pressure, or (finger) how far down the key you press */
 function touchVel(e,k){
   if(e.pointerType==='pen'&&e.pressure>0&&e.pressure!==.5)return Math.max(.18,Math.min(1,.15+e.pressure*.95));
@@ -2292,7 +2337,7 @@ $('dock').addEventListener('change',function(e){
   if(e.target.id==='hQuant'){S.quant=+e.target.value;}
   if(e.target.id==='hKeys'){S.keymode=e.target.value;renderDock();}
   if(e.target.id==='hLab'){KLAB=e.target.value;try{localStorage.setItem('jr-klab',KLAB);}catch(er){}renderDock();return;}
-  if(e.target.id==='hSize'){S.kbsize=e.target.value;try{localStorage.setItem('jr-kb',S.kbsize);}catch(er){}renderDock();}
+  if(e.target.id==='hSize'){S.kbsize=e.target.value;S.kbh=null;try{localStorage.setItem('jr-kb',S.kbsize);localStorage.removeItem('jr-kbh');}catch(er){}renderDock();}
 });
 document.addEventListener('keydown',function(e){
   var tg=e.target.tagName;if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA'||e.metaKey||e.ctrlKey||e.altKey)return;
@@ -2369,11 +2414,11 @@ function renderEditor(){
   if(ARR.on){renderArrange(host);return;}
   if(!t){host.innerHTML='<p class="hint">Add a track to get started.</p>';return;}
   if(t.kind==='voice'){
-    host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="impBtn">Import a recording</button><button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+autoPanelHTML(t)+
+    host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="sndBtn" class="sndbtn" title="Sound styles and effects for this track">'+IC.polish+'<span>Sound</span><b>'+esc(soundName(t))+'</b></button><button id="impBtn">Import a recording</button><button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+autoPanelHTML(t)+
       '<div class="microw"><button id="micBtn">Turn on microphone</button><select id="micSel" hidden aria-label="Choose microphone"></select><button id="liveTog" class="tog" aria-pressed="'+!!S.liveTune+'" title="Hear yourself auto-tuned in your headphones while you record. Adds a small delay.">Hear auto-tune live</button></div>'+
       '<div class="vrow"><label>Vocal sound <select id="polSel">'+Object.keys(POLISH).map(function(n){return'<option'+((t.polish||'Off')===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select></label><span class="hint" id="polTip">'+POLISH_TIP[t.polish||'Off']+'</span></div>'+
       '<p class="hint">Press the red record button to sing over your song for one pass. Use headphones so the microphone doesn\'t pick up the music. Each recording becomes a new take, so you can layer harmonies. No microphone access? Record on your phone and import the file.</p>'+
-      '<div class="meter" aria-label="Microphone level"><i id="meterBar"></i></div><div id="takes" class="col"></div>'+fxHTML(t);
+      '<div class="meter" aria-label="Microphone level"><i id="meterBar"></i></div><div id="takes" class="col"></div>';
     var th=$('takes');micList();
     if(!t.takes.length)th.innerHTML='<p class="hint">No takes yet.</p>';
     t.takes.forEach(function(k){
@@ -2397,17 +2442,27 @@ function renderEditor(){
     return;
   }
   var drums=t.kind==='drum';
-  var head='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="editor" aria-label="Help" title="What is this?">?</button>';
+  /* one toolbar row: what you use all the time stays visible, the rest sits under More */
+  var head='<div class="etools" id="rtools"><div class="etitle"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="editor" aria-label="Help" title="What is this?">?</button></div>'+
+    '<button id="sndBtn" class="sndbtn" title="Sound styles and effects for this track">'+IC.polish+'<span>Sound</span><b>'+esc(soundName(t))+'</b></button>'+
+    rollToolsHTML(t);
+  if(!drums)head+='<label class="il" title="How long new notes are. With notes selected, sets their length.">Note <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
+  head+='<span class="grow"></span>';
   if(drums){
     head+='<button id="dmBtn" class="tog" aria-pressed="'+DRUMMERUI.on+'" title="A virtual drummer that plays grooves in many styles">'+IC.drums+' Drummer</button>';
-    head+='<label>Starter beat <select id="beat"><option value="">Choose…</option>'+Object.keys(BEATS).map(function(b){return'<option>'+b+'</option>';}).join('')+'</select></label>';
-  }else{
-    head+='<label>Note length <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
+    head+='<label class="il">Beat <select id="beat"><option value="">Starter beat…</option>'+Object.keys(BEATS).map(function(b){return'<option>'+b+'</option>';}).join('')+'</select></label>';
   }
-  head+='<span class="tidy"><select id="tidyAmt" aria-label="How much to tidy" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select><button id="tidyBtn">Tidy timing</button>'+(t._undo?'<button id="undoTidy">Undo tidy</button>':'')+'</span>';
+  head+='<button id="tidyBtn" title="Line the notes up with the beat (strength under More)">Tidy timing</button>';
   if(!drums)head+='<button id="chBtn" title="Build a chord progression and learn what comes next">'+IC.chords+' Chord helper</button>';
-  head+='<button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button><button id="clearNotes">Clear notes</button></div>';
-  host.innerHTML=head+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+'<p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
+  head+='<button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button>';
+  head+='<details class="more"><summary>More</summary><div class="morep">'+
+    '<button data-r="vel" class="tog" aria-pressed="'+ROLL.vel+'" title="A lane under the notes for how hard each note is played">Velocity lane</button>'+
+    '<button data-r="all" title="Select every note (Ctrl+A)">Select all notes</button>'+
+    '<label class="il">Tidy strength <select id="tidyAmt" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select></label>'+
+    (t._undo?'<button id="undoTidy">Undo tidy</button>':'')+
+    '<button id="clearNotes" class="warn">Clear all notes</button></div></details></div>';
+  host.innerHTML=head+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+'<div class="rollwrap">'+rollSelHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+
+    '<p class="hint ehint">'+(drums?'Tap the grid to add a hit · tap a hit to select · double-tap to remove · drag to move.':'Tap to add a note · tap to select · double-tap to remove · drag to move · drag a selected note’s handle to change its length.')+'</p>';
   mountRoll($('roll'),t);mountAuto(t);if(drums&&DRUMMERUI.on)mountDrummer(t);
 }
 $('editor').addEventListener('change',function(e){
@@ -2477,6 +2532,7 @@ $('editor').addEventListener('click',function(e){
   if(b.id==='micBtn'){if(mic){micOff();micList();}else{ensureMic().then(micList);}return;}
   if(b.id==='impBtn'){var inp=$('impFile');if(inp)inp.click();return;}
   if(b.id==='autoBtn'){autoToggle();return;}
+  if(b.id==='sndBtn'){openSound(t);return;}
   if(b.id==='chBtn'){openChords();return;}
   if(b.id==='dmBtn'){DRUMMERUI.on=!DRUMMERUI.on;renderEditor();return;}
   if(b.id==='tidyBtn'){
@@ -2927,7 +2983,7 @@ $('bRec').addEventListener('click',async function(){
 });
 
 /* =============== start =============== */
-try{var kbs=localStorage.getItem('jr-kb');if(kbs)S.kbsize=kbs;}catch(e){}
+try{var kbs=localStorage.getItem('jr-kb');if(kbs)S.kbsize=kbs;var kbh=+localStorage.getItem('jr-kbh');if(kbh>0)S.kbh=kbh;}catch(e){}
 function showWelcome(){var w=$('welcome'),seen=false;try{seen=!!localStorage.getItem('jr-welcome');}catch(e){}if(!seen)w.hidden=false;}
 $('welcomeX').addEventListener('click',function(){$('welcome').hidden=true;try{localStorage.setItem('jr-welcome','1');}catch(e){}});
 
@@ -3332,6 +3388,7 @@ var PADI={strings:1,tronstrings:1,tronchoir:1,choir:1,oohs:1,synchoir:1,pad:1,ju
 var LEADI={flute:1,piccolo:1,recorder:1,oboe:1,clarinet:1,sax:1,tenorsax:1,trumpet:1,mutedtpt:1,trombone:1,horn:1,brass:1,violin:1,cello:1,panflute:1,shakuhachi:1,harmonica:1,ocarina:1,lead:1,tronflute:1,sitar:1,koto:1,shamisen:1};
 var COLORI={vibes:1,marimba:1,xylo:1,glock:1,celesta:1,musicbox:1,tubular:1,chimes:1,kalimba:1,steeldrum:1,bells:1,harp:1,dulcimer:1,harpsi:1,pizz:1,spluck:1};
 /*@include js/mix.js*/
+/*@include js/sound.js*/
 var ROLE_LAB={vocal:'vocals',lead:'lead',drums:'drums',bass:'bass',chords:'chords',color:'color',pad:'pad'};
 function roleOf(t){if(t.kind==='voice')return'vocal';if(t.kind==='drum')return'drums';var i=t.inst;if(BASSI[i])return'bass';if(PADI[i])return'pad';if(LEADI[i])return'lead';if(COLORI[i])return'color';return'chords';}
 function levelOf(b,secs){
