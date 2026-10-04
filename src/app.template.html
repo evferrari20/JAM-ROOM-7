@@ -602,6 +602,8 @@ var INST_DESC={piano:'Concert grand, two playing strengths',upright:'Honky, wood
 /* ---- line icons (replace emoji: crisp, consistent, tinted by CSS) ---- */
 var SVGI=function(p,vb){return'<svg class="i" viewBox="'+(vb||'0 0 24 24')+'" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';};
 var IC={
+ pencil:SVGI('<path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3 3"/>'),
+ marquee:SVGI('<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M12 4h3M19 4h-.5M20 8v3M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H16M12 20H9M5 20h-.5A1.5 1.5 0 0 1 4 18.5V16M4 12v-1"/>'),
  keys:SVGI('<rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M7 5v9M12 5v9M17 5v9M5.2 5v6h3.6V5M14.2 5v6h3.6V5"/>'),
  organ:SVGI('<path d="M4 20V9M8 20V6M12 20V4M16 20V6M20 20V9"/><path d="M3 20h18"/>'),
  tape:SVGI('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="8" cy="12" r="2.2"/><circle cx="16" cy="12" r="2.2"/><path d="M10.2 12h3.6"/>'),
@@ -913,7 +915,7 @@ function applyInstFx(t){
 }
 function applyPreset(t,name){
   var p=FX_PRESETS[name];if(!p)return;
-  t.fx=fxZero();FXN.forEach(function(n){if(p[n]!=null)t.fx[n]=p[n];});
+  t.fx=fxZero();t.sb=null;t.style=null;FXN.forEach(function(n){if(p[n]!=null)t.fx[n]=p[n];});
   t.rev=p.rev!=null?p.rev:(t.kind==='voice'?.25:.15);if(t.send)t.send.gain.value=t.rev;
   if(A.c&&t.node)rebuildFx(t);
   renderTracks();renderEditor();toast(name+' applied');markDirty();
@@ -1182,7 +1184,7 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
@@ -2276,75 +2278,12 @@ document.addEventListener('keyup',function(e){
 window.addEventListener('blur',function(){susOff();Object.keys(down).forEach(function(p){pressEnd(p,true);});});
 window.addEventListener('resize',function(){renderDock();if(R)R.resize();});
 
-/* =============== piano roll / drum grid =============== */
-function theme(){
-  if(TH)return TH;var cs=getComputedStyle(document.documentElement),g=function(n){return cs.getPropertyValue(n).trim();};
-  TH={bg:g('--roll-bg'),black:g('--roll-black'),scale:g('--roll-scale'),root:g('--roll-root'),cell:g('--roll-cell'),beat:g('--roll-beat'),bar:g('--roll-bar'),head:g('--roll-head'),panel:g('--panel'),ink:g('--ink'),muted:g('--muted')};return TH;
-}
-function mountRoll(host,t){
-  var drums=t.kind==='drum',Gw=drums?76:48,HDR=22,cw=drums?30:22,rh=drums?30:18,hi=96,lo=36,rows=drums?DRUM_NAMES.length:(hi-lo+1);
-  host.innerHTML='<div class="spacer"><canvas></canvas></div>';
-  var sp=host.firstChild,cv=sp.firstChild,g=cv.getContext('2d');
-  R={t:t,draw:draw,resize:size};
-  function steps(){return S.bars*16;}
-  function size(){
-    var w=host.clientWidth,h=host.clientHeight,d=window.devicePixelRatio||1;if(!w||!h)return;
-    cv.width=w*d;cv.height=h*d;cv.style.width=w+'px';cv.style.height=h+'px';R.d=d;
-    sp.style.width=(Gw+steps()*cw)+'px';sp.style.height=(HDR+rows*rh)+'px';draw();
-  }
-  function draw(){
-    var d=R.d||1,w=cv.width/d,h=cv.height/d,sx=host.scrollLeft,sy=host.scrollTop,C=theme(),r,s;
-    g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);g.fillStyle=C.bg;g.fillRect(0,0,w,h);
-    var r0=Math.max(0,Math.floor((sy-HDR)/rh)),r1=Math.min(rows-1,Math.ceil((sy+h-HDR)/rh));
-    for(r=r0;r<=r1;r++){
-      var y=HDR+r*rh-sy,fill=null;
-      if(drums){if(r%2)fill=C.black;}
-      else{var m=hi-r,pc=m%12;if([1,3,6,8,10].indexOf(pc)>=0)fill=C.black;else if(inScale(m))fill=(pc===S.key)?C.root:C.scale;if(pc===S.key&&fill===C.black)fill=C.root;}
-      if(fill){g.fillStyle=fill;g.fillRect(Gw,y,w-Gw,rh);}
-      g.fillStyle=C.cell;g.fillRect(Gw,y+rh-1,w-Gw,1);
-    }
-    var s0=Math.max(0,Math.floor(sx/cw)),s1=Math.min(steps(),Math.ceil((sx+w)/cw));
-    for(s=s0;s<=s1;s++){var x=Gw+s*cw-sx;if(x<Gw)continue;g.fillStyle=s%16===0?C.bar:(s%4===0?C.beat:C.cell);g.fillRect(x,HDR,1,h-HDR);}
-    g.fillStyle=t.color;
-    t.notes.forEach(function(n){
-      var row=drums?n.m:hi-n.m;if(row<0||row>=rows)return;
-      var x=Gw+n.s*4*cw-sx,wd=Math.max(4,n.d*4*cw-2),y=HDR+row*rh-sy;
-      if(x+wd<Gw||x>w||y+rh<HDR||y>h)return;
-      g.globalAlpha=.55+.45*(n.v||.8);g.beginPath();if(g.roundRect)g.roundRect(x+1,y+1,wd,rh-2,4);else g.rect(x+1,y+1,wd,rh-2);g.fill();g.globalAlpha=1;
-    });
-    if(P.playing){var b=wrapBeat(curBeat());if(b!=null){var px=Gw+b*4*cw-sx;if(px>=Gw){g.fillStyle=C.head;g.fillRect(px,HDR,2,h-HDR);}}}
-    g.fillStyle=C.panel;g.fillRect(Gw,0,w-Gw,HDR);g.fillRect(0,HDR,Gw,h-HDR);g.fillRect(0,0,Gw,HDR);
-    g.fillStyle=C.muted;g.font='600 11px system-ui, sans-serif';g.textBaseline='middle';g.textAlign='left';
-    for(s=s0;s<=s1;s+=16){if(s%16)continue;var bx=Gw+s*cw-sx;if(bx>=Gw&&s<steps())g.fillText(String(s/16+1),bx+4,HDR/2);}
-    for(r=r0;r<=r1;r++){
-      var yy=HDR+r*rh-sy;
-      if(drums){g.fillStyle=C.ink;g.font='700 12px system-ui, sans-serif';g.fillText(drumNames(t)[r],8,yy+rh/2);}
-      else{var mm=hi-r;if(mm%12===0){g.fillStyle=C.ink;g.font='700 11px system-ui, sans-serif';g.fillText('C'+(Math.floor(mm/12)-1),8,yy+rh/2);}else if(inScale(mm)&&rh>=16){g.fillStyle=C.muted;g.font='600 10px system-ui, sans-serif';g.fillText(NOTE_NAMES[mm%12],8,yy+rh/2);}}
-    }
-    g.fillStyle=C.cell;g.fillRect(Gw-1,HDR,1,h-HDR);g.fillRect(0,HDR-1,w,1);
-  }
-  host.addEventListener('scroll',function(){draw();});
-  cv.addEventListener('click',function(e){
-    var x=e.offsetX+host.scrollLeft,y=e.offsetY+host.scrollTop;if(y<HDR)return;
-    var row=Math.floor((y-HDR)/rh);if(row<0||row>=rows)return;
-    var m=drums?row:hi-row;
-    if(x<Gw){preview(t,m);return;}
-    var step=Math.floor((x-Gw)/cw);if(step<0||step>=steps())return;
-    var b=step/4,idx=-1;
-    var bx=(x-Gw)/cw/4;t._undo=null;t.notes.forEach(function(n,i){if(idx<0&&n.m===m&&bx>=n.s-1e-6&&bx<n.s+Math.max(n.d,.25)-1e-6)idx=i;});
-    if(idx>=0){t.notes.splice(idx,1);}
-    else{var mm=(!drums&&S.lock)?snapScale(m):m,dd=drums?.25:Math.min(S.len/4,LEN()-b);if(mm!==m)lockNudge();
-      t.notes.push({s:b,d:dd,m:mm,v:drums?(m===3?(step%4===0?.9:.55):.85):.8});preview(t,mm);}
-    draw();markDirty();
-  });
-  size();
-  var bassy=['ebass','sbass','sub808','cello','jazzbass','slapbass','contrabass','subbass','tuba','timpani'].indexOf(t.inst)>=0;
-  host.scrollTop=drums?0:(hi-(bassy?55:76))*rh;
-}
-function tidyNotes(t,str,grid){
+/*@include js/roll.js*/
+function tidyNotes(t,str,grid,only){
   var L=LEN(),g=1/grid,out=[];
   t._undo=JSON.parse(JSON.stringify(t.notes));
   t.notes.slice().sort(function(a,b){return a.s-b.s;}).forEach(function(n){
+    if(only&&!only.has(n)){out.push(n);return;}
     var s=n.s+(Math.round(n.s/g)*g-n.s)*str,e=n.s+n.d;e=e+(Math.round(e/g)*g-e)*str;
     if(s>=L-1e-6)s-=L;if(s<0)s=0;s=Math.round(s*10000)/10000;
     var d=t.kind==='drum'?.25:Math.max(g*(str>=1?1:.5),e-s);d=Math.min(d,L-s);
@@ -2371,8 +2310,8 @@ function waveDraw(cv,raw){
   for(var x=0;x<w;x++){var mx=0,i0=x*step;for(var i=i0;i<i0+step&&i<raw.length;i+=8){var a=Math.abs(raw[i]);if(a>mx)mx=a;}var bh=Math.max(1,mx*h*.95);g.fillRect(x,(h-bh)/2,1,bh);}
 }
 function fxHTML(t){
-  return'<div class="fx"><div class="ehead"><strong>Mix &amp; effects</strong><button class="qh" data-help="effects" aria-label="Help" title="What is this?">?</button><label>Style <select id="fxPreset"><option value="">Choose…</option>'+Object.keys(FX_PRESETS).map(function(p){return'<option>'+p+'</option>';}).join('')+'</select></label></div>'+
-    '<div class="fxgrid mixg"><label title="Place the track left or right. Double-click to center.">Pan <span class="lr">Left · Right</span><input type="range" data-mix="pan" min="-1" max="1" step="0.05" value="'+(t.pan||0)+'"></label><label title="Make the track darker or brighter. Double-click to reset.">Tone <span class="lr">Dark · Bright</span><input type="range" data-mix="tone" min="-1" max="1" step="0.05" value="'+(t.tone||0)+'"></label></div>'+
+  return'<div class="fx"><div class="ehead"><strong>Mix &amp; effects</strong><button class="qh" data-help="effects" aria-label="Help" title="What is this?">?</button><label>Style <select id="fxPreset"><option value="">Choose…</option><optgroup label="Sound styles">'+stylesFor(t).map(function(n){return'<option value="s:'+n+'"'+(t.style===n?' selected':'')+'>'+n+'</option>';}).join('')+'</optgroup><optgroup label="Effect presets">'+Object.keys(FX_PRESETS).map(function(p){return'<option value="p:'+p+'">'+p+'</option>';}).join('')+'</optgroup></select></label></div>'+
+    '<div class="fxgrid mixg"><label title="Place the track left or right. Double-click to center.">Pan <span class="lr">Left · Right</span><input type="range" data-mix="pan" min="-1" max="1" step="0.05" value="'+(t.pan||0)+'"></label><label title="Make the track darker or brighter. Double-click to reset.">Tone <span class="lr">Dark · Bright</span><input type="range" data-mix="tone" min="-1" max="1" step="0.05" value="'+(t.eq?Math.max(-1,Math.min(1,(t.eq.h-t.eq.l)/14)):(t.tone||0))+'"></label></div>'+
     '<div class="fxgrid">'+FXN.map(function(n){return'<label title="'+FXTIP[n]+'">'+FXLAB[n]+'<input type="range" data-fx="'+n+'" min="0" max="1" step="0.01" value="'+t.fx[n]+'"></label>';}).join('')+'</div>'+
     '<p class="hint">Inspired by the Tame Impala sound: fuzz pedal, phaser, tape warmth, tempo-synced echo and heavily squashed drums. Reverb is on the track card.</p></div>';
 }
@@ -2415,7 +2354,7 @@ function renderEditor(){
   }
   head+='<span class="tidy"><select id="tidyAmt" aria-label="How much to tidy" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select><button id="tidyBtn">Tidy timing</button>'+(t._undo?'<button id="undoTidy">Undo tidy</button>':'')+'</span>';
   head+='<button id="clearNotes">Clear notes</button></div>';
-  host.innerHTML=head+'<div class="roll" id="roll"></div><p class="hint">'+(drums?'Tap the grid to add or remove hits, or pick a starter beat. You can also record by tapping the pads below.':'Tap the grid to add or remove notes. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
+  host.innerHTML=head+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div><p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
   mountRoll($('roll'),t);
 }
 $('editor').addEventListener('change',function(e){
@@ -2435,9 +2374,9 @@ $('editor').addEventListener('change',function(e){
     }
     if(tk&&(ta==='speed'||ta==='amt'||ta==='form')){retune(tk);return;}
   }
-  if(e.target.id==='fxPreset'){applyPreset(t,e.target.value);return;}
+  if(e.target.id==='fxPreset'){var pv=e.target.value;if(pv.slice(0,2)==='s:'){applyStyle(t,pv.slice(2));renderTracks();renderEditor();toast(pv.slice(2)+': '+STYLES[pv.slice(2)].d);}else if(pv)applyPreset(t,pv.slice(2));return;}
   if(e.target.id==='impFile'){var f=e.target.files[0];if(f)importAudio(f,t);e.target.value='';return;}
-  if(e.target.id==='selLen')S.len=+e.target.value;
+  if(e.target.id==='selLen'){S.len=+e.target.value;if(R&&R.t===t&&R.sel.size){var LL=LEN();R.sel.forEach(function(n){n.d=Math.min(S.len/4,LL-n.s);});t._undo=null;R.update();markDirty();toast('Length set for '+R.sel.size+' note'+(R.sel.size>1?'s':''));}}
   if(e.target.id==='beat'&&e.target.value){applyBeat(t,e.target.value);if(R)R.draw();markDirty();e.target.value='';toast('Beat added');}
 });
 function importAudio(f,t){
@@ -2486,7 +2425,7 @@ $('editor').addEventListener('click',function(e){
   if(b.id==='impBtn'){var inp=$('impFile');if(inp)inp.click();return;}
   if(b.id==='tidyBtn'){
     if(!t.notes.length){toast('No notes to tidy yet');return;}
-    var tv=$('tidyAmt').value.split(',');tidyNotes(t,+tv[0],+tv[1]);var keep=$('tidyAmt').value;renderEditor();$('tidyAmt').value=keep;markDirty();toast('Timing tidied. Tap Undo tidy to go back.');return;
+    var tv=$('tidyAmt').value.split(',');tidyNotes(t,+tv[0],+tv[1],R&&R.t===t&&R.sel.size?R.sel:null);var keep=$('tidyAmt').value;renderEditor();$('tidyAmt').value=keep;markDirty();toast('Timing tidied. Tap Undo tidy to go back.');return;
   }
   if(b.id==='undoTidy'){if(!t._undo){toast('Nothing to undo');return;}t.notes=t._undo;t._undo=null;renderEditor();markDirty();toast('Back to how you played it');return;}
   if(b.id==='clearNotes'){twoTap(b,'Tap again to clear',function(){t._undo=null;t.notes=[];if(R)R.draw();markDirty();});return;}
@@ -2508,12 +2447,12 @@ $('editor').addEventListener('click',function(e){
 
 $('editor').addEventListener('dblclick',function(e){
   if(e.target.dataset&&e.target.dataset.a==='form'){var fr=e.target.closest('.take'),ft=selTrack(),fk=ft&&fr&&ft.takes.filter(function(x){return x.id===fr.dataset.k;})[0];if(fk){fk.form=0;e.target.value=0;retune(fk);}return;}
-  var t=selTrack(),k=e.target.dataset&&e.target.dataset.mix;if(!t||!k)return;e.target.value=0;t[k]=0;applyMix(t);markDirty();
+  var t=selTrack(),k=e.target.dataset&&e.target.dataset.mix;if(!t||!k)return;e.target.value=0;if(k==='tone'&&t.eq){stripSet(t,'eql',0);stripSet(t,'eqh',0);}else{t[k]=0;applyMix(t);}markDirty();
 });
 $('editor').addEventListener('input',function(e){
   var t=selTrack();if(!t)return;
-  if(e.target.dataset.fx){fxSet(t,e.target.dataset.fx,+e.target.value);markDirty();return;}
-  if(e.target.dataset.mix){t[e.target.dataset.mix]=+e.target.value;applyMix(t);markDirty();return;}
+  if(e.target.dataset.fx){var fn=e.target.dataset.fx,fv=+e.target.value;fxSet(t,fn,fv);if(t.sb){t.sb.fx[fn]=fv-(macroDelta(t).fx[fn]||0);}markDirty();return;}
+  if(e.target.dataset.mix){var mk=e.target.dataset.mix,mv=+e.target.value;if(mk==='tone'&&t.eq){stripSet(t,'eql',-mv*7);stripSet(t,'eqh',mv*7);}else{t[mk]=mv;applyMix(t);}markDirty();return;}
   var row=e.target.closest('.take');if(!row)return;
   var k=t.takes.filter(function(x){return x.id===row.dataset.k;})[0];if(!k)return;
   var a=e.target.dataset.a,v=+e.target.value;
@@ -2952,8 +2891,13 @@ var GUIDE='<div class="guide"><h3>Guide</h3><div class="gnav">'+[['start','Start
 '<dt>Drum kit</dt><dd>Nine kits, all recorded: an acoustic kit in Studio, Tight and Lo-fi flavours, the classic drum machines (Roland TR-808, LinnDrum, Roland CR-8000, Drumtraks, Casio RZ-1) and a hand percussion kit with cajón, congas, bongo and shakers. Pad names change with the kit.</dd>'+
 '<dt>Volume, Reverb, Mute, ✕</dt><dd>Loudness, how much room echo, silence the track, delete it.</dd></dl></section>'+
 '<section class="gsec" id="g-hear"><h4>Hear bar</h4><p>Tap a numbered chip to hear only that track. Tap others to add them back, or tap a lit chip to take it out. <b>Hear all</b> brings everything back. Exports include only what you are hearing.</p></section>'+
-'<section class="gsec" id="g-editor"><h4>Note grid and drum grid</h4><dl><dt>Grid</dt><dd>Rows are notes (or drums), columns are 16th notes, numbered by bar. Tap to add a note, tap it again to remove it. Tap a row name to hear it.</dd>'+
-'<dt>Note length</dt><dd>How long new notes are when you tap the grid.</dd><dt>Starter beat</dt><dd>Fills a drum track with a ready-made groove you can edit.</dd><dt>Clear notes</dt><dd>Empties the track (tap twice).</dd></dl></section>'+
+'<section class="gsec" id="g-editor"><h4>Note grid and drum grid</h4><dl><dt>Grid</dt><dd>Rows are notes (or drums), columns are 16th notes, numbered by bar. Tap empty space to add a note. Tap a row name to hear it.</dd>'+
+'<dt>Select, move, stretch</dt><dd>Tap a note to select it (it gets a white outline). Drag it to move it in time or pitch; drag its right edge to make it longer or shorter. Double-tap a note to delete it. Notes snap to the <b>Grid</b> setting while you drag.</dd>'+
+'<dt>Select several notes</dt><dd>Switch to <b>Select</b> and drag a box around notes, or use <b>Select all</b>. With a mouse you can drag a box in Edit mode too, and Shift-click adds notes to the selection. In Edit mode, dragging empty space with a finger or pen scrolls the grid.</dd>'+
+'<dt>Copy, paste, duplicate</dt><dd><b>Copy</b> then tap the bar numbers at the top to place the gold paste marker, then <b>Paste</b>. <b>Duplicate</b> repeats the selected notes straight after themselves, handy for turning one bar into four. Keyboard: <span class="kbd">Ctrl</span>+<span class="kbd">C</span> / <span class="kbd">X</span> / <span class="kbd">V</span> / <span class="kbd">D</span> / <span class="kbd">A</span>, <span class="kbd">Delete</span>.</dd>'+
+'<dt>Transpose</dt><dd>Moves the selected notes (or every note, if none are selected) up or down. With Scale lock on, +1 and −1 move one step within your key. Arrow keys move selected notes: left/right in time, up/down in pitch, Shift+up/down by an octave.</dd>'+
+'<dt>Velocity</dt><dd>How hard each note is played. Turn on <b>Velocity</b> to see a lane of bars under the grid: drag across it to paint softer or louder notes, or drag a selected note\'s bar to change all selected notes together.</dd>'+
+'<dt>Note length</dt><dd>How long new notes are when you tap the grid. With notes selected, it changes their length.</dd><dt>Tidy timing</dt><dd>Lines notes up to the beat; only the selected notes if any are selected.</dd><dt>Starter beat</dt><dd>Fills a drum track with a ready-made groove you can edit.</dd><dt>Clear notes</dt><dd>Empties the track (tap twice).</dd></dl></section>'+
 '<section class="gsec" id="g-effects"><h4>Mix and effects</h4><dl><dt>Pan and Tone</dt><dd>Pan places a track left or right; Tone makes it darker or brighter. Double-click either to reset.</dd>'+
 '<dt>Fuzz</dt><dd>Gritty distortion, great on guitars and bass.</dd><dt>Squash</dt><dd>Heavy compression that makes drums punchy and big.</dd><dt>Phaser</dt><dd>A slow swirling sweep, very 70s and very Tame Impala.</dd>'+
 '<dt>Chorus</dt><dd>Doubles the sound slightly out of tune for width and shimmer.</dd><dt>Tape</dt><dd>Warm saturation and gentle wobble, like an old tape machine.</dd><dt>Echo</dt><dd>Repeats in time with your tempo.</dd><dt>Style</dt><dd>Presets that set several effects at once.</dd></dl></section>'+
