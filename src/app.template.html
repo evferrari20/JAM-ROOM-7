@@ -47,6 +47,7 @@
     <div class="tools" id="tools">
       <button id="bStart" class="tool" title="Start a new song from a vibe" data-ic="wand"><span>Starter</span></button>
       <button id="bLoops" class="tool" title="Ready-made loops that fit your song: drums, bass, chords, melodies" data-ic="loops"><span>Loops</span></button>
+      <button id="bChords" class="tool" title="Chord helper: build a chord progression, see what comes next, and learn why it works" data-ic="chords"><span>Chords</span></button>
       <button id="bMix" class="tool" title="Balance all your tracks" data-ic="mixer"><span>Mixer</span></button>
       <button id="bPolish" class="tool" title="Balance every track and add a finished sound in one tap" data-ic="polish"><span>Polish</span></button>
       <span class="tsep"></span>
@@ -627,6 +628,7 @@ var IC={
  redo:SVGI('<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>'),
  mixer:SVGI('<path d="M6 3v18M12 3v18M18 3v18"/><rect x="4" y="13" width="4" height="3" rx="1" fill="currentColor"/><rect x="10" y="6" width="4" height="3" rx="1" fill="currentColor"/><rect x="16" y="15" width="4" height="3" rx="1" fill="currentColor"/>'),
  polish:SVGI('<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>'),
+ chords:SVGI('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v10M13 4v10M18 4v10"/><circle cx="8" cy="14" r="1.6"/><circle cx="13" cy="11" r="1.6"/><circle cx="18" cy="14" r="1.6"/>'),
  loops:SVGI('<path d="M17 2.5l3 3-3 3"/><path d="M4 11.5v-1a5 5 0 0 1 5-5h11"/><path d="M7 21.5l-3-3 3-3"/><path d="M20 12.5v1a5 5 0 0 1-5 5H4"/>'),
  wand:SVGI('<path d="m4 20 11-11M14 4v3M19 9h-3M17.5 5.5l-2 2M6 6l1.5 1.5"/>'),
  full:SVGI('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
@@ -1195,7 +1197,7 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ch:{name:function(m){return nameChord(m);},shape:function(c){return guitarShape(c);},sug:function(c){return suggestNext(c).map(function(x){return chName(x[0])+': '+x[1];});},st:function(){return chState();}},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
@@ -2035,12 +2037,13 @@ function pressStart(pid,midis,elm,vel,raw){
     return{m:mm,h:trackPlay(kt,mm,now+.004,v),rb:rb,t0:now,kt:kt,v:v};
   });
   down[pid]={items:items,el:elm};if(elm)elm.classList.add('on');
+  showHeldChord();
 }
 function pressEnd(pid,force){
   if(apEnd(pid)){if(AP.glide&&AP.glide.pid===pid)AP.glide=null;return;}
   var d=down[pid];if(!d)return;
   if(sustain&&!force){if(sus.indexOf(pid)<0)sus.push(pid);return;}
-  delete down[pid];var si=sus.indexOf(pid);if(si>=0)sus.splice(si,1);
+  delete down[pid];var si=sus.indexOf(pid);if(si>=0)sus.splice(si,1);setTimeout(showHeldChord,0);
   var c=A.c,now=c.currentTime;if(d.el)d.el.classList.remove('on');
   d.items.forEach(function(it){
     it.h.release(now);
@@ -2188,6 +2191,7 @@ function renderDock(){
   h+='<button class="tog" id="hFocus" aria-pressed="'+document.body.classList.contains('focus')+'" title="Hide the song editor so the keyboard fills the screen">Focus</button>';
   h+='<span class="vtip" title="On a touchscreen, tap low on a key or pad for loud and high for soft. With a Surface Pen, press harder for louder.">Press harder for louder</span>';
   h+='<span class="susb" id="susB"'+(sustain?'':' hidden')+'>Sustain</span>';
+  if(!drumMode)h+='<span class="chnow" id="chNow" hidden title="The chord you are playing"></span>';
   h+='<button class="qh" data-help="keys" aria-label="Help" title="What is this?">?</button>';
   if(!drumMode)h+='<button class="tog" id="hViz" aria-pressed="'+VIZ.on()+'" title="Show the instrument and the note you play">Instrument view</button>';
   h+='<span class="who">'+tIcon(kt)+' '+esc(kt.name)+'</span></div>';
@@ -2319,6 +2323,7 @@ window.addEventListener('resize',function(){renderDock();if(R)R.resize();if(AUTO
 /*@include js/drummer.js*/
 /*@include js/loops.js*/
 /*@include js/strips.js*/
+/*@include js/chords.js*/
 function tidyNotes(t,str,grid,only){
   var L=LEN(),g=1/grid,out=[];
   t._undo=JSON.parse(JSON.stringify(t.notes));
@@ -2396,6 +2401,7 @@ function renderEditor(){
     head+='<label>Note length <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   }
   head+='<span class="tidy"><select id="tidyAmt" aria-label="How much to tidy" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select><button id="tidyBtn">Tidy timing</button>'+(t._undo?'<button id="undoTidy">Undo tidy</button>':'')+'</span>';
+  if(!drums)head+='<button id="chBtn" title="Build a chord progression and learn what comes next">'+IC.chords+' Chord helper</button>';
   head+='<button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button><button id="clearNotes">Clear notes</button></div>';
   host.innerHTML=head+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+'<p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
   mountRoll($('roll'),t);mountAuto(t);if(drums&&DRUMMERUI.on)mountDrummer(t);
@@ -2467,6 +2473,7 @@ $('editor').addEventListener('click',function(e){
   if(b.id==='micBtn'){if(mic){micOff();micList();}else{ensureMic().then(micList);}return;}
   if(b.id==='impBtn'){var inp=$('impFile');if(inp)inp.click();return;}
   if(b.id==='autoBtn'){autoToggle();return;}
+  if(b.id==='chBtn'){openChords();return;}
   if(b.id==='dmBtn'){DRUMMERUI.on=!DRUMMERUI.on;renderEditor();return;}
   if(b.id==='tidyBtn'){
     if(!t.notes.length){toast('No notes to tidy yet');return;}
@@ -2613,6 +2620,7 @@ $('addDrums').addEventListener('click',function(){addTrack('drum');});
 $('addVoice').addEventListener('click',function(){addTrack('voice');});
 $('addLoop').addEventListener('click',function(){openLoops();});
 $('bLoops').addEventListener('click',function(){openLoops();});
+$('bChords').addEventListener('click',function(){openChords();});
 
 /* =============== modals =============== */
 var modalHandler=null;
@@ -2695,7 +2703,7 @@ function openPicker(target){
 /* =============== saving, loading, exporting =============== */
 (async function(){try{if(window.claude&&claude.use)DL=await claude.use('downloads');}catch(e){DL=null;}})();
 function snapshot(){
-  return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,arr:S.arr,arrOff:(arrNorm(),S.arrOff),songMode:!!S.songMode,
+  return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,chords:S.chords||{},arr:S.arr,arrOff:(arrNorm(),S.arrOff),songMode:!!S.songMode,
     tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,auto:t.auto||{},drummer:t.drummer||null,
       takes:t.takes.map(takeMeta),pd:pdMeta(t)};})};
 }
@@ -2737,6 +2745,7 @@ function applyProject(d,aud,opts){
   setRef(d.tune!=null?+d.tune:prefTune(),true);S.fin=!!d.fin;S.mst=d.mst||'';applyFin();
   S.parts=(d.parts&&d.parts.length)?d.parts.map(function(p){return{id:p.id,name:p.name};}):[{id:'p1',name:'Main'}];
   S.part=S.parts.some(function(p){return p.id===d.part;})?d.part:S.parts[0].id;
+  S.chords=d.chords||{};
   var aoff=d.arrOff||[],apairs=(d.arr||[S.part]).map(function(id,i){return[id,aoff[i]||{}];}).filter(function(x){return S.parts.some(function(p){return p.id===x[0];});});
   S.arr=apairs.map(function(x){return x[0];});S.arrOff=apairs.map(function(x){return x[1];});if(!S.arr.length){S.arr=[S.part];S.arrOff=[{}];}
   S.songMode=!!d.songMode;
@@ -2761,7 +2770,7 @@ function applyProject(d,aud,opts){
 function audFromRecord(rec){var m={};Object.keys(rec.audio||{}).forEach(function(id){m[id]={sr:rec.audio[id].sr,f:i162f(new Int16Array(rec.audio[id].pcm))};});return m;}
 function starter(){
   setRef(prefTune(),true);S.fin=false;S.mst='';applyFin();
-  S.parts=[{id:'p1',name:'Main'}];S.part='p1';S.arr=['p1'];S.arrOff=[{}];S.songMode=false;
+  S.parts=[{id:'p1',name:'Main'}];S.part='p1';S.arr=['p1'];S.arrOff=[{}];S.chords={};S.songMode=false;
   S.solo=null;S.swing=0;if(S.space!=='Studio'){S.space='Studio';if(A.c)A.rev.buffer=makeIR(A.c,S.space);}S.tracks.forEach(unwireTrack);S.tracks=[];S.name='My song';S.bpm=100;S.key=0;S.scale='Major';S.bars=4;
   var d=mkTrack('drum');S.tracks.push(d);applyBeat(d,'Rock');
   var p=mkTrack('inst','piano');S.tracks.push(p);
@@ -2928,7 +2937,7 @@ var GUIDE='<div class="guide"><h3>Guide</h3><div class="gnav">'+[['start','Start
 '<dt>Space</dt><dd>The room your reverb imitates, from a small Room to a huge Cathedral.</dd>'+
 '<dt>Metronome, Count-in, Loop</dt><dd>A click on every beat; 4 clicks before recording starts; and whether the song repeats.</dd>'+
 '<dt>Hear myself</dt><dd>Sends your microphone to your headphones while recording. Only use it with headphones.</dd></dl></section>'+
-'<section class="gsec" id="g-song"><h4>Building a song</h4><dl><dt>Song starter</dt><dd>Pick a vibe (Lo-fi, Pop, Psych, Hip-hop, R&amp;B, Funk or House) and get drums, a bass line, chords and a fuller chorus, already lined up into a song.</dd>'+
+'<section class="gsec" id="g-song"><h4>Building a song</h4><dl><dt>Chord helper</dt><dd>Tap <b>Chords</b> (or <b>Chord helper</b> above the note grid) to build the chords for the part you are on. Each bar is a slot: tap one, then pick a chord. Chords are coloured by what they do: green <b>Home</b> feels settled, gold <b>Away</b> moves off, red <b>Tension</b> wants to resolve, purple <b>Colour</b> is borrowed from outside the key. <b>What could come next</b> suggests good next chords and says why. Every chord shows its notes on a piano and a guitar shape with finger numbers, and you can change it (7th, sus, add9…) or put a different note in the bass. Try a <b>ready-made progression</b> by mood, or <b>Read my song</b> to name the chords you already have. <b>Write into</b> turns it into a chord track (and a bass line if you like). Once a part has chords, the note grid names them in the bar ruler and lights up the rows of each chord\'s notes, so writing a melody that fits is easy. While you play, the chord you are holding is named next to the keyboard.</dd><dt>Song starter</dt><dd>Pick a vibe (Lo-fi, Pop, Psych, Hip-hop, R&amp;B, Funk or House) and get drums, a bass line, chords and a fuller chorus, already lined up into a song.</dd>'+
 '<dt>Parts</dt><dd>A part is one section of your song, like a verse or chorus, with its own notes and recordings. Tap a part to edit it. ＋ Part adds one, either as a copy of the part you are on or empty. ⋯ renames, copies or deletes.</dd>'+
 '<dt>Song order</dt><dd>Line parts up in any order and repeat them as often as you like. Turn on <b>▶ Play whole song</b> to hear everything in order, or switch to <b>Loop this part</b> while you work on one section. Recording always loops the part you are editing.</dd>'+
 '<dt>Arrange</dt><dd>Shows the whole song as a timeline: one column per section, one row per instrument, with a small picture of the notes. Tap a cell to drop that instrument out of that section (a quiet intro, a drum break) without making a new part. Drag a section name to move it, and use the bar underneath to duplicate, remove or <b>Make it unique</b> (gives that section its own copy of the part so you can vary it). <b>Play from section</b> starts playback there; double-tap a section to edit its notes.</dd>'+
@@ -3012,13 +3021,14 @@ function nextPartName(){for(var i=0;i<PART_NAMES.length;i++){var n=PART_NAMES[i]
 function addPart(name,copy){
   var id=nid('p');S.parts.push({id:id,name:name});
   S.tracks.forEach(function(t){t.pd=t.pd||{};t.pd[id]=copy?{notes:JSON.parse(JSON.stringify(t.notes)),takes:t.takes.map(copyTake),auto:JSON.parse(JSON.stringify(t.auto||{}))}:{notes:[],takes:[],auto:{}};});
+  if(copy&&S.chords&&S.chords[S.part])S.chords[id]=JSON.parse(JSON.stringify(S.chords[S.part]));
   arrInsert(S.arr.length,id,{});switchPart(id);
 }
 function deletePart(id){
   if(S.parts.length<2)return;
   if(id===S.part)switchPart(S.parts.filter(function(p){return p.id!==id;})[0].id);
   S.parts=S.parts.filter(function(p){return p.id!==id;});
-  S.tracks.forEach(function(t){if(t.pd)delete t.pd[id];});
+  S.tracks.forEach(function(t){if(t.pd)delete t.pd[id];});if(S.chords)delete S.chords[id];
   arrNorm();for(var ai=S.arr.length-1;ai>=0;ai--)if(S.arr[ai]===id)arrRemove(ai);if(!S.arr.length){S.arr=[S.part];S.arrOff=[{}];}
   renderSong();markDirty();
 }
@@ -3158,7 +3168,7 @@ function buildVibe(name){
   S.name=name+' song';S.bpm=V.bpm;S.key=V.keys[Math.floor(Math.random()*V.keys.length)];S.scale=V.scale;S.bars=4;S.swing=V.sw;
   S.space=V.space;if(A.c)A.rev.buffer=makeIR(A.c,S.space);
   var pv={id:nid('p'),name:'Verse'},pc={id:nid('p'),name:'Chorus'};
-  S.parts=[pv,pc];S.part=pv.id;S.arr=[pv.id,pc.id,pv.id,pc.id];S.arrOff=[{},{},{},{}];S.songMode=true;
+  S.parts=[pv,pc];S.part=pv.id;S.arr=[pv.id,pc.id,pv.id,pc.id];S.arrOff=[{},{},{},{}];S.chords={};S.songMode=true;
   function add(kind,inst,vol){var t=mkTrack(kind,inst);t.vol=vol;S.tracks.push(t);return t;}
   var dr=add('drum',null,.8),bs=add('inst',V.bass,.78),ch=add('inst',V.chord,.6),ly=add('inst',V.layer,.42);add('voice',null,.9);
   dr.kit=V.kit;

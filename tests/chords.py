@@ -1,0 +1,46 @@
+"""Chord helper: chord naming, guitar shapes, suggestions, templates, writing to the song, live chord display, grid chord guide."""
+import os,asyncio,json
+from playwright.async_api import async_playwright
+JR=os.environ.get("JR") or "file://"+os.path.abspath(os.path.join(os.path.dirname(__file__),"..","dist","jam-room.html"))
+OUT=os.environ.get('SHOT','/tmp')
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
+        pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        tests=[[60,64,67],[57,60,64],[64,67,71,74],[55,59,62,65],[60,63,66],[52,60,64,67],[60,62,67],[60,65,67],[48,55],[60,64,67,71],[62,65,69,72],[59,62,65,69]]
+        print('names:',[await pg.evaluate(f'()=>__jr.ch.name({json.dumps(t)})') for t in tests])
+        await pg.evaluate('()=>{__jr.S.key=0;__jr.S.scale="Major"}')
+        for nm,c in [('C',[0,'']),('G',[7,'']),('D',[2,'']),('Am',[9,'m']),('Em',[4,'m']),('F',[5,'']),('E7',[4,'7']),('Cmaj7',[0,'maj7']),('Dm7',[2,'m7']),('Bb',[10,'']),('F#m',[6,'m']),('A',[9,'']),('B7',[11,'7']),('Gsus4',[7,'sus4'])]:
+            s=await pg.evaluate(f'()=>__jr.ch.shape({{r:{c[0]},q:"{c[1]}",inv:0}})')
+            print(f'{nm:6s}',''.join('x' if f<0 else str(f) for f in s['f']) if s else None,'fingers',''.join(str(x) for x in s['fing']) if s else '', 'barre',s['barre'] if s else '')
+        print('after V:',await pg.evaluate('()=>__jr.ch.sug({r:7,q:"",inv:0})'))
+        await pg.evaluate('''()=>{var c=[...document.querySelectorAll('.tcard')].find(x=>/piano/i.test(x.innerText));c.click()}''');await pg.wait_for_timeout(200)
+        await pg.click('#bChords');await pg.wait_for_timeout(300)
+        await pg.screenshot(path=OUT+'/chords_empty.png')
+        for nm in ['C','Am','F','G']:
+            await pg.click(f'.chpal >> nth=0 >> .chchip:has-text("{nm}") >> nth=0');await pg.wait_for_timeout(120)
+        print('slots',await pg.evaluate('()=>__jr.ch.st().slots.map(c=>c&&(c.r+c.q)).join(" ")'))
+        await pg.click('.chslot[data-i="1"]');await pg.wait_for_timeout(200)
+        await pg.screenshot(path=OUT+'/chords_detail.png')
+        await pg.click('.chq[data-q="m7"]');await pg.click('.chinv[data-inv="1"]');await pg.wait_for_timeout(150)
+        print('slot 2 now',await pg.evaluate('()=>document.querySelector(".chslot[data-i=\'1\'] b").textContent'))
+        await pg.click('.chip[data-mood="Epic"]');await pg.click('.chtpl >> nth=0');await pg.wait_for_timeout(200)
+        print('epic template in C major ->',await pg.evaluate('()=>[...document.querySelectorAll(".chslot b")].map(b=>b.textContent).join(" ")'))
+        await pg.click('.chip[data-mood="Bluesy"]');await pg.click('.chtpl >> nth=0');await pg.wait_for_timeout(200)
+        print('12-bar ->',await pg.evaluate('()=>__jr.S.bars'),'bars:',await pg.evaluate('()=>[...document.querySelectorAll(".chslot b")].map(b=>b.textContent).join(" ")'))
+        await pg.select_option('#chRhy','strum');await pg.select_option('#chBass','walk');await pg.select_option('#chInst','steel')
+        n0=await pg.evaluate('()=>__jr.S.tracks.length');await pg.click('[data-x=write]');await pg.wait_for_timeout(400)
+        print('tracks',n0,'->',await pg.evaluate('()=>__jr.S.tracks.length'),await pg.evaluate('()=>__jr.S.tracks.map(t=>t.inst+":"+t.notes.length).join(" ")'))
+        await pg.click('[data-x=play]');await pg.wait_for_timeout(1500);await pg.screenshot(path=OUT+'/chords_play.png');await pg.click('[data-x=play]')
+        await pg.click('[data-x=close]');await pg.wait_for_timeout(200)
+        await pg.evaluate('()=>document.getElementById("roll").scrollIntoView({block:"center"})');await pg.wait_for_timeout(200)
+        await pg.screenshot(path=OUT+'/chords_grid.png')
+        await pg.select_option('#hPlay','keys');await pg.wait_for_timeout(200)
+        cb=await (await pg.query_selector('.chord[data-chord="5"]')).bounding_box()
+        await pg.mouse.move(cb['x']+20,cb['y']+10);await pg.mouse.down();await pg.wait_for_timeout(200)
+        print('holding chord button vi shows:',await pg.evaluate('()=>document.getElementById("chNow").textContent'))
+        await pg.mouse.up();await pg.wait_for_timeout(100)
+        print('after release hidden:',await pg.evaluate('()=>document.getElementById("chNow").hidden'))
+        print('errors',errs[:5]);await b.close()
+asyncio.run(main())

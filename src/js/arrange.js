@@ -65,6 +65,7 @@ function arrMakeUnique(i){
   do{name=base+' '+k++;}while(S.parts.some(function(p){return p.name===name;}));
   var id=nid('p');S.parts.push({id:id,name:name});
   S.tracks.forEach(function(t){var d=partData(t,src);t.pd=t.pd||{};t.pd[id]={notes:JSON.parse(JSON.stringify(d.notes||[])),takes:(d.takes||[]).map(copyTake),auto:JSON.parse(JSON.stringify(d.auto||{}))};});
+  if(S.chords&&S.chords[src])S.chords[id]=JSON.parse(JSON.stringify(S.chords[src]));
   S.arr[i]=id;return name;
 }
 $('editor').addEventListener('click',function(e){

@@ -60,13 +60,13 @@ function apStart(pid,ci,zone,vel,el){
   else if(P.playing&&!AP.held.length){var b=(apNow()-P.T0)/spb();AP.next=Math.max(0,Math.ceil(b*4-.05));}
   AP.held=AP.held.filter(function(h){return h.pid!==pid;});
   AP.held.push({pid:pid,ci:ci,zone:zone==null?3:zone,vel:vel||.8,el:el});if(el)el.classList.add('on');
-  if(!AP.timer){AP.timer=setInterval(apTick,25);}apTick();
+  if(!AP.timer){AP.timer=setInterval(apTick,25);}apTick();showHeldChord();
 }
 function apEnd(pid){
   var i=-1;AP.held.forEach(function(h,k){if(h.pid===pid)i=k;});if(i<0)return false;
   var h=AP.held.splice(i,1)[0];if(h.el)h.el.classList.remove('on');
   if(!AP.held.length){clearInterval(AP.timer);AP.timer=0;}
-  return true;
+  showHeldChord();return true;
 }
 function apTick(){
   if(!AP.held.length||!A.c)return;
