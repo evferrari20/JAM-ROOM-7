@@ -46,6 +46,7 @@
     <div class="spacer-flex"></div>
     <div class="tools" id="tools">
       <button id="bStart" class="tool" title="Start a new song from a vibe" data-ic="wand"><span>Starter</span></button>
+      <button id="bLoops" class="tool" title="Ready-made loops that fit your song: drums, bass, chords, melodies" data-ic="loops"><span>Loops</span></button>
       <button id="bMix" class="tool" title="Balance all your tracks" data-ic="mixer"><span>Mixer</span></button>
       <button id="bPolish" class="tool" title="Balance every track and add a finished sound in one tap" data-ic="polish"><span>Polish</span></button>
       <span class="tsep"></span>
@@ -89,6 +90,7 @@
       <button id="addInst">+ Instrument</button>
       <button id="addDrums">+ Drums</button>
       <button id="addVoice">+ Voice</button>
+      <button id="addLoop">+ Loop</button>
     </div>
   </section>
   <section class="editor" id="editor"></section>
@@ -625,6 +627,7 @@ var IC={
  redo:SVGI('<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>'),
  mixer:SVGI('<path d="M6 3v18M12 3v18M18 3v18"/><rect x="4" y="13" width="4" height="3" rx="1" fill="currentColor"/><rect x="10" y="6" width="4" height="3" rx="1" fill="currentColor"/><rect x="16" y="15" width="4" height="3" rx="1" fill="currentColor"/>'),
  polish:SVGI('<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>'),
+ loops:SVGI('<path d="M17 2.5l3 3-3 3"/><path d="M4 11.5v-1a5 5 0 0 1 5-5h11"/><path d="M7 21.5l-3-3 3-3"/><path d="M20 12.5v1a5 5 0 0 1-5 5H4"/>'),
  wand:SVGI('<path d="m4 20 11-11M14 4v3M19 9h-3M17.5 5.5l-2 2M6 6l1.5 1.5"/>'),
  full:SVGI('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
  speaker:SVGI('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>'),
@@ -1192,7 +1195,7 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
@@ -2294,6 +2297,8 @@ window.addEventListener('resize',function(){renderDock();if(R)R.resize();if(AUTO
 /*@include js/roll.js*/
 /*@include js/auto.js*/
 /*@include js/arrange.js*/
+/*@include js/drummer.js*/
+/*@include js/loops.js*/
 function tidyNotes(t,str,grid,only){
   var L=LEN(),g=1/grid,out=[];
   t._undo=JSON.parse(JSON.stringify(t.notes));
@@ -2365,14 +2370,15 @@ function renderEditor(){
   var drums=t.kind==='drum';
   var head='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="editor" aria-label="Help" title="What is this?">?</button>';
   if(drums){
+    head+='<button id="dmBtn" class="tog" aria-pressed="'+DRUMMERUI.on+'" title="A virtual drummer that plays grooves in many styles">'+IC.drums+' Drummer</button>';
     head+='<label>Starter beat <select id="beat"><option value="">Choose…</option>'+Object.keys(BEATS).map(function(b){return'<option>'+b+'</option>';}).join('')+'</select></label>';
   }else{
     head+='<label>Note length <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   }
   head+='<span class="tidy"><select id="tidyAmt" aria-label="How much to tidy" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select><button id="tidyBtn">Tidy timing</button>'+(t._undo?'<button id="undoTidy">Undo tidy</button>':'')+'</span>';
   head+='<button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button><button id="clearNotes">Clear notes</button></div>';
-  host.innerHTML=head+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+'<p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
-  mountRoll($('roll'),t);mountAuto(t);
+  host.innerHTML=head+(drums&&DRUMMERUI.on?drummerPanelHTML(t):'')+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+'<p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
+  mountRoll($('roll'),t);mountAuto(t);if(drums&&DRUMMERUI.on)mountDrummer(t);
 }
 $('editor').addEventListener('change',function(e){
   var t=selTrack();if(!t)return;
@@ -2441,6 +2447,7 @@ $('editor').addEventListener('click',function(e){
   if(b.id==='micBtn'){if(mic){micOff();micList();}else{ensureMic().then(micList);}return;}
   if(b.id==='impBtn'){var inp=$('impFile');if(inp)inp.click();return;}
   if(b.id==='autoBtn'){autoToggle();return;}
+  if(b.id==='dmBtn'){DRUMMERUI.on=!DRUMMERUI.on;renderEditor();return;}
   if(b.id==='tidyBtn'){
     if(!t.notes.length){toast('No notes to tidy yet');return;}
     var tv=$('tidyAmt').value.split(',');tidyNotes(t,+tv[0],+tv[1],R&&R.t===t&&R.sel.size?R.sel:null);var keep=$('tidyAmt').value;renderEditor();$('tidyAmt').value=keep;markDirty();toast('Timing tidied. Tap Undo tidy to go back.');return;
@@ -2584,6 +2591,8 @@ function addTrack(kind,inst){
 $('addInst').addEventListener('click',function(){openPicker(null);});
 $('addDrums').addEventListener('click',function(){addTrack('drum');});
 $('addVoice').addEventListener('click',function(){addTrack('voice');});
+$('addLoop').addEventListener('click',function(){openLoops();});
+$('bLoops').addEventListener('click',function(){openLoops();});
 
 /* =============== modals =============== */
 var modalHandler=null;
@@ -2667,7 +2676,7 @@ function openPicker(target){
 (async function(){try{if(window.claude&&claude.use)DL=await claude.use('downloads');}catch(e){DL=null;}})();
 function snapshot(){
   return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,arr:S.arr,arrOff:(arrNorm(),S.arrOff),songMode:!!S.songMode,
-    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,auto:t.auto||{},
+    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,auto:t.auto||{},drummer:t.drummer||null,
       takes:t.takes.map(takeMeta),pd:pdMeta(t)};})};
 }
 function takeMeta(k){return{id:k.id,name:k.name,gain:k.gain,nudge:k.nudge,tune:k.tune,strength:k.strength,speed:k.speed,form:k.form||0,edits:k.edits||[],mute:k.mute,sr:k.sr};}
@@ -2907,7 +2916,7 @@ var GUIDE='<div class="guide"><h3>Guide</h3><div class="gnav">'+[['start','Start
 '<dt>↶ Undo and ↷ Redo</dt><dd>Undo anything: notes, deleted tracks or takes, effects, new parts, even a song starter. Shortcuts: <span class="kbd">Ctrl</span>/<span class="kbd">Cmd</span> + <span class="kbd">Z</span>, add <span class="kbd">Shift</span> to redo.</dd>'+
 '<dt>Mixer</dt><dd>Every track side by side with a level meter, volume, pan, reverb, mute and solo, plus a master volume. Press play and balance by ear; if a meter turns red, turn that track down.</dd>'+
 '<dt>WAV export</dt><dd>In Save &amp; share, Download WAV makes a full-quality file of your whole song (or the part you are on), faster than real time.</dd></dl></section>'+
-'<section class="gsec" id="g-tracks"><h4>Tracks</h4><dl><dt>Track card</dt><dd>Each instrument, drum kit or voice has its own card. Tap it to select it; the editor and keyboard then work on that track.</dd>'+
+'<section class="gsec" id="g-tracks"><h4>Tracks</h4><dl><dt>Loops</dt><dd>Tap <b>Loops</b> (or <b>+ Loop</b>) for ready-made drums, bass lines, chords, strums, arpeggios and melodies. They are all written in your song\'s key and follow the <b>Chords</b> chosen at the top (Jam Room can read the chords from your song), so any loops you pick fit together. Press ▶ to hear one; while your song plays, the preview starts in time on the next bar. <b>＋ Track</b> adds it as a new track; <b>Use here</b> puts the notes on the selected track.</dd><dt>Drummer</dt><dd>On a drum track, tap <b>Drummer</b>. Pick a style (Rock, Funk, Bossa nova, Jazz swing and more) and drag the dot: left is simple, right is busy, bottom is soft, top is loud. Choose fills, try <b>New take</b> for a slightly different performance, or tick <b>Whole song</b> so the drummer plays every part, calmer in the intro and bigger in the chorus.</dd><dt>Track card</dt><dd>Each instrument, drum kit or voice has its own card. Tap it to select it; the editor and keyboard then work on that track.</dd>'+
 '<dt>Instrument button</dt><dd>Opens the instrument browser: 76 sounds in 12 families, with search and favorites (tap ☆). Tap a card to hear a short phrase, double-tap or press Use to pick it. <b>Recorded</b> sounds are real instruments sampled note by note; <b>Synth</b> ones are generated live.</dd>'+
 '<dt>Drum kit</dt><dd>Nine kits, all recorded: an acoustic kit in Studio, Tight and Lo-fi flavours, the classic drum machines (Roland TR-808, LinnDrum, Roland CR-8000, Drumtraks, Casio RZ-1) and a hand percussion kit with cajón, congas, bongo and shakers. Pad names change with the kit.</dd>'+
 '<dt>Volume, Reverb, Mute, ✕</dt><dd>Loudness, how much room echo, silence the track, delete it.</dd></dl></section>'+
