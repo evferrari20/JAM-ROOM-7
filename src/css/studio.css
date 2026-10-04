@@ -788,3 +788,21 @@ body.focus .viz{height:180px}
 @media (max-width:1400px){.top .seg .tog span{display:none}.top .seg .tog{width:36px;height:34px;padding:0}}
 @media (max-width:1240px){.bar2 .tool{padding:6px 7px}}
 @media (max-width:1240px){.bar2{gap:5px 6px;padding-left:10px;padding-right:10px}.bar2 #key{width:58px}.bar2 #scale{width:104px}.bar2 #bars{width:86px}.bar2 #feel{width:102px}.bar2 #space{width:96px}.bar2 .tool{font-size:12px;gap:4px;padding:6px 6px}.bar2 .tools{gap:4px}.bar2 .ib{width:30px}#bTune{padding:6px 8px}}
+/* ---------- Orchestra workspace (studio editor with its own piece) ---------- */
+body.orchmode #bStart,body.orchmode #bLoops,body.orchmode .adds{display:none}
+.obar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px;margin-bottom:10px;border:1px solid rgba(212,166,94,.3);border-radius:var(--r);background:var(--brass-soft)}
+.obar .obt{width:100%;font-family:var(--font-d);font-size:15px;color:#f1cf95}
+.obar button{padding:6px 10px;font-size:12.5px}.obar select{font-size:12.5px;padding:5px 24px 5px 8px}
+.tsec{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 4px 4px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sc);border-top:1px solid var(--line)}
+.tsec:first-of-type{border-top:0}
+.tsec button{font-size:11px;padding:3px 8px;letter-spacing:0;text-transform:none}
+.oset{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:12px 0}
+.osc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;white-space:normal;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);min-height:92px}
+.osc b{font-size:15px}.osc small{color:var(--brass);font-weight:700;font-size:11.5px}.osc span{color:var(--muted);font-size:12.5px;font-weight:500;line-height:1.4}
+.osc.primary-card{border-color:var(--accent);background:var(--accent-soft)}
+.oadd{display:flex;flex-direction:column;gap:10px;max-height:min(60vh,520px);overflow:auto;margin:10px 0}
+.oag{border-left:3px solid var(--sc,var(--line2));padding:4px 0 4px 10px}
+.oah{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.oah b{font-size:14px}
+.oai{display:flex;flex-wrap:wrap;gap:6px}.oai button{padding:6px 10px;font-size:13px}
+.oscore2{background:#fff;border-radius:8px;max-height:65vh;overflow:auto;min-height:200px}
+.obar button{flex:1 1 calc(50% - 6px)}.obar .il{flex:1 1 100%;justify-content:space-between}.obar .il select{flex:1}

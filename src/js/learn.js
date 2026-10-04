@@ -49,13 +49,15 @@ var LEARN=(function(){
 
   /* ---------- mode switch ---------- */
   function setMode(m){
-    if(m===MODE)return;
+    if(m===MODE&&!(m==='studio'&&SLOT==='orch'))return;
     if(MODE==='orch')ORCH.leave();
     if(MODE==='learn')stopPlayer();
     document.body.classList.remove('mode-learn','mode-orch');
     if(m==='orch'){
-      if(P.playing)stop();Object.keys(down).forEach(function(p){pressEnd(p,true);});
-      MODE='orch';document.body.classList.add('mode-orch');ORCH.enter();osmd().catch(function(){});
+      /* the Orchestra is its own piece, opened in the studio editor */
+      Object.keys(down).forEach(function(p){pressEnd(p,true);});
+      MODE='studio';renderDock();ORCH2.enter();osmd().catch(function(){});
+      document.querySelectorAll('.modes [data-mode]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.mode==='orch');});return;
     }else if(m==='learn'){
       if(P.playing)stop();
       MODE='learn';document.body.classList.add('mode-learn');
@@ -64,7 +66,8 @@ var LEARN=(function(){
       if(!built)build();
       if(P2)showPlayer();else showLibrary();
     }else{
-      MODE='studio';renderDock();if(R)R.resize();
+      if(SLOT==='orch'&&MODE==='studio'&&!document.body.classList.contains('mode-learn')){}
+      MODE='studio';if(SLOT==='orch')ORCH2.leave();renderDock();if(R)R.resize();
     }
     document.querySelectorAll('.modes [data-mode]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.mode===MODE);});
   }

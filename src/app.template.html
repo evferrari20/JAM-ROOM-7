@@ -84,6 +84,7 @@
     <button id="welcomeX">Got it</button>
   </div>
   <section class="col">
+    <div id="obarHost"></div>
     <div class="song" id="song"></div>
     <div class="hear" id="hear" role="group" aria-label="Choose which instruments you hear"></div>
     <div id="trackList" class="col"></div>
@@ -2208,6 +2209,7 @@ function midiLabel(){
 /*@include js/viz.js*/
 /*@include js/learn.js*/
 /*@include js/orch.js*/
+/*@include js/orch2.js*/
 function renderDock(){
   recomputeKeys();
   var kt=keyTrack(),host=$('dock'),drumMode=kt&&kt.kind==='drum',h='';
@@ -2448,7 +2450,7 @@ function renderEditor(){
   var drums=t.kind==='drum';
   /* one toolbar row: what you use all the time stays visible, the rest sits under More */
   var head='<div class="etools" id="rtools"><div class="etitle"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="editor" aria-label="Help" title="What is this?">?</button></div>'+
-    '<button id="sndBtn" class="sndbtn" title="Sound styles and effects for this track">'+IC.polish+'<span>Sound</span><b>'+esc(soundName(t))+'</b></button>'+
+    '<button id="sndBtn" class="sndbtn" title="Sound styles and effects for this track">'+IC.polish+'<span>Sound</span><b>'+esc(soundName(t))+'</b></button>'+ORCH2.editorExtras(t)+
     rollToolsHTML(t);
   if(!drums)head+='<label class="il" title="How long new notes are. With notes selected, sets their length.">Note <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   head+='<span class="grow"></span>';
@@ -2605,12 +2607,13 @@ $('editor').addEventListener('pointerup',pgEnd);$('editor').addEventListener('po
 
 /* =============== track list =============== */
 function renderTracks(){
-  $('trackList').innerHTML=S.tracks.map(function(t){
+  $('obarHost').innerHTML=SLOT==='orch'?ORCH2.barHTML():'';
+  $('trackList').innerHTML=S.tracks.map(function(t,ti){
     var mid;
     if(t.kind==='inst')mid='<button class="inst" data-act="inst" aria-label="Change instrument">'+esc(INST_NAME[t.inst]||t.inst)+IC.chev+'</button>';
     else if(t.kind==='drum')mid='<select class="kit" aria-label="Drum kit">'+KIT_ORDER.map(function(k){return'<option value="'+k+'"'+(t.kit===k?' selected':'')+'>'+KITS[k].label+'</option>';}).join('')+'</select>';
     else mid='<span class="muted">Microphone</span>';
-    return'<div class="tcard'+(t.id===S.sel?' sel':'')+'" data-id="'+t.id+'" style="--tc:'+t.color+'">'+
+    return(SLOT==='orch'?ORCH2.groupHeader(t,S.tracks[ti-1]):'')+'<div class="tcard'+(t.id===S.sel?' sel':'')+'" data-id="'+t.id+'" style="--tc:'+t.color+'">'+
       '<div class="trow"><span class="ico" aria-hidden="true">'+tIcon(t)+'</span><input class="tname" value="'+esc(t.name)+'" aria-label="Track name" maxlength="30">'+
       '<button class="tog sm" data-act="mute" aria-pressed="'+t.mute+'" title="Mute">M</button><button class="ib" data-act="del" aria-label="Delete track" title="Delete track">'+IC.x+'</button></div>'+
       '<div class="trow">'+mid+'</div>'+
@@ -2768,7 +2771,7 @@ function openPicker(target){
 (async function(){try{if(window.claude&&claude.use)DL=await claude.use('downloads');}catch(e){DL=null;}})();
 function snapshot(){
   return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,chords:S.chords||{},arr:S.arr,arrOff:(arrNorm(),S.arrOff),songMode:!!S.songMode,
-    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,auto:t.auto||{},drummer:t.drummer||null,
+    osty:S.osty,tracks:S.tracks.map(function(t){return{orow:t.orow,inst0:t.inst0,id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,auto:t.auto||{},drummer:t.drummer||null,
       takes:t.takes.map(takeMeta),pd:pdMeta(t)};})};
 }
 function takeMeta(k){return{id:k.id,name:k.name,gain:k.gain,nudge:k.nudge,tune:k.tune,strength:k.strength,speed:k.speed,form:k.form||0,edits:k.edits||[],mute:k.mute,sr:k.sr};}
@@ -2790,7 +2793,7 @@ async function dbPut(name){
 async function dbGet(name){try{var db=await dbOpen();return await rq(db.transaction('p').objectStore('p').get(name));}catch(e){return null;}}
 async function dbAll(){try{var db=await dbOpen();return await rq(db.transaction('p').objectStore('p').getAll());}catch(e){return[];}}
 async function dbDel(name){try{var db=await dbOpen();await rq(db.transaction('p','readwrite').objectStore('p').delete(name));return true;}catch(e){return false;}}
-function markDirty(){clearTimeout(dirtyT);dirtyT=setTimeout(function(){dbPut('__auto__');},900);if(!HIST.busy){clearTimeout(HIST.t);HIST.t=setTimeout(commitHist,400);}}
+function markDirty(){clearTimeout(dirtyT);dirtyT=setTimeout(function(){dbPut(slotKey());},900);if(!HIST.busy){clearTimeout(HIST.t);HIST.t=setTimeout(commitHist,400);}}
 
 function mkTakeFrom(k,aud){
   var a=aud[k.id];if(!a)return null;
@@ -2809,7 +2812,7 @@ function applyProject(d,aud,opts){
   setRef(d.tune!=null?+d.tune:prefTune(),true);S.fin=!!d.fin;S.mst=d.mst||'';applyFin();
   S.parts=(d.parts&&d.parts.length)?d.parts.map(function(p){return{id:p.id,name:p.name};}):[{id:'p1',name:'Main'}];
   S.part=S.parts.some(function(p){return p.id===d.part;})?d.part:S.parts[0].id;
-  S.chords=d.chords||{};
+  S.chords=d.chords||{};S.osty=d.osty;
   var aoff=d.arrOff||[],apairs=(d.arr||[S.part]).map(function(id,i){return[id,aoff[i]||{}];}).filter(function(x){return S.parts.some(function(p){return p.id===x[0];});});
   S.arr=apairs.map(function(x){return x[0];});S.arrOff=apairs.map(function(x){return x[1];});if(!S.arr.length){S.arr=[S.part];S.arrOff=[{}];}
   S.songMode=!!d.songMode;
@@ -3178,7 +3181,7 @@ function histGo(dir){
     applyProject(d,aud,{keepView:true});HIST.list[ni]=histSnap();
   }finally{HIST.busy=false;}
   updUndo();toast(dir<0?'Undone':'Redone');
-  clearTimeout(dirtyT);dirtyT=setTimeout(function(){dbPut('__auto__');},900);
+  clearTimeout(dirtyT);dirtyT=setTimeout(function(){dbPut(slotKey());},900);
 }
 function updUndo(){var u=$('bUndo'),r=$('bRedo');if(u)u.disabled=HIST.idx<=0;if(r)r.disabled=HIST.idx>=HIST.list.length-1;}
 $('bUndo').addEventListener('click',function(){histGo(-1);});
@@ -3545,8 +3548,8 @@ function openOutput(){
     }
   });
   $('mBox').classList.add('med');draw();if(can)refresh();
-  $('liteChk').addEventListener('change',function(){try{localStorage.setItem('jr-lite',this.checked?'1':'0');}catch(er){}toast('Restarting with the new setting…');dbPut('__auto__').then(function(){setTimeout(function(){location.reload();},400);});});
-  $('latSel').addEventListener('change',function(){var v=this.value;try{localStorage.setItem('jr-lat',v);}catch(er){}toast('Restarting with the new setting…');dbPut('__auto__').then(function(){setTimeout(function(){location.reload();},400);});});
+  $('liteChk').addEventListener('change',function(){try{localStorage.setItem('jr-lite',this.checked?'1':'0');}catch(er){}toast('Restarting with the new setting…');dbPut(slotKey()).then(function(){setTimeout(function(){location.reload();},400);});});
+  $('latSel').addEventListener('change',function(){var v=this.value;try{localStorage.setItem('jr-lat',v);}catch(er){}toast('Restarting with the new setting…');dbPut(slotKey()).then(function(){setTimeout(function(){location.reload();},400);});});
 }
 $('bOut').addEventListener('click',openOutput);
 

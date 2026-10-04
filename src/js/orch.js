@@ -448,5 +448,21 @@ var ORCH=(function(){
   }
   function midi(st,n,vel){if(st===0x90&&vel>0)noteOn(n,Math.max(.2,vel/127));else if(st===0x80||(st===0x90&&vel===0))noteOff(n);}
   window.__orch={state:function(){return PJ;},orchestrate:orchestrate,render:render,play:startPlay,stop:stopPlay,musicxml:musicxml,analyse:analyse,fromClassic:function(id){return LEARN.loadData(id);}};
-  return{enter:enter,leave:leave,key:key,midi:midi};
+  /* used by the Orchestra workspace (orch2.js): write one part from a sketch, and build a score */
+  function fillPart(id,sketch,sty,L,beats){
+    load();var save=PJ.beats;PJ.beats=beats||4;
+    try{var A=analyse(sketch,L),st=STY[sty]||STY.romantic,role=st.m[id];
+      /* a style that has no line for this instrument: give it a sensible one for its range (low: bass, middle: harmony, high: melody) */
+      if(!role||!LINES[role]){var r=ROW[id];if(!r||r[2]==='drums')role=r&&id==='pc'?'Ptri':(r&&id==='ti'?'Troot':null);else role=r[4]<=60?'B1':r[3]>=58?'M':'Pm';}
+      if(!role||!LINES[role])return null;
+      var ns=LINES[role](A,ROW[id]).filter(function(n){return n.t<L;});
+      return{notes:ns,art:role==='B8p'?'pizz':(role==='Bwalk'||role==='B8walk'||/^Ost/.test(role))?'short':'legato'};}
+    finally{PJ.beats=save;}
+  }
+  function scoreXML(name,bars,beats,parts,bpm){
+    var save=PJ;ENS._x={n:'',r:Object.keys(parts).filter(function(k){return ROW[k];})};
+    PJ={beats:beats||4,ens:'_x',cur:0,bpm:bpm||100,mv:[{name:name,bars:bars,sketch:[],parts:parts}]};
+    try{return musicxml();}finally{PJ=save;delete ENS._x;}
+  }
+  return{enter:enter,leave:leave,key:key,midi:midi,ROW:ROW,SEC_COL:SEC_COL,ENS:ENS,STY:STY,fillPart:fillPart,scoreXML:scoreXML};
 })();
