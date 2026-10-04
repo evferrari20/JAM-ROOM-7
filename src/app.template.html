@@ -2324,6 +2324,7 @@ window.addEventListener('resize',function(){renderDock();if(R)R.resize();if(AUTO
 /*@include js/loops.js*/
 /*@include js/strips.js*/
 /*@include js/chords.js*/
+/*@include js/export.js*/
 function tidyNotes(t,str,grid,only){
   var L=LEN(),g=1/grid,out=[];
   t._undo=JSON.parse(JSON.stringify(t.notes));
@@ -2843,7 +2844,7 @@ function openMenu(){
     openModal('<h3>Save &amp; share</h3>'+
       '<div class="row"><input type="text" id="pName" value="'+esc(S.name)+'" maxlength="40" aria-label="Song name"><button class="primary" data-x="save">Save on this device</button></div>'+
       '<h4>Saved songs</h4><div class="list">'+(list.length?list.map(function(r){return'<div class="item"><span>'+esc(r.name)+'</span><small>'+new Date(r.updated).toLocaleDateString()+'</small><button data-open="'+esc(r.name)+'">Open</button><button data-del="'+esc(r.name)+'" aria-label="Delete saved song">✕</button></div>';}).join(''):'<p class="hint">Nothing saved yet. Your work is also saved automatically while you play.</p>')+'</div>'+
-      '<h4>Share</h4><div class="row"><button class="primary" data-x="link" title="A link your friend can open on any device">Share a link to this song</button><button data-x="wav" title="Full-quality WAV of the whole song (or this part), made faster than real time">Download WAV (best quality)</button><button data-x="audio" title="Records in real time to a smaller compressed file">Quick export (smaller file)</button><button data-x="file">Save project file</button><button data-x="import">Open project file</button><button data-x="code">Open a song code</button></div>'+
+      '<h4>Share</h4><div class="row"><button class="primary" data-x="link" title="A link your friend can open on any device">Share a link to this song</button><button data-x="export" title="Save your song as an MP3 or WAV, with each track on its own if you like">Export audio (MP3, WAV, stems)</button><button data-x="card" title="A picture of your song to share: title, waveform, chords and instruments">Share card</button><button data-x="file">Save project file</button><button data-x="import">Open project file</button><button data-x="code">Open a song code</button></div>'+
       '<h4>Credits</h4><p class="hint">Grand piano, drums, vibraphone, marimba, glockenspiel, kalimba, harpsichord, harmonica and ocarina come from the Versilian Community Sample Library (CC0, free for any use). The other recorded instruments come from the tonejs-instruments collection (CC BY 3.0), built from VSCO 2 Community Edition, Karoryfer Samples, the University of Iowa Electronic Music Studios and Freesound contributors. Check those licenses before selling an app that uses them.</p>'+
       '<h4>Start over</h4><div class="row"><button data-x="new">New song</button></div>'+
       '<div class="row" style="justify-content:flex-end"><button data-x="close">Close</button></div>',
@@ -2857,6 +2858,8 @@ function openMenu(){
       else if(b.dataset.x==='code'){closeModal();openCode();}
       else if(b.dataset.x==='audio'){closeModal();exportAudio();}
       else if(b.dataset.x==='wav'){closeModal();renderWav();}
+      else if(b.dataset.x==='export'){openExport();}
+      else if(b.dataset.x==='card'){runCard();}
       else if(b.dataset.x==='file'){
         var snap=snapshot();snap.audio={};S.tracks.forEach(function(t){allTakes(t).forEach(function(k){snap.audio[k.id]={sr:k.sr,pcm:toB64(f2i16(k.raw))};});});
         closeModal();saveFile(slug()+'.json',JSON.stringify(snap),'Project file text');

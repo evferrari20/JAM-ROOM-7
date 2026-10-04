@@ -35,3 +35,8 @@ Licences differ: check them before using the app for anything other than persona
 - Suggested fingerings are calculated by Jam Room where a score has none (marked "suggested").
 - Sheet music is drawn by **OpenSheetMusicDisplay** (BSD 3-Clause, see src/vendor/OSMD-LICENSE.txt), with VexFlow inside.
 - Scores were converted with **music21** (BSD).
+
+# Export
+- MP3 files are made by **lamejs** (a JavaScript port of the LAME MP3 encoder, LGPL-3.0; see src/vendor/LAME-LICENSE.txt and
+  lame.sourceforge.net). It is included unmodified as a separate file (vendor/lame.min.js on the website).
+
