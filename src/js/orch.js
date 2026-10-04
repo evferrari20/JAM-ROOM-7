@@ -160,6 +160,7 @@ var ORCH=(function(){
   /* ---------------- transport ---------------- */
   function startPlay(fromBeat){
     var c=ensureAudio();wakeAudio();if(PL)stopPlay();
+    var pe=view.querySelector('#orPos');if(pe)pe.textContent='Loading sounds…';
     prep().then(function(){
       var mv=MV(),t0=c.currentTime+.15-beatTime(fromBeat||0),L=len(),q=[];
       Object.keys(mv.parts).forEach(function(id){(mv.parts[id]||[]).forEach(function(n){if(n.t>=(fromBeat||0)&&n.t<L)q.push([n.t,id,n]);});});
@@ -186,7 +187,7 @@ var ORCH=(function(){
   /* ---------------- sketch recording ---------------- */
   function rec(){
     if(recState){endRec();return;}
-    stopPlay();var c=ensureAudio();wakeAudio();ensureSamples('piano');
+    stopPlay();var c=ensureAudio();wakeAudio();ensureSamples('piano');var oe=view.querySelector('.oempty');if(oe)oe.remove();
     var mv=MV(),spb=60/PJ.bpm,t0=c.currentTime+.2+PJ.beats*spb;
     mv.sketch=[];mv.parts={};recState={t0:t0,spb:spb,open:{}};
     for(var k=0;k<PJ.beats;k++)metro(c.currentTime+.2+k*spb,k===0);
@@ -291,7 +292,8 @@ var ORCH=(function(){
   function enter(){
     load();if(!built){built=true;view=document.getElementById('orch');view.addEventListener('click',onClick);view.addEventListener('change',onChange);view.addEventListener('pointerdown',onDown);document.addEventListener('pointerup',onUp);document.addEventListener('pointercancel',onUp);window.addEventListener('resize',function(){if(MODE==='orch')render();});}
     ensureAudio();ensureSamples('piano');render();
-    if(!MV().sketch.length&&!localStorage.getItem('jr-orch-seen')){try{localStorage.setItem('jr-orch-seen','1');}catch(e){}intro();}
+    setTimeout(prep,200);/* start loading the orchestra's sounds now so Play starts at once */
+    /* the empty screen explains the steps, so no pop-up is needed */
   }
   function leave(){stopPlay();if(recState)endRec();}
   function intro(){
@@ -301,23 +303,29 @@ var ORCH=(function(){
   function opts(o,cur){return Object.keys(o).map(function(k){return'<option value="'+k+'"'+(k===cur?' selected':'')+'>'+esc(o[k].n||o[k])+'</option>';}).join('');}
   function render(){
     if(!view)return;var mv=MV();
+    var has=mv.sketch.length>0,done=Object.keys(mv.parts).some(function(k){return(mv.parts[k]||[]).length;});
     view.innerHTML='<div class="otop">'+
+      '<div class="ostep'+(has?' odone':' ocur')+'"><span class="onum">1</span><b>Sketch</b>'+
+        '<button class="round rec" data-o="rec" aria-label="Record sketch" title="Record a melody with chords on the keyboard below">'+IC.rec+'</button>'+
+        '<button data-o="classic" title="Use a public-domain piano piece as the sketch">Classic</button>'+
+        '<button data-o="studio" title="Use your Studio song as the sketch">Studio song</button></div>'+
+      '<div class="ostep'+(done?' odone':has?' ocur':'')+'"><span class="onum">2</span><b>Orchestrate</b>'+
+        '<select id="orEns" title="Ensemble">'+opts(ENS,PJ.ens)+'</select>'+
+        '<select id="orSty" title="Style">'+opts(STY,PJ.sty)+'</select>'+
+        '<button class="'+(has&&!done?'primary':'primary-soft')+'" data-o="orch"'+(has?'':' disabled')+'>'+IC.wand+' Orchestrate</button></div>'+
+      '<div class="ostep'+(done?' ocur':'')+'"><span class="onum">3</span><b>Listen</b>'+
+        '<button class="round play" data-o="play" aria-label="Play"'+(has?'':' disabled')+'>'+IC.play+'</button>'+
+        '<div class="lpbar" id="orPos">Bar 1 · 1</div>'+
+        '<select id="orSeat" title="Your seat in the concert hall"><option value="front"'+(PJ.seat==='front'?' selected':'')+'>Front row</option><option value="mid"'+(PJ.seat==='mid'?' selected':'')+'>Middle seats</option><option value="back"'+(PJ.seat==='back'?' selected':'')+'>Balcony</option></select></div>'+
+      '<span class="grow"></span>'+
       '<select id="orMv" title="Movement">'+PJ.mv.map(function(m,i){return'<option value="'+i+'"'+(i===PJ.cur?' selected':'')+'>'+esc(m.name)+'</option>';}).join('')+'<option value="+">+ New movement</option></select>'+
-      '<button class="round play" data-o="play" aria-label="Play">'+IC.play+'</button>'+
-      '<button class="round rec" data-o="rec" aria-label="Record sketch" title="Record a sketch on the keyboard">'+IC.rec+'</button>'+
-      '<div class="lpbar" id="orPos">Bar 1 · 1</div>'+
       '<label class="omini">Tempo <input type="number" id="orBpm" min="30" max="200" value="'+PJ.bpm+'"></label>'+
       '<label class="omini">Bars <input type="number" id="orBars" min="2" max="128" value="'+mv.bars+'"></label>'+
-      '<span class="tsep"></span>'+
-      '<select id="orEns" title="Ensemble">'+opts(ENS,PJ.ens)+'</select>'+
-      '<select id="orSty" title="Style">'+opts(STY,PJ.sty)+'</select>'+
-      '<button class="primary-soft" data-o="orch">'+IC.wand+' Orchestrate</button>'+
-      '<span class="grow"></span>'+
-      '<button data-o="classic" title="Use a public-domain piano piece as the sketch">Classics</button>'+
-      '<button data-o="studio" title="Use your Studio song as the sketch">From Studio</button>'+
-      '<select id="orSeat" title="Your seat in the concert hall"><option value="front"'+(PJ.seat==='front'?' selected':'')+'>Front row</option><option value="mid"'+(PJ.seat==='mid'?' selected':'')+'>Middle seats</option><option value="back"'+(PJ.seat==='back'?' selected':'')+'>Balcony</option></select>'+
       '<div class="seg2"><button data-o="vblocks" aria-pressed="'+(VIEWM==='blocks')+'">Blocks</button><button data-o="vscore" aria-pressed="'+(VIEWM==='score')+'">Score</button></div>'+
       '</div>'+
+      (has?'':'<div class="oempty"><h3>Write for an orchestra in three steps</h3><p>First give it a <b>sketch</b>: the tune and chords. Then pick an ensemble and a style and tap <b>Orchestrate</b>, and the music is shared out across the whole orchestra. Then press play.</p>'+
+        '<div class="oebtns"><button class="primary" data-o="classic">Start from a classic</button><button data-o="studio">Use my Studio song</button><button data-o="rec">'+IC.rec+' Play my own sketch</button></div>'+
+        '<p class="hint">Playing your own: tap the red button, wait for the 4 count-in clicks, then play a melody with chords on the keyboard at the bottom (or your computer keys Z to M). Tap it again to stop.</p></div>')+
       '<div class="obody">'+(VIEWM==='score'?'<div class="oscore" id="orScore"></div>':
       '<div class="orows">'+rowsHTML()+'</div><div class="otl"><canvas id="orCv"></canvas></div>')+'</div>'+
       (VIEWM==='blocks'?'<div class="olanes"><div class="olab"><b>Dynamics</b><span>soft ↔ loud</span></div><canvas id="orDyn" data-lane="dyn"></canvas><div class="olab"><b>Tempo</b><span>slower ↔ faster</span></div><canvas id="orTmp" data-lane="tmp"></canvas></div>':'')+
