@@ -1,14 +1,17 @@
-from specs1 import dg, vs
 from build import *
+# local copies (importing specs1 would re-run every instrument build in it)
+def dg(base,s,fmt='ogg'): return get(RAW+base+s+'.'+fmt)
+def vs(p): return get('https://raw.githubusercontent.com/sgossner/VSCO-2-CE/master/'+p)
 from fetch import websfz
 def kit(id,paths,durs=None):
-    res={};tot=0
+    from packs import write_pack
+    clips=[]
     D=[.7,.5,.5,.25,.8,.7,.3,1.8,.9,.4,.6,.5]
     for i,p in enumerate(paths):
         d=(durs or {}).get(i,D[i])
         y=proc(load(p),d,False,thr=.05,pre=.001)
-        b=enc(y,64);res[str(i)]=[base64.b64encode(b).decode()];tot+=len(b)
-    print(id,tot//1024,'KB');json.dump(res,open(f'{OUT}/kit_{id}.json','w'))
+        clips.append((i,0,0,enc(y)))
+    n=write_pack('kit_'+id,clips,src='v1hq');print(id,n//1024,'KB')
 T='drum-machines/TR-808/'
 kit('808',[dg(T,x) for x in ['kick/bd2575','snare/sd5050','clap/cp','hihat-close/ch','hihat-open/oh25','mid-tom/mt50','rimshot/rs','cymbal/cy5050','tom-low/lt50','maraca/ma','conga-hi/hc50','cowbell/cb']],{0:1.4})
 L='drum-machines/LM-2/'

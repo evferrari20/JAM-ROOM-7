@@ -10,13 +10,14 @@ A one-file, offline-capable music studio (HTML/CSS/JS, no framework). Record and
 The deliverable is a **single self-contained HTML file** (about 15.6 MB, mostly base64 audio). Two identical copies are given out: `jam-room.html` (his) and `jam-room-share.html` (for sending).
 
 ## Layout of this folder
-- `dist/jam-room.html`: the current finished build (open it in a browser).
-- `src/app.template.html`: the whole app (readable, no audio inside). Edit this.
-- `src/samples/legacy_samples.json` and `src/samples/new/*.json`: the audio (MP3, base64). Rarely touched.
-- `tools/assemble.py`: **run `python3 tools/assemble.py` from the project root** to rebuild `dist/jam-room.html` (packs the audio into the template in a compact base-85 format).
-- `tools/fetch.py, build.py, specs1.py, specs2.py, kits.py`: how the samples were downloaded, trimmed, tuned and encoded (only needed to add or change instruments).
-- `tests/`: Playwright scripts used for checks (paths need editing: search for `REPLACE_WITH_FULL_PATH`).
-- `CREDITS.md`: where the samples came from.
+- `src/app.template.html`: the whole app (no audio inside). Edit this. It pulls in `src/css/*.css` and `src/js/*.js` via `/*@include ...*/`.
+- `src/samples/packs/<id>.bin + .json`: the sounds, one pack per instrument (MP3 clips back to back; the JSON lists key, velocity layer, round robin, offset, length, encoder delay, sample count, and an optional loudness `gain` / per-pad `pg`).
+- `tools/assemble.py`: **run `python3 tools/assemble.py` from the project root**. Builds `dist/jam-room.html` (one self-contained file) and `site/` (the website: small page + packs loaded on demand + `sw.js` for offline). GitHub Actions publishes `site/` to the gh-pages branch on every push.
+- `tools/build2.py`: builds high-quality packs from free sample libraries (SFZ maps via `tools/sfz.py`, pitch check, octave fix, gapless MP3). `python3 tools/build2.py piano ebass ...`. Libraries are blobless git clones in `/home/user/src-samples` (fetched on demand).
+- `tools/specs1.py, specs2.py, kits.py, build.py, fetch.py`: older instruments, now writing high-quality packs too.
+- `tools/calibrate.py OLD_COMMIT ids...`: matches loudness of rebuilt packs to an older build (stores `gain`/`pg`).
+- `tests/`: Playwright scripts (`limiter_probe.py`, `soundcheck.py`, `site.py`, `viz.py`, `onset.py`, `click3.py`, ...). They use `dist/jam-room.html` or `$JR`.
+- `CREDITS.md`: where the samples came from and their licences.
 
 ## How the code is organised (inside app.template.html)
 - Audio chain (`buildGraph`): tracks -> master -> highpass -> finishing EQ (`applyFin`) -> compressor -> limiter -> trim -> destination (+ analyser `A.an`). `A` holds the audio context and nodes.

@@ -1104,8 +1104,17 @@ function packBuf(id){
 function packClips(id,c){
   var e=SMAN[id];
   return packBuf(id).then(function(ab){
-    return Promise.all(e.r.map(function(r){return decodeBuf(c,ab.slice(r[3],r[3]+r[4])).then(function(buf){return{m:+r[0],l:r[1],rr:r[2],buf:buf};});}));
+    return Promise.all(e.r.map(function(r){return decodeBuf(c,ab.slice(r[3],r[3]+r[4])).then(function(buf){return{m:+r[0],l:r[1],rr:r[2],buf:gapless(c,buf,r[5],r[6])};});}));
   });
+}
+/* MP3s start with a short silent lead-in from the encoder. Most browsers remove it using the file's header;
+   if one didn't (decoded clip longer than the real length), cut it here so notes start exactly on time. */
+function gapless(c,buf,delay,n){
+  if(!delay||!n)return buf;var k=buf.sampleRate/44100,want=Math.round(n*k),lead=Math.round((delay+529)*k);
+  if(buf.length<want+lead*.6)return buf;
+  var len=Math.min(want,buf.length-lead),nb=c.createBuffer(buf.numberOfChannels,len,buf.sampleRate);
+  for(var ch=0;ch<buf.numberOfChannels;ch++)nb.getChannelData(ch).set(buf.getChannelData(ch).subarray(lead,lead+len));
+  return nb;
 }
 /* offline: fetch every pack once so the service worker keeps it */
 function packsOffline(onProgress){
@@ -1119,13 +1128,11 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
- piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,soft:'piano_s',pan:'pitch'},
- piano_s:{gain:1,rel:.35,lp0:4500,lpv:12000},
+ piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
- epiano:{gain:0.64,rel:.3,lp0:3000,lpv:12000,soft:'epiano_s',pan:'pitch'},
- epiano_s:{gain:0.49,rel:.3,lp0:3000,lpv:12000},
+ epiano:{gain:0.64,rel:.3,lp0:3000,lpv:12000,pan:'pitch'},
  wurli:{gain:0.7,rel:.25,lp0:3000,lpv:11000},
  clav:{gain:0.87,rel:.08,lp0:3500,lpv:12000},
  celesta:{gain:0.72,rel:.6,lp0:7000,lpv:9000,pan:'pitch'},
@@ -1186,8 +1193,8 @@ var SI={
  ocarina:{loop:1,gain:.85,rel:.15,att:.05,lp0:7000,lpv:8000},
  choir:{loop:1,gain:0.96,rel:.4,att:.15,lp0:6000,lpv:6000},
  oohs:{loop:1,gain:0.6,rel:.4,att:.12,lp0:6000,lpv:6000},
- brass:{deps:['trumpet','trombone','horn']},
- oguitar:{deps:['eguitar']}
+ brass:{loop:1,gain:.9,rel:.25,att:.04,lp0:5000,lpv:9000},
+ oguitar:{gain:1,rel:.15,lp0:6000,lpv:8000}
 };
 var FB={steel:'steel',eguitar:'steel',oguitar:'steel',jazzgtr:'steel',harmonium:'organ',drawbar:'organ',accordion:'organ',trumpet:'brass',mutedtpt:'brass',trombone:'brass',horn:'brass',tuba:'sbass',bassoon:'clarinet',contrabass:'cello',jazzbass:'ebass',slapbass:'ebass',xylo:'marimba',kalimba:'musicbox',harpsi:'spluck',clav:'spluck',harmonica:'clarinet',ocarina:'flute',recorder:'flute',piccolo:'flute',panflute:'flute',shakuhachi:'flute',tronflute:'flute',oboe:'clarinet',tenorsax:'sax',glock:'bells',celesta:'bells',chimes:'bells',tubular:'bells',steeldrum:'bells',bowedvibe:'vibes',glasses:'pad',piano_s:'piano',epiano_s:'epiano',upright:'piano',wurli:'epiano',tronstrings:'strings',tronchoir:'choir',oohs:'choir',pizz:'harp',sitar:'steel',koto:'harp',shamisen:'steel',banjo:'steel',dulcimer:'harp',timpani:'sub808'};
 function b64buf(b){var s=atob(b),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer;}
@@ -1224,7 +1231,7 @@ function loadOne(id){
     /* layers[l] = notes sorted by pitch, each with its round-robin takes */
     var L=[];arr.forEach(function(x){var ly=L[x.l]||(L[x.l]=[]),n=null;for(var i=0;i<ly.length;i++)if(ly[i].m===x.m){n=ly[i];break;}if(!n){n={m:x.m,rr:[]};ly.push(n);}n.rr[x.rr]=x.buf;});
     L=L.filter(Boolean);L.forEach(function(ly){ly.sort(function(a,b){return a.m-b.m;});ly.forEach(function(n){n.rr=n.rr.filter(Boolean);n.buf=n.rr[0];});});
-    si.L=L;si.bufs=L[L.length-1]||[];si.ready=si.bufs.length>0;
+    si.L=L;si.bufs=L[L.length-1]||[];si.pg=(SMAN[id]&&SMAN[id].gain)||1;si.ready=si.bufs.length>0;
   }).catch(function(){si.p=null;});
   return si.p;
 }
@@ -1239,7 +1246,7 @@ function sampleVoice(id,c,out,m,t,v){
   var si=SI[id],dest=out,srcs=[];
   if(si.pan==='pitch'&&c.createStereoPanner){var pn=c.createStereoPanner();pn.pan.value=Math.max(-.55,Math.min(.55,(m-60)/40));pn.connect(out);dest=pn;}
   var lpf=si.lp0+v*si.lpv;if(si.L&&si.L.length>2)lpf=Math.max(lpf,7000+v*11000);/* real soft/loud recordings already carry the tone change */
-  var fl=F(c,'lowpass',lpf,.4),g=G(c,dest,t,.9*si.gain*(.4+.6*v),si.att||.002,10,1);fl.connect(g);
+  var fl=F(c,'lowpass',lpf,.4),g=G(c,dest,t,.9*si.gain*(si.pg||1)*(si.L&&si.L.length>1?.62+.38*v:.4+.6*v),si.att||.002,10,1);fl.connect(g);
   function add(sx,b,gain){
     var s=c.createBufferSource();s.buffer=b.buf;s.playbackRate.value=Math.pow(2,(m-b.m)/12)*(REF/440);s.detune.value=(Math.random()-.5)*5;
     if(sx.loop&&!b.buf._nl){s.loop=true;s.loopStart=b.buf._ls;s.loopEnd=b.buf._le;}
@@ -1268,16 +1275,6 @@ function layer(c,out,t,v,m,att,parts){
   });
   return{g:g,srcs:srcs,rt:rt};
 }
-SV.brass=function(c,out,f,t,v,m){
-  return layer(c,out,t,v,m,.045,m>=54?[['trumpet',m,.55,0,0],['trombone',m>=46?m-12:m,.45,.01,4],['horn',m,.3,.018,-4]]:[['trombone',m,.6,0,0],['horn',m,.45,.012,-4]]);
-};
-SV.oguitar=function(c,out,f,t,v,m){
-  var pre=c.createGain();pre.gain.value=7;var ws=c.createWaveShaper();ws.curve=sat(9);ws.oversample='2x';
-  var lp=F(c,'lowpass',4200,.7),post=c.createGain();post.gain.value=.3;
-  pre.connect(ws);ws.connect(lp);lp.connect(post);post.connect(out);
-  var o=sampleVoice('eguitar',c,pre,m,t,v);return{g:o.g,srcs:o.srcs,rt:o.rt};
-};
-
 /* ---- drums ---- */
 var KB={};
 var PG=[1.1,4,.6,1,1.1,1.8,1.5,2.5,1.7,3.5,3.3,3.8],DPAN=[0,0,0,-.25,-.25,.2,.05,.35,.4,-.4,.45,-.3];
@@ -1290,7 +1287,7 @@ function loadKit(name){
     /* per pad: layers (soft..hard), each a list of round-robin takes */
     arr.forEach(function(x){var pd=K.bufs[x.m]||(K.bufs[x.m]=[]),ly=pd[x.l]||(pd[x.l]=[]);ly[x.rr]=x.buf;});
     Object.keys(K.bufs).forEach(function(pi){K.bufs[pi]=K.bufs[pi].filter(Boolean).map(function(ly){return ly.filter(Boolean);});});
-    K.ready=true;
+    K.pg=(SMAN[bk]&&SMAN[bk].pg)||null;K.ready=true;
   }).catch(function(){K.p=null;});
   return K.p;
 }
@@ -1298,7 +1295,7 @@ function drumSample(c,out,pi,t,v,K){
   var lay=KB[K.bank||'kit'].bufs[pi],b,li=Math.max(0,Math.min(lay.length-1,Math.floor(Math.max(0,v-.12)/.88*lay.length))),ly=lay[li];
   b=ly[Math.floor(Math.random()*ly.length)];
   var s=c.createBufferSource();s.buffer=b;s.playbackRate.value=K.rate*(1+(Math.random()-.5)*.012);
-  var g=c.createGain();g.gain.setValueAtTime((.3+.7*v)*K.gain*((K.pg||PG)[pi]||1),t);
+  var KBB=KB[K.bank||'kit'],g=c.createGain();g.gain.setValueAtTime((.3+.7*v)*K.gain*((K.pg||PG)[pi]||1)*(KBB.pg&&KBB.pg[pi]!=null?KBB.pg[pi]:1),t);
   if(K.tight)g.gain.setTargetAtTime(0.0001,t+(pi===7?.35:pi===4?.12:.08),pi===7?.25:.05);
   var dest=out;
   if(K.dirt){var pre=c.createGain(),ws=c.createWaveShaper(),lp=F(c,'lowpass',K.lp,.7),post=c.createGain();pre.gain.value=1.6;ws.curve=sat(3);post.gain.value=.55;pre.connect(ws);ws.connect(lp);lp.connect(post);post.connect(out);dest=pre;}

@@ -40,7 +40,7 @@ def manifest(urls):
         m = json.load(open(os.path.join(PK, pid + '.json')))
         man[pid] = {'r': m['r'], 'n': os.path.getsize(os.path.join(PK, pid + '.bin'))}
         if urls: man[pid]['u'] = urls[pid]
-        for k in ('ch', 'gain'):
+        for k in ('ch', 'gain', 'pg'):
             if k in m: man[pid][k] = m[k]
     return man
 

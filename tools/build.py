@@ -43,9 +43,10 @@ def proc(x,dur,loop,fadein=0.002,thr=0.03,pre=0.004,startsec=None):
     y[n-fo:]*=np.cos(np.linspace(0,np.pi/2,fo))**2
     y*=0.9/np.abs(y).max()
     return y
-def enc(y,br):
-    r=subprocess.run(['ffmpeg','-v','error','-f','f32le','-ar',str(SR),'-ac','1','-i','-','-c:a','libmp3lame','-b:a',f'{br}k','-f','mp3','-'],input=y.astype(np.float32).tobytes(),capture_output=True)
-    return r.stdout
+def enc(y,br=None):
+    # high-quality VBR with a gapless header (see build2.enc); br is ignored, kept for old call sites
+    from build2 import enc as enc2
+    return enc2(np.asarray(y,dtype=np.float32).reshape(-1,1),4)
 def build(id,items,dur,loop=False,br=48,tune=True,durfn=None,lo=40,hi=2000,**kw):
     """items: list of (nominal_midi, path, extra_tune_semitones)"""
     res={};log=[]
@@ -63,10 +64,8 @@ def build(id,items,dur,loop=False,br=48,tune=True,durfn=None,lo=40,hi=2000,**kw)
                 dd=dev-round(dev/12)*12
                 if abs(dd)<0.45 and cl>0.6: root=round(nom+dd,2)
                 log.append(f'{nom}->{dm:.2f}({cl:.2f})')
-        b=enc(y,br)
-        k=str(root) if root!=int(root) else str(int(root))
-        res[k]=base64.b64encode(b).decode()
-    tot=sum(len(v) for v in res.values())*3//4
-    print(id,len(res),f'{tot//1024}KB',' '.join(log)); sys.stdout.flush()
-    json.dump(res,open(f'{OUT}/{id}.json','w'))
+        res[root]=enc(y,br)
+    from packs import write_pack
+    n=write_pack(id,[(k,0,0,b) for k,b in res.items()],src='v1hq')
+    print(id,len(res),f'{n//1024}KB',' '.join(log)); sys.stdout.flush()
     return res

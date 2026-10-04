@@ -1,7 +1,9 @@
 from specs1 import *
 import urllib.parse
-from ls2 import ls
-def vsfiles(d): return [n for n,t in ls('sgossner/VSCO-2-CE','master',d) if t=='file']
+def vsfiles(d):
+    # file names in a VSCO-2-CE folder (from the local blobless clone; github.com listing pages are not reachable)
+    from build2 import tree
+    return [p[len(d)+1:] for p in tree('VSCO-2-CE') if p.startswith(d+'/') and '/' not in p[len(d)+1:]]
 def vsname_m(fn,pat):
     m=re.search(pat,fn); return n2m(m.group(1))+12
 if want('strings'):
