@@ -451,3 +451,54 @@ input,textarea,.tname{-webkit-user-select:text;user-select:text}
   .dock.kb-m .kb{height:190px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- instrument view ---------- */
+.viz{height:118px;border-radius:8px;background:linear-gradient(180deg,#0b1712,#0e1c16);border:1px solid #120603;box-shadow:inset 0 2px 8px rgba(0,0,0,.6),0 1px 0 rgba(255,225,190,.08);overflow:hidden;flex:none}
+.viz[hidden]{display:none}
+.vz{width:100%;height:100%;display:block}
+.vz-sl{stroke:#5c7468;stroke-width:1}
+.vz-clef{font-size:30px;fill:#8ea596;font-family:'Segoe UI Symbol','Apple Symbols','Noto Music',serif}
+.vz-clef.b{font-size:22px}
+.vz-head{fill:#a9e6c5;filter:drop-shadow(0 0 4px rgba(109,181,143,.8))}
+.vz-acc{fill:#a9e6c5;font-size:12px;font-weight:700}
+.vz-name{fill:#ece5d3;font-size:13px;font-weight:700;font-family:var(--mono)}
+.vz-cap{fill:#7e9386;font-size:9px;font-weight:600;letter-spacing:.04em}
+.vz-wood{fill:#3a1a10;stroke:#1d0b06}
+.vz-felt{fill:#7a1f25}
+.vz-wk{fill:#efe6cf;stroke:#9f927a;stroke-width:.5;transition:fill .08s}
+.vz-bk{fill:#16120f;transition:fill .08s}
+.vz-wk.lit{fill:#8fd1ae}.vz-bk.lit{fill:#4f9a74}
+.vz-brk{fill:none;stroke:var(--brass);stroke-width:1.5}
+.vz-pipe{fill:#b8975c;stroke:#6a5228;stroke-width:.6;transition:fill .1s}
+.vz-pipe.s{fill:#a3854f}
+.vz-pipe.lit{fill:#f1d18f;filter:drop-shadow(0 0 6px rgba(241,209,143,.9))}
+.vz-mouth{fill:#2a1d0c}
+.vz-neck{fill:#5a2e1c;stroke:#2a110a}
+.vz-neck.ebony{fill:#1a1512}
+.vz-head2{fill:#2a110a}
+.vz-nut{fill:#e9dfc5}
+.vz-fret{stroke:#b9b2a2;stroke-width:1.6}
+.vz-inlay{fill:#e9dfc5;opacity:.75}
+.vz-str{stroke:#cfc6b2;transition:stroke .08s}
+.vz-str.lit{stroke:#a9e6c5}
+.vz-str.vib{animation:vzvib .5s ease-out}
+@keyframes vzvib{0%{transform:translateY(0)}15%{transform:translateY(1.6px)}30%{transform:translateY(-1.4px)}45%{transform:translateY(1px)}60%{transform:translateY(-.6px)}100%{transform:translateY(0)}}
+.vz-dot circle{fill:#6db58f;stroke:#e8fff2;stroke-width:1.2;filter:drop-shadow(0 0 5px rgba(109,181,143,.9))}
+.vz-dot text{fill:#06130c;font-size:8.5px;font-weight:800}
+.vz-harp{fill:none;stroke:#7a3b22;stroke-width:9;stroke-linejoin:round}
+.vz-hs{stroke:#d9cfb8;stroke-width:1.2}.vz-hs.c{stroke:#d1503a}.vz-hs.f{stroke:#3b6aa8}
+.vz-hs.lit{stroke:#a9e6c5;stroke-width:2.4}
+.vz-rail{fill:#3a1a10}
+.vz-bar{fill:#9a5a34;stroke:#4a2414;stroke-width:.6;transition:fill .08s}
+.vz-bar.metal{fill:#b8bec2;stroke:#5f676c}
+.vz-bar.lit{fill:#8fd1ae;filter:drop-shadow(0 0 6px rgba(109,181,143,.9))}
+.vz-sil{fill:none;stroke:#d4a65e;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.vz-sil.flute{fill:#b9bfc3;stroke:#7d868b;stroke-width:1}
+.vz-hole{fill:#2a2f31;stroke:#7d868b}.vz-hole.shut{fill:#d4a65e}
+.vz-range{stroke:#2d4a3d;stroke-width:3;stroke-linecap:round}
+.vz-bub{fill:#a9e6c5;font-size:13px;font-weight:800;animation:vzbub 1.1s ease-out forwards}
+@keyframes vzbub{from{opacity:1;transform:translate(0,0)}to{opacity:0;transform:translate(26px,-36px)}}
+.vz-rip{fill:none;stroke:#a9e6c5;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:vzrip .6s ease-out forwards}
+@keyframes vzrip{from{opacity:.9;transform:scale(1)}to{opacity:0;transform:scale(3.2)}}
+@media (pointer:coarse){.viz{height:104px}}
+body.focus .viz{height:140px}

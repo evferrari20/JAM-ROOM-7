@@ -1082,7 +1082,7 @@ function b85buf(r){
   if(rem){v=0;for(j=0;j<5;j++)v=v*85+(j<rem?B85D[SMP.charCodeAt(s+full*5+j)]:84);var bb=[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255];for(j=0;j<rem-1;j++)out[o++]=bb[j];}
   return out.buffer;
 }
-window.__jr={SD:SD,b85buf:b85buf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;}};
+window.__jr={SD:SD,b85buf:b85buf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,soft:'piano_s',pan:'pitch'},
  piano_s:{gain:1,rel:.35,lp0:4500,lpv:12000},
@@ -1320,7 +1320,11 @@ function playInst(name,c,out,m,t,v){
     var st=tr+o.rt*2.4+.05;o.srcs.forEach(function(s){try{s.stop(st);}catch(e){}});rec.end=st;
   }};
 }
-function trackPlay(t,m,tm,v){var c=A.c;return t.kind==='drum'?drum(c,t.node,m,tm,v,t.kit):playInst(t.inst,c,t.node,m,tm,v);}
+function trackPlay(t,m,tm,v){
+  var c=A.c;if(t.kind==='drum'){VIZ.drum(t,m,tm);return drum(c,t.node,m,tm,v,t.kit);}
+  var h=playInst(t.inst,c,t.node,m,tm,v),vid=VIZ.note(t,m,tm);if(vid==null)return h;
+  return{release:function(tr){h.release(tr);VIZ.end(vid,tr);}};
+}
 function preview(t,m){ensureAudio();ensureHeard(t);var c=A.c,h=trackPlay(t,m,c.currentTime+.01,.8);h.release(c.currentTime+.45);}
 function click(t,acc){var c=A.c,o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1600:1100;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(acc?.3:.2,t+.002);g.gain.setTargetAtTime(.0001,t+.002,.012);o.connect(g);g.connect(A.master);o.start(t);o.stop(t+.08);}
 
@@ -2035,6 +2039,7 @@ function midiLabel(){
   if(!midiAcc)return'MIDI keyboard';var n=[];midiAcc.inputs.forEach(function(i){n.push(i.name);});
   return n.length?'MIDI: '+n[0]+(n.length>1?' +'+(n.length-1):''):'MIDI: none found';
 }
+/*@include js/viz.js*/
 function renderDock(){
   recomputeKeys();
   var kt=keyTrack(),host=$('dock'),drumMode=kt&&kt.kind==='drum',h='';
@@ -2054,7 +2059,9 @@ function renderDock(){
   h+='<span class="vtip" title="On a touchscreen, tap low on a key or pad for loud and high for soft. With a Surface Pen, press harder for louder.">Press harder for louder</span>';
   h+='<span class="susb" id="susB"'+(sustain?'':' hidden')+'>Sustain</span>';
   h+='<button class="qh" data-help="keys" aria-label="Help" title="What is this?">?</button>';
+  if(!drumMode)h+='<button class="tog" id="hViz" aria-pressed="'+VIZ.on()+'" title="Show the instrument and the note you play">Instrument view</button>';
   h+='<span class="who">'+tIcon(kt)+' '+esc(kt.name)+'</span></div>';
+  if(!drumMode)h+='<div class="viz" id="viz"></div>';
   if(drumMode){
     var dk={};Object.keys(DRUMKEYS).forEach(function(c){dk[DRUMKEYS[c]]=codeLabel(c);});
     h+=kitHTML(kt,dk);
@@ -2064,6 +2071,7 @@ function renderDock(){
     h+='</div>'+kbHTML(host.clientWidth-20);
   }
   host.className='dock kb-'+S.kbsize;host.innerHTML=h;
+  VIZ.mount(kt);
 }
 /* how hard: Surface Pen pressure, or (finger) how far down the key you press */
 function touchVel(e,k){
@@ -2122,6 +2130,7 @@ $('dock').addEventListener('click',function(e){
   else if(b.id==='oUp'){S.oct=Math.min(6,S.oct+1);renderDock();}
   else if(b.id==='hMidi'){enableMidi();}
   else if(b.id==='hFocus'){document.body.classList.toggle('focus');renderDock();}
+  else if(b.id==='hViz'){VIZ.toggle();renderDock();}
 });
 $('dock').addEventListener('change',function(e){
   if(e.target.id==='hChord'){S.chordType=e.target.value;renderDock();}
