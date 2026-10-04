@@ -7,7 +7,7 @@ N='()=>__jr.selTrack().notes.length'
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
-        pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];await pg.add_init_script("try{localStorage.setItem('jr-sndp','0')}catch(e){}");pg.on('pageerror',lambda e:errs.append(str(e)))
         await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
         # pick the first instrument track
         await pg.evaluate('''()=>{var c=[...document.querySelectorAll('.tcard')].find(x=>/piano|keys|Rhodes|Grand/i.test(x.innerText));(c||document.querySelectorAll('.tcard')[1]).click()}''')
