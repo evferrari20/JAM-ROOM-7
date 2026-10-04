@@ -822,3 +822,8 @@ body.orchmode #bStart,body.orchmode #bLoops,body.orchmode .adds{display:none}
 .schip{flex:none;padding:4px 9px;font-size:12px}
 .splab{position:sticky;left:0;background:#1a2a20;z-index:1;padding-right:6px;width:auto}
 .sndpanel{gap:5px;padding:8px 10px}
+.wk .kk.kl{font-size:10.5px;font-weight:700;color:#2f6b4c;opacity:.85;margin-top:2px;font-family:var(--mono)}
+.bk .kk.kl{font-size:9px;color:#bfe3cf;margin-top:1px;font-family:var(--mono)}
+.wk.on .kk.kl{color:#0b2a1c}
+.midist{font-size:12px;font-weight:700;color:var(--wood-muted);white-space:nowrap}.midist.on{color:#9fe0bc}
+.bk .kk.nn,.bk .kk.kl{display:block;text-align:center}

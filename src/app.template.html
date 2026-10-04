@@ -2178,7 +2178,9 @@ function kitHTML(kt,dk){
   });
   return h+'</div>';
 }
-var KLAB='notes';try{var _kl=localStorage.getItem('jr-klab');if(_kl==='keys'||_kl==='none')KLAB=_kl;}catch(e){}
+var KLAB='notes';try{var _kl=localStorage.getItem('jr-klab');if(_kl==='keys'||_kl==='none'||_kl==='both')KLAB=_kl;}catch(e){}
+/* how you play: on-screen keys, computer keys or a MIDI keyboard (remembered) */
+var INPUT='screen';try{INPUT=localStorage.getItem('jr-input')||'screen';}catch(e){}
 var SHN=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],FLN=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
 /* keyboard size: a height in pixels (drag the handle, or pick a size); key width follows the height */
 var KB_PRESET={s:104,m:140,l:190,xl:250};
@@ -2190,12 +2192,14 @@ function kbHTML(width){
     var oc=Math.floor(i/7),d=W[i%7],m=base+oc*12+d,lab=KM.labels[m],inner='';
     if(KLAB==='notes')inner='<i class="kk nn">'+SHN[m%12]+(d===0?'<sub>'+(S.oct+oc)+'</sub>':'')+'</i>';
     else if(KLAB==='keys')inner=(lab?'<i class="kk">'+esc(lab)+'</i>':'')+(d===0?'<span class="cn">C'+(S.oct+oc)+'</span>':'');
+    else if(KLAB==='both')inner='<i class="kk nn">'+SHN[m%12]+(d===0?'<sub>'+(S.oct+oc)+'</sub>':'')+'</i>'+(lab?'<i class="kk kl">'+esc(lab)+'</i>':'');
     else inner=d===0?'<span class="cn">C'+(S.oct+oc)+'</span>':'';
     wh+='<div class="wk'+cls(m)+'" data-m="'+m+'">'+inner+'</div>';
     if([0,1,3,4,5].indexOf(i%7)>=0&&i<wk-1){
       var bm=m+1,bl2=KM.labels[bm],left=(i+1)/wk*100-.3/wk*100,bi='';
       if(KLAB==='notes')bi='<i class="kk nn">'+SHN[bm%12]+'<small>'+FLN[bm%12]+'</small></i>';
       else if(KLAB==='keys')bi=bl2?'<i class="kk">'+esc(bl2)+'</i>':'';
+      else if(KLAB==='both')bi='<i class="kk nn">'+SHN[bm%12]+'</i>'+(bl2?'<i class="kk kl">'+esc(bl2)+'</i>':'');
       bl+='<div class="bk'+cls(bm).replace(' root','')+'" data-m="'+bm+'" style="left:'+left+'%;width:'+(.6/wk*100)+'%">'+bi+'</div>';
     }
   }
@@ -2220,6 +2224,8 @@ function renderDock(){
     h+='<label title="Play with a piano keyboard, or with chord strips like on a tablet">Play <select id="hPlay"><option value="keys"'+(S.playmode!=='strips'?' selected':'')+'>Keyboard</option><option value="strips"'+(S.playmode==='strips'?' selected':'')+'>Chord strips</option></select></label>';
     var apf=apFamily(kt);h+='<label title="Hold a chord and the instrument plays a pattern in time with the song">Autoplay <select id="hAP"><option value="0">Off</option>'+(apf?AP_PATS[apf].map(function(p,i){return'<option value="'+(i+1)+'"'+(AP.mode===i+1?' selected':'')+'>'+(i+1)+' · '+p[0]+'</option>';}).join(''):'')+'</select></label>';
   }
+  h+='<label title="What you play with">Play with <select id="hInput"><option value="screen"'+(INPUT==='screen'?' selected':'')+'>On-screen keys</option><option value="keys"'+(INPUT==='keys'?' selected':'')+'>Computer keys</option><option value="midi"'+(INPUT==='midi'?' selected':'')+'>'+(midiAcc&&midiCount()?'MIDI keyboard ✓':'MIDI keyboard')+'</option></select></label>';
+  if(INPUT==='midi')h+='<span class="midist'+(midiAcc&&midiCount()?' on':'')+'" title="MIDI keyboard status">'+(midiAcc&&midiCount()?'● '+esc(midiLabel().replace(/^MIDI: /,'')):'○ No MIDI keyboard found')+'</span>';
   h+='<label>Size <select id="hSize" title="Make the keyboard bigger or smaller (or drag the handle above it)">'+[['s','Small'],['m','Medium'],['l','Large'],['xl','Huge']].map(function(o){return'<option value="'+o[0]+'"'+(!S.kbh&&S.kbsize===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+(S.kbh?'<option selected disabled>Custom</option>':'')+'</select></label>';
   if(!drumMode)h+='<button class="tog" id="hViz" aria-pressed="'+VIZ.on()+'" title="Show the instrument and the note you play">Instrument view</button>';
   if(!drumMode&&VIZ.on()&&VIZ.can3())h+='<button class="tog" id="hViz3" aria-pressed="'+VIZ.on3()+'" title="Show a moving 3D instrument (off: a flat drawing, lighter on slow computers)">3D</button>';
@@ -2231,7 +2237,7 @@ function renderDock(){
     h+='<label>Keys <select id="hKeys" title="How the computer keyboard plays"><option value="piano"'+(S.keymode==='piano'?' selected':'')+'>Piano (2 rows)</option><option value="scale"'+(S.keymode==='scale'?' selected':'')+'>Scale + chords</option></select></label>';
     h+='<label>Chords <select id="hChord"><option value="triad"'+(S.chordType==='triad'?' selected':'')+'>Triads</option><option value="7th"'+(S.chordType==='7th'?' selected':'')+'>7ths</option></select></label>';
   }
-  h+='<label>Labels <select id="hLab" title="What to write on the keys and drums"><option value="notes"'+(KLAB==='notes'?' selected':'')+'>'+(drumMode?'Drum names':'Note names')+'</option><option value="keys"'+(KLAB==='keys'?' selected':'')+'>'+(drumMode?'Names + computer keys':'Computer keys')+'</option><option value="none"'+(KLAB==='none'?' selected':'')+'>'+(drumMode?'Names only':'None')+'</option></select></label>';
+  h+='<label>Labels <select id="hLab" title="What to write on the keys and drums"><option value="notes"'+(KLAB==='notes'?' selected':'')+'>'+(drumMode?'Drum names':'Note names')+'</option><option value="both"'+(KLAB==='both'?' selected':'')+'>'+(drumMode?'Names + computer keys':'Notes + computer keys')+'</option><option value="keys"'+(KLAB==='keys'?' selected':'')+'>'+(drumMode?'Names + computer keys':'Computer keys')+'</option><option value="none"'+(KLAB==='none'?' selected':'')+'>'+(drumMode?'Names only':'None')+'</option></select></label>';
   h+='<label title="Off keeps exactly what you play. Turn on to line notes up to the beat as you record.">Auto-snap <select id="hQuant">'+[[0,'Off'],[4,'1/16'],[2,'1/8'],[1,'1/4']].map(function(o){return'<option value="'+o[0]+'"'+(S.quant===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   h+='<button id="hMidi" title="Use a USB or Bluetooth MIDI keyboard (Chrome or Edge)">'+esc(midiLabel())+'</button>';
   h+='<p class="hint">On a touchscreen, tap low on a key for loud and high for soft. With a Surface Pen, press harder for louder.</p></div></details>';
@@ -2311,9 +2317,10 @@ function enableMidi(){
     var n=0;a.inputs.forEach(function(){n++;});toast(n?'MIDI keyboard connected':'No MIDI keyboard found. Plug one in.');
   }).catch(function(){toast(window.claude?'MIDI is blocked inside Claude. Host the page at its own address.':'MIDI access was blocked. Allow it in your browser.');});
 }
+function midiCount(){var n=0;if(midiAcc)midiAcc.inputs.forEach(function(){n++;});return n;}
 function bindMidi(){
   if(!midiAcc)return;midiAcc.inputs.forEach(function(inp){inp.onmidimessage=onMidi;});
-  var b=$('hMidi');if(b)b.textContent=midiLabel();
+  var b=$('hMidi');if(b)b.textContent=midiLabel();if(MODE==='studio')renderDock();
 }
 function onMidi(e){
   var d=e.data,st=d[0]&0xf0,n=d[1],vel=d[2],kt=keyTrack();
@@ -2342,6 +2349,11 @@ $('dock').addEventListener('change',function(e){
   if(e.target.id==='hAP'){AP.mode=+e.target.value;try{localStorage.setItem('jr-ap',AP.mode);}catch(er){}if(AP.mode)toast('Autoplay '+apPatName(AP.mode)+': hold a chord and it plays in time');}
   if(e.target.id==='hQuant'){S.quant=+e.target.value;}
   if(e.target.id==='hKeys'){S.keymode=e.target.value;renderDock();}
+  if(e.target.id==='hInput'){INPUT=e.target.value;try{localStorage.setItem('jr-input',INPUT);}catch(er){}
+    if(INPUT==='keys'){if(KLAB==='notes'||KLAB==='none')KLAB='both';toast('Play with the letters shown on the keys. Space plays and stops, the arrow keys change octave.');}
+    else if(INPUT==='midi'){if(KLAB==='both')KLAB='notes';enableMidi();}
+    else{if(KLAB==='both'||KLAB==='keys')KLAB='notes';toast('Tap or click the keys on screen. Tap low on a key for loud, high for soft.');}
+    try{localStorage.setItem('jr-klab',KLAB);}catch(er){}renderDock();return;}
   if(e.target.id==='hLab'){KLAB=e.target.value;try{localStorage.setItem('jr-klab',KLAB);}catch(er){}renderDock();return;}
   if(e.target.id==='hSize'){S.kbsize=e.target.value;S.kbh=null;try{localStorage.setItem('jr-kb',S.kbsize);localStorage.removeItem('jr-kbh');}catch(er){}renderDock();}
 });
@@ -3663,6 +3675,7 @@ if(A.c===null&&0){}
   HIST.list=[];HIST.idx=-1;commitHist();
   /* fetch and decode every sound the song uses straight away, so the first notes are not late or silent */
   setTimeout(function(){try{S.tracks.forEach(loadTrackSamples);loadDrumKits();}catch(e){}},250);
+  if(INPUT==='midi'&&navigator.requestMIDIAccess)setTimeout(enableMidi,600);
   if(shared&&shared!=='old'&&ok){
     markDirty();
     openModal('<h3>A song for you</h3><p class="hint">“'+esc(S.name)+'” was shared with you. Press Play to hear it, then change anything you like. It will not change the original.</p><div class="row" style="justify-content:flex-end"><button data-x="close">Look around</button><button class="primary" data-x="play">Play it</button></div>',
