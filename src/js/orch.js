@@ -119,15 +119,21 @@ var ORCH=(function(){
       for(var k=0;k<1/step;k++){var m=ct[pat[k%4]%ct.length];while(m<r[3])m+=12;while(m>r[4])m-=12;o.push({t:s.t+k*step,d:step*.85,m:m,v:k%2?.5:.62});}});
     return o;
   }
-  function orchestrate(){
+  /* only: list of row ids to (re)write; the other rows keep what you made */
+  function orchestrate(only){
     var mv=MV(),L=len();if(!mv.sketch.length){toast('Play or record a sketch first, or start from a classic');return false;}
-    var A=analyse(mv.sketch,L),st=STY[PJ.sty];mv.parts={};mv.art={};
-    rows().forEach(function(id){var role=st.m[id];if(!role||!LINES[role])return;mv.parts[id]=LINES[role](A,ROW[id]).filter(function(n){return n.t<L;});
+    var A=analyse(mv.sketch,L),st=STY[PJ.sty];if(!only){mv.parts={};mv.art={};}
+    rows().forEach(function(id){if(only&&only.indexOf(id)<0)return;var role=st.m[id];if(!role||!LINES[role]){if(only)delete mv.parts[id];return;}mv.parts[id]=LINES[role](A,ROW[id]).filter(function(n){return n.t<L;});
       if(role==='B8p')mv.art[id]='pizz';if(role==='Bwalk'||role==='B8walk')mv.art[id]='short';if(/^Ost/.test(role))mv.art[id]='short';});
-    mv.dyn=st.dyn.map(function(p){return[p[0]*L,p[1]];});
+    if(!only)mv.dyn=st.dyn.map(function(p){return[p[0]*L,p[1]];});
     save();return true;
   }
 
+  /* ---------------- what you are building: one instrument, one section, or everything ---------------- */
+  function hasParts(){var mv=MV();return Object.keys(mv.parts).some(function(k){return(mv.parts[k]||[]).length;});}
+  function isRow(x){return!!(x&&ROW[x]&&rows().indexOf(x)>=0);}
+  function targetRows(){if(isRow(sel))return[sel];if(sel&&sel.slice(0,4)==='sec:'){var nm=sel.slice(4);return rows().filter(function(id){return ROW[id][1]===nm;});}return rows();}
+  function targetName(){if(isRow(sel))return ROW[sel][0];if(sel&&sel.slice(0,4)==='sec:')return sel.slice(4);return'Whole orchestra';}
   /* ---------------- tempo + dynamics maps ---------------- */
   function lane(pts,b){if(!pts||!pts.length)return 1;if(b<=pts[0][0])return pts[0][1];for(var i=1;i<pts.length;i++){if(b<=pts[i][0]){var a=pts[i-1],c=pts[i];return a[1]+(c[1]-a[1])*(b-a[0])/Math.max(1e-6,c[0]-a[0]);}}return pts[pts.length-1][1];}
   function beatTime(b){/* seconds from beat 0 to beat b with the tempo lane (integrated in small steps) */var mv=MV(),s=0,step=.25,x=0;while(x+step<=b){s+=step*60/(PJ.bpm*lane(mv.tmp,x+step/2));x+=step;}if(b>x)s+=(b-x)*60/(PJ.bpm*lane(mv.tmp,(x+b)/2));return s;}
@@ -158,13 +164,13 @@ var ORCH=(function(){
   function prep(){var c=ensureAudio();graph(c);var need={};rows().forEach(function(id){var i=ROW[id][2];if(i==='drums')loadKit('Orchestra');else need[i]=1;});need.pizz=1;need.piano=1;return Promise.all(Object.keys(need).map(ensureSamples));}
 
   /* ---------------- transport ---------------- */
-  function startPlay(fromBeat){
+  function startPlay(fromBeat,at,skip){
     var c=ensureAudio();wakeAudio();if(PL)stopPlay();
     var pe=view.querySelector('#orPos');if(pe)pe.textContent='Loading sounds…';
     prep().then(function(){
-      var mv=MV(),t0=c.currentTime+.15-beatTime(fromBeat||0),L=len(),q=[];
-      Object.keys(mv.parts).forEach(function(id){(mv.parts[id]||[]).forEach(function(n){if(n.t>=(fromBeat||0)&&n.t<L)q.push([n.t,id,n]);});});
-      if(!Object.keys(mv.parts).length)mv.sketch.forEach(function(n){if(n.t>=(fromBeat||0))q.push([n.t,'_sk',n]);});
+      var mv=MV(),t0=(at!=null?at:c.currentTime+.15)-beatTime(fromBeat||0),L=len(),q=[];
+      Object.keys(mv.parts).forEach(function(id){if(id===skip)return;(mv.parts[id]||[]).forEach(function(n){if(n.t>=(fromBeat||0)&&n.t<L)q.push([n.t,id,n]);});});
+      if(!Object.keys(mv.parts).some(function(k){return k!==skip&&(mv.parts[k]||[]).length;})&&skip!=='_sk')mv.sketch.forEach(function(n){if(n.t>=(fromBeat||0))q.push([n.t,'_sk',n]);});
       q.sort(function(a,b){return a[0]-b[0];});
       PL={t0:t0,q:q,i:0,from:fromBeat||0,L:L};
       PL.timer=setInterval(sched,25);sched();PL.raf=requestAnimationFrame(frame);
@@ -185,34 +191,50 @@ var ORCH=(function(){
     if(G)Object.keys(G.rows).forEach(function(id){var n=G.rows[id];try{n.g.gain.setTargetAtTime(0,A.c.currentTime,.05);}catch(e){}setTimeout(applyVol,300);});drawTL();}
 
   /* ---------------- sketch recording ---------------- */
+  /* record into the selected instrument (the rest of the orchestra plays along), or into the piano sketch */
   function rec(){
     if(recState){endRec();return;}
     stopPlay();var c=ensureAudio();wakeAudio();ensureSamples('piano');var oe=view.querySelector('.oempty');if(oe)oe.remove();
-    var mv=MV(),spb=60/PJ.bpm,t0=c.currentTime+.2+PJ.beats*spb;
-    mv.sketch=[];mv.parts={};recState={t0:t0,spb:spb,open:{}};
-    for(var k=0;k<PJ.beats;k++)metro(c.currentTime+.2+k*spb,k===0);
+    var tgt=isRow(sel)?sel:'_sk';
+    var mv=MV(),spb=60/PJ.bpm,t0=c.currentTime+.35+PJ.beats*spb;
+    recState={t0:t0,spb:spb,open:{},tgt:tgt,notes:[]};
+    for(var k=0;k<PJ.beats;k++)metro(c.currentTime+.35+k*spb,k===0);
+    prep().then(function(){if(recState&&recState.t0===t0)startPlay(0,t0,tgt);});
     recState.tick=setInterval(function(){if(!recState)return;var b=(A.c.currentTime-recState.t0)/spb;var nb=Math.floor(b+.15);if(nb!==recState.lb&&b>-1){recState.lb=nb;if(nb>=0&&nb<len())metro(recState.t0+nb*spb,nb%PJ.beats===0);}if(b>=len())endRec();},40);
-    recState.raf=requestAnimationFrame(function f(){if(!recState)return;recState.raf=requestAnimationFrame(f);var b=(A.c.currentTime-recState.t0)/spb;var el=view.querySelector('#orPos');if(el)el.textContent=b<0?'Count '+Math.ceil(-b):'Rec bar '+(Math.floor(b/PJ.beats)+1);PL=PL||null;drawTL(b);});
-    var rb=view.querySelector('[data-o=rec]');if(rb)rb.classList.add('on');
-    toast('Recording your sketch: play the melody and chords. Tap the record button again to stop.');
+    recState.raf=requestAnimationFrame(function f(){if(!recState)return;recState.raf=requestAnimationFrame(f);var b=(A.c.currentTime-recState.t0)/spb;var el=view.querySelector('#orPos');if(el)el.textContent=b<0?'Count '+Math.ceil(-b):'Rec bar '+(Math.floor(b/PJ.beats)+1);drawTL(b);});
+    view.querySelectorAll('[data-o=rec]').forEach(function(rb){rb.classList.add('on');});
+    toast(tgt==='_sk'?'Recording the sketch: play the tune and chords after the 4 clicks. Tap record again to stop.':'Recording '+ROW[tgt][0]+' while the rest plays along. Tap record again to stop.');
   }
   function endRec(){
     if(!recState)return;clearInterval(recState.tick);cancelAnimationFrame(recState.raf);
-    var now=(A.c.currentTime-recState.t0)/recState.spb;Object.keys(recState.open).forEach(function(m){var o=recState.open[m];MV().sketch.push({t:o.t,d:Math.max(.25,now-o.t),m:+m,v:o.v});});
-    MV().sketch.forEach(function(n){n.t=Math.max(0,Math.round(n.t*4)/4);n.d=Math.max(.25,Math.round(n.d*4)/4);});
-    recState=null;var rb=view.querySelector('[data-o=rec]');if(rb)rb.classList.remove('on');save();render();
-    toast(MV().sketch.length?'Sketch saved. Now pick a style and tap Orchestrate.':'Nothing was recorded');
+    var R=recState,now=(A.c.currentTime-R.t0)/R.spb;Object.keys(R.open).forEach(function(m){var o=R.open[m];R.notes.push({t:o.t,d:Math.max(.25,now-o.t),m:+m,v:o.v});});
+    R.notes.forEach(function(n){n.t=Math.max(0,Math.round(n.t*4)/4);n.d=Math.max(.25,Math.round(n.d*4)/4);});
+    recState=null;stopPlay();var mv=MV();
+    if(R.notes.length){if(R.tgt==='_sk')mv.sketch=R.notes;else mv.parts[R.tgt]=R.notes.filter(function(n){return n.t<len();});}
+    save();render();
+    toast(!R.notes.length?'Nothing was recorded':R.tgt==='_sk'?'Sketch saved. Pick a section and tap Fill from sketch, or record each instrument yourself.':ROW[R.tgt][0]+' recorded ('+R.notes.length+' notes)');
   }
   function metro(t,acc){var c=A.c,o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1500:1000;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(acc?.25:.15,t+.002);g.gain.setTargetAtTime(.0001,t+.003,.015);o.connect(g);g.connect(A.master);o.start(t);o.stop(t+.1);}
+  /* the keyboard plays the selected instrument's real sound */
   function noteOn(m,v){
-    var c=ensureAudio();hold[m]=playInst('piano',c,graph(c).bus,m,c.currentTime+.005,v||.8);
+    var c=ensureAudio(),id=isRow(sel)?sel:null,inst=id?ROW[id][2]:'piano';
+    if(inst==='drums'){drum(c,rowNode(id).g,((m%12)+12)%12,c.currentTime+.005,v||.8,'Orchestra');hold[m]={release:function(){}};}
+    else hold[m]=playInst(id&&MV().art[id]==='pizz'?'pizz':inst,c,id?rowNode(id).g:graph(c).bus,m,c.currentTime+.005,v||.8);
     var k=view&&view.querySelector('.ok[data-m="'+m+'"]');if(k)k.classList.add('on');
     if(recState){var b=(c.currentTime-recState.t0)/recState.spb;if(b>=-.25)recState.open[m]={t:Math.max(0,b),v:v||.8};}
   }
   function noteOff(m){
     if(hold[m]){hold[m].release(A.c.currentTime);delete hold[m];}
     var k=view&&view.querySelector('.ok[data-m="'+m+'"]');if(k)k.classList.remove('on');
-    if(recState&&recState.open[m]){var o=recState.open[m],b=(A.c.currentTime-recState.t0)/recState.spb;MV().sketch.push({t:o.t,d:Math.max(.25,b-o.t),m:m,v:o.v});delete recState.open[m];}
+    if(recState&&recState.open[m]){var o=recState.open[m],b=(A.c.currentTime-recState.t0)/recState.spb;recState.notes.push({t:o.t,d:Math.max(.25,b-o.t),m:m,v:o.v});delete recState.open[m];}
+  }
+  /* clearing: one instrument, one section, the sketch, or everything */
+  function clearWhat(what){
+    var mv=MV();stopPlay();
+    if(what==='target'){targetRows().forEach(function(id){delete mv.parts[id];});toast(targetName()+' cleared');}
+    else if(what==='sketch'){mv.sketch=[];toast('Sketch cleared (your orchestra parts stay)');}
+    else{mv.sketch=[];mv.parts={};mv.art={};mv.dyn=[[0,.6],[len(),.6]];mv.tmp=[[0,1],[len(),1]];toast('Everything in this movement cleared');}
+    save();render();
   }
 
   /* ---------------- import ---------------- */
@@ -227,7 +249,7 @@ var ORCH=(function(){
           PJ.beats=beats>=2?beats:4;PJ.bpm=Math.round(meta.bpm);
           var maxB=Math.min(32*PJ.beats,Math.ceil(meta.beats));
           var mv=MV();mv.name=meta.t;mv.bars=Math.ceil(maxB/PJ.beats);mv.sketch=d.data.n.filter(function(n){return n[0]<maxB;}).map(function(n){return{t:n[0],d:Math.min(n[1],maxB-n[0]),m:n[2],v:.75};});
-          mv.tmp=[[0,1],[len(),1]];orchestrate();render();toast('"'+meta.t+'" orchestrated in '+STY[PJ.sty].n+' style. Press play.');
+          mv.tmp=[[0,1],[len(),1]];var kept=hasParts();if(!kept)orchestrate();save();render();toast(kept?'"'+meta.t+'" is your new sketch. Your parts were kept: pick a section and tap Fill from sketch.':'"'+meta.t+'" orchestrated in '+STY[PJ.sty].n+' style. Press play, or rebuild any section yourself.');
         },function(){toast('Could not load that piece');});
       });
     $('mBox').classList.add('med');
@@ -235,7 +257,7 @@ var ORCH=(function(){
   function fromStudio(){
     var ns=[];S.tracks.forEach(function(t){if(t.kind!=='inst'||!audible(t))return;t.notes.forEach(function(n){ns.push({t:n.s,d:n.d,m:n.m,v:n.v||.8});});});
     if(!ns.length){toast('Your Studio song has no instrument notes yet');return;}
-    var mv=MV();mv.sketch=ns;mv.bars=S.bars;PJ.bpm=S.bpm||PJ.bpm;PJ.beats=4;orchestrate();render();toast('Your Studio song is now the sketch, orchestrated. Press play.');
+    var mv=MV();mv.sketch=ns;mv.bars=S.bars;PJ.bpm=S.bpm||PJ.bpm;PJ.beats=4;var kept=hasParts();if(!kept)orchestrate();save();render();toast(kept?'Your Studio song is the new sketch. Your parts were kept: pick a section and tap Fill from sketch.':'Your Studio song is now the sketch, orchestrated. Press play.');
   }
 
   /* ---------------- MusicXML (score view) ---------------- */
@@ -304,28 +326,34 @@ var ORCH=(function(){
   function render(){
     if(!view)return;var mv=MV();
     var has=mv.sketch.length>0,done=Object.keys(mv.parts).some(function(k){return(mv.parts[k]||[]).length;});
+    var tg=targetName(),one=isRow(sel),secSel=sel&&sel.slice(0,4)==='sec:';
     view.innerHTML='<div class="otop">'+
-      '<div class="ostep'+(has?' odone':' ocur')+'"><span class="onum">1</span><b>Sketch</b>'+
-        '<button class="round rec" data-o="rec" aria-label="Record sketch" title="Record a melody with chords on the keyboard below">'+IC.rec+'</button>'+
+      '<div class="ostep'+(has||done?' odone':' ocur')+'"><span class="onum">1</span><b>Start</b>'+
         '<button data-o="classic" title="Use a public-domain piano piece as the sketch">Classic</button>'+
         '<button data-o="studio" title="Use your Studio song as the sketch">Studio song</button></div>'+
-      '<div class="ostep'+(done?' odone':has?' ocur':'')+'"><span class="onum">2</span><b>Orchestrate</b>'+
-        '<select id="orEns" title="Ensemble">'+opts(ENS,PJ.ens)+'</select>'+
-        '<select id="orSty" title="Style">'+opts(STY,PJ.sty)+'</select>'+
-        '<button class="'+(has&&!done?'primary':'primary-soft')+'" data-o="orch"'+(has?'':' disabled')+'>'+IC.wand+' Orchestrate</button></div>'+
+      '<div class="ostep ocur obuild"><span class="onum">2</span><b>Build</b>'+
+        '<span class="otgt" title="Tap an instrument or a section name on the left to choose what you build">'+esc(tg)+'</span>'+
+        '<button class="round rec" data-o="rec" aria-label="Record" title="'+(one?'Record '+esc(tg)+' on the keyboard while the rest plays along':'Record the piano sketch (tune and chords)')+'">'+IC.rec+'</button>'+
+        '<button class="'+(has&&!done?'primary':'primary-soft')+'" data-o="orch"'+(has?'':' disabled')+' title="Write parts for '+esc(tg)+' from the sketch">'+IC.wand+' Fill from sketch</button>'+
+        '<select id="orSty" title="Style used by Fill from sketch">'+opts(STY,PJ.sty)+'</select>'+
+        '<details class="more oclr"><summary>Clear</summary><div class="morep">'+
+          (one||secSel?'<button data-o="clr-target">Clear '+esc(tg)+'</button>':'')+
+          '<button data-o="clr-sketch"'+(has?'':' disabled')+'>Clear the sketch</button>'+
+          '<button data-o="clr-all" class="warn">Clear everything</button></div></details></div>'+
       '<div class="ostep'+(done?' ocur':'')+'"><span class="onum">3</span><b>Listen</b>'+
-        '<button class="round play" data-o="play" aria-label="Play"'+(has?'':' disabled')+'>'+IC.play+'</button>'+
+        '<button class="round play" data-o="play" aria-label="Play"'+(has||done?'':' disabled')+'>'+IC.play+'</button>'+
         '<div class="lpbar" id="orPos">Bar 1 · 1</div>'+
         '<select id="orSeat" title="Your seat in the concert hall"><option value="front"'+(PJ.seat==='front'?' selected':'')+'>Front row</option><option value="mid"'+(PJ.seat==='mid'?' selected':'')+'>Middle seats</option><option value="back"'+(PJ.seat==='back'?' selected':'')+'>Balcony</option></select></div>'+
+      '<select id="orEns" title="Ensemble: which instruments are in your orchestra">'+opts(ENS,PJ.ens)+'</select>'+
       '<span class="grow"></span>'+
       '<select id="orMv" title="Movement">'+PJ.mv.map(function(m,i){return'<option value="'+i+'"'+(i===PJ.cur?' selected':'')+'>'+esc(m.name)+'</option>';}).join('')+'<option value="+">+ New movement</option></select>'+
       '<label class="omini">Tempo <input type="number" id="orBpm" min="30" max="200" value="'+PJ.bpm+'"></label>'+
       '<label class="omini">Bars <input type="number" id="orBars" min="2" max="128" value="'+mv.bars+'"></label>'+
       '<div class="seg2"><button data-o="vblocks" aria-pressed="'+(VIEWM==='blocks')+'">Blocks</button><button data-o="vscore" aria-pressed="'+(VIEWM==='score')+'">Score</button></div>'+
       '</div>'+
-      (has?'':'<div class="oempty"><h3>Write for an orchestra in three steps</h3><p>First give it a <b>sketch</b>: the tune and chords. Then pick an ensemble and a style and tap <b>Orchestrate</b>, and the music is shared out across the whole orchestra. Then press play.</p>'+
-        '<div class="oebtns"><button class="primary" data-o="classic">Start from a classic</button><button data-o="studio">Use my Studio song</button><button data-o="rec">'+IC.rec+' Play my own sketch</button></div>'+
-        '<p class="hint">Playing your own: tap the red button, wait for the 4 count-in clicks, then play a melody with chords on the keyboard at the bottom (or your computer keys Z to M). Tap it again to stop.</p></div>')+
+      (has||done?'':'<div class="oempty"><h3>Build your orchestra piece</h3><p><b>One instrument at a time:</b> tap an instrument on the left (or a section name like Strings), press the red record button, and play its part on the keyboard below. Each new part plays along with everything you have already made.</p><p><b>Or let it help:</b> start from a sketch (a classic, your Studio song, or your own tune and chords), then choose a section and tap <b>Fill from sketch</b>.</p>'+
+        '<div class="oebtns"><button class="primary" data-o="classic">Start from a classic</button><button data-o="studio">Use my Studio song</button><button data-o="rec">'+IC.rec+' Record my own sketch</button></div>'+
+        '<p class="hint">Recording: after 4 count-in clicks, play on the keyboard at the bottom (or computer keys Z to M). Tap record again to stop.</p></div>')+
       '<div class="obody">'+(VIEWM==='score'?'<div class="oscore" id="orScore"></div>':
       '<div class="orows">'+rowsHTML()+'</div><div class="otl"><canvas id="orCv"></canvas></div>')+'</div>'+
       (VIEWM==='blocks'?'<div class="olanes"><div class="olab"><b>Dynamics</b><span>soft ↔ loud</span></div><canvas id="orDyn" data-lane="dyn"></canvas><div class="olab"><b>Tempo</b><span>slower ↔ faster</span></div><canvas id="orTmp" data-lane="tmp"></canvas></div>':'')+
@@ -334,7 +362,7 @@ var ORCH=(function(){
   }
   function rowsHTML(){
     var mv=MV(),h='<div class="orh sk'+(sel==='_sk'?' sel':'')+'" data-row="_sk"><i style="background:#ece5d3"></i><b>Piano sketch</b><span>'+mv.sketch.length+' notes</span></div>',last='';
-    rows().forEach(function(id){var r=ROW[id];if(r[1]!==last){h+='<div class="osec" style="--sc:'+SEC_COL[r[1]]+'">'+r[1]+'</div>';last=r[1];}
+    rows().forEach(function(id){var r=ROW[id];if(r[1]!==last){h+='<div class="osec'+(sel==='sec:'+r[1]?' sel':'')+'" data-sec="'+r[1]+'" style="--sc:'+SEC_COL[r[1]]+'" title="Tap to build the whole '+r[1]+' section">'+r[1]+'</div>';last=r[1];}
       var n=(mv.parts[id]||[]).length,art=mv.art[id]||'legato',canPizz=/strings|violin|cello|contrabass/.test(r[2]);
       h+='<div class="orh'+(sel===id?' sel':'')+'" data-row="'+id+'" style="--sc:'+SEC_COL[r[1]]+'"><i></i><b>'+r[0]+'</b>'+
         (r[2]!=='drums'?'<select data-art="'+id+'" title="Playing style">'+Object.keys(ART).filter(function(k){return k!=='pizz'||canPizz;}).map(function(k){return'<option value="'+k+'"'+(k===art?' selected':'')+'>'+ART[k]+'</option>';}).join('')+'</select>':'<span></span>')+
@@ -386,14 +414,18 @@ var ORCH=(function(){
   }
   function onUp(e){if(MODE!=='orch')return;var m=hold['p'+e.pointerId];if(m!=null){delete hold['p'+e.pointerId];noteOff(m);}if(drawing){drawing.onpointermove=null;drawing=null;save();}}
   function onClick(e){
-    var b=e.target.closest('button,.orh');if(!b)return;var o=b.dataset.o,mv=MV();
-    if(b.classList.contains('orh')&&!e.target.closest('select,button')){sel=b.dataset.row;view.querySelectorAll('.orh').forEach(function(x){x.classList.toggle('sel',x.dataset.row===sel);});
-      if(sel!=='_sk'&&!PL){var ns=(mv.parts[sel]||[]).slice(0,8);var c=ensureAudio(),t=c.currentTime+.05;prep().then(function(){ns.forEach(function(n,i){playNote(sel,n,t+i*.25,.7,.3);});});}return;}
+    var b=e.target.closest('button,.orh,.osec');if(!b)return;var o=b.dataset.o,mv=MV();
+    if(b.classList.contains('osec')){var sk='sec:'+b.dataset.sec;sel=sel===sk?null:sk;stopPlay();render();return;}
+    if(b.classList.contains('orh')&&!e.target.closest('select,button')){var was=sel;sel=sel===b.dataset.row?null:b.dataset.row;render();
+      if(sel&&sel!=='_sk'&&sel!==was&&!PL&&!recState){var ns=(mv.parts[sel]||[]).slice(0,8),c=ensureAudio(),t=c.currentTime+.05;prep().then(function(){ns.forEach(function(n,i){playNote(sel,n,t+i*.25,.7,.3);});});}return;}
     if(b.dataset.m2){mv.mute[b.dataset.m2]=!mv.mute[b.dataset.m2];b.setAttribute('aria-pressed',!!mv.mute[b.dataset.m2]);applyVol();save();return;}
     if(b.dataset.s2){mv.solo[b.dataset.s2]=!mv.solo[b.dataset.s2];b.setAttribute('aria-pressed',!!mv.solo[b.dataset.s2]);applyVol();save();return;}
     if(o==='play'){if(PL)stopPlay();else startPlay(0);return;}
     if(o==='rec'){rec();return;}
-    if(o==='orch'){stopPlay();if(orchestrate()){render();toast('Orchestrated for '+ENS[PJ.ens].n+' in '+STY[PJ.sty].n+' style');}return;}
+    if(o==='orch'){stopPlay();var only=sel&&sel!=='_sk'?targetRows():null;if(orchestrate(only)){render();toast((only?targetName():'The whole orchestra')+' written from the sketch in '+STY[PJ.sty].n+' style');}return;}
+    if(o==='clr-target'){clearWhat('target');return;}
+    if(o==='clr-sketch'){clearWhat('sketch');return;}
+    if(o==='clr-all'){twoTap(b,'Tap again to clear everything',function(){clearWhat('all');});return;}
     if(o==='classic'){fromClassic();return;}
     if(o==='studio'){fromStudio();return;}
     if(o==='vblocks'||o==='vscore'){VIEWM=o==='vblocks'?'blocks':'score';render();return;}
