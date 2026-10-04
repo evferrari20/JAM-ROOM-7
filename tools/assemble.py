@@ -33,5 +33,6 @@ a=s.index('<script type="application/json" id="smp">');b=s.index('</script>',a)+
 s=s[:a]+'<script type="text/plain" id="smp">\n'+data+'</script>'+s[b:]
 # restore signalsmith etc: skel had <B64> only inside smp? check
 assert '<B64>' not in s, s.count('<B64>')
+os.makedirs('dist',exist_ok=True)
 open('dist/jam-room.html','w').write(s)
 print(len(s.encode()), len(D), len(lines))
