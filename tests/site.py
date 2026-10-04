@@ -10,7 +10,7 @@ async def main():
             ctx=await b.new_context(viewport={'width':1368,'height':912});pg=await ctx.new_page()
             errs=[];pg.on('pageerror',lambda e:errs.append(str(e)));reqs=[];pg.on('request',lambda r:reqs.append(r.url))
             t=time.time();await pg.goto('http://localhost:8765/');await pg.wait_for_timeout(1500);print('load %.1fs'%(time.time()-t))
-            await pg.click('#welcomeX')
+            await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
             print('packs fetched at start:',len([u for u in reqs if '/s/' in u]))
             await pg.evaluate('''()=>{window.__pk=0;var buf=new Float32Array(1024);setInterval(function(){var a=__jr.curA();if(!a.an)return;a.an.getFloatTimeDomainData(buf);for(var i=0;i<1024;i++)window.__pk=Math.max(window.__pk,Math.abs(buf[i]));},8);}''')
             await pg.click('.kb .wk >> nth=7');await pg.wait_for_timeout(1500)

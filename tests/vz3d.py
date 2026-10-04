@@ -13,7 +13,7 @@ async def main():
         errs=[];warn=[]
         pg.on('pageerror',lambda e:errs.append(str(e)))
         pg.on('console',lambda m:warn.append(m.text[:120]) if m.type in('error','warning') else None)
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.wait_for_function('__jr.viz().st3()===2||__jr.viz().st3()===-1',timeout=30000)
         assert await pg.evaluate('__jr.viz().st3()')==2,'3D did not load'
         assert await pg.evaluate("document.querySelector('#viz.is3d canvas')!==null"),'3D canvas not mounted'

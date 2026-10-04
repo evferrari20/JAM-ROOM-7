@@ -8,7 +8,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.click('#bStart');await pg.click('.vibe[data-v="Pop"]');await pg.wait_for_timeout(1200)
         print('Pop starter verse uses degrees [0,4,5,3]; detected:',await pg.evaluate('()=>JSON.stringify(__jr.loops.detect())'))
         for sc in ['Major','Minor','Dorian','Major pentatonic','Blues']:

@@ -7,7 +7,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.click('.modes [data-mode=learn]');await pg.wait_for_timeout(800)
         await pg.screenshot(path=OUT+'/learn_lib.png')
         print('songs',await pg.evaluate('()=>LEARN.songs().length') if False else await pg.evaluate('()=>document.querySelectorAll(".scard").length'),'cards in first genre')

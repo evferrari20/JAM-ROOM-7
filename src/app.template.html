@@ -79,7 +79,7 @@
 <div class="main" id="main">
   <div class="welcome" id="welcome" hidden>
     <div class="steps">
-      <div class="step"><b>1</b><span><strong>Pick a sound</strong><br>Tap the instrument name on a track.</span></div>
+      <div class="step"><b>1</b><span><strong>Add a sound</strong><br>Pick an instrument, drums or your voice.</span></div>
       <div class="step"><b>2</b><span><strong>Play or tap</strong><br>Use the keyboard below, or tap the grid to add notes.</span></div>
       <div class="step"><b>3</b><span><strong>Record</strong><br>Press the red button. Add a Voice track to sing over it. Tap <b>? Guide</b> any time.</span></div>
     </div>
@@ -1233,7 +1233,7 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={viz:function(){return VIZ;},instIds:function(){return[].concat.apply([],INST_GROUPS.map(function(g){return g[1].map(function(x){return x[0];});}));},SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ch:{name:function(m){return nameChord(m);},shape:function(c){return guitarShape(c);},sug:function(c){return suggestNext(c).map(function(x){return chName(x[0])+': '+x[1];});},st:function(){return chState();}},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={classicStart:function(){/* tests: the old default song (drums, piano, voice) */var d=mkTrack('drum');S.tracks.push(d);applyBeat(d,'Rock');var p=mkTrack('inst','piano');S.tracks.push(p);S.tracks.push(mkTrack('voice'));if(A.c)S.tracks.forEach(wireTrack);S.sel=p.id;S.lastInst=p.id;renderAll();},viz:function(){return VIZ;},instIds:function(){return[].concat.apply([],INST_GROUPS.map(function(g){return g[1].map(function(x){return x[0];});}));},SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ch:{name:function(m){return nameChord(m);},shape:function(c){return guitarShape(c);},sug:function(c){return suggestNext(c).map(function(x){return chName(x[0])+': '+x[1];});},st:function(){return chState();}},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
@@ -2220,7 +2220,7 @@ function midiLabel(){
 function renderDock(){
   recomputeKeys();
   var kt=keyTrack(),host=$('dock'),drumMode=kt&&kt.kind==='drum',h='';
-  if(!kt){host.innerHTML='<p class="hint">Add an instrument or drums to start playing.</p>';return;}
+  if(!kt){host.className='dock';host.innerHTML='<p class="hint dempty">The keyboard appears here once you add an instrument or drums.</p>';return;}
   h+='<div class="dgrip" id="dGrip" title="Drag to make the keyboard bigger or smaller" aria-hidden="true"><i></i></div><div class="hrow">';
   if(!drumMode){
     h+='<button id="oDn" aria-label="Octave down" title="Arrow down">Octave −</button><button id="oUp" aria-label="Octave up" title="Arrow up">Octave +</button>';
@@ -2451,7 +2451,9 @@ function fxHTML(t){
 function renderEditor(){
   var t=selTrack(),host=$('editor');R=null;AUTOUI.draw=null;AUTOUI.size=null;
   if(ARR.on){renderArrange(host);return;}
-  if(!t){host.innerHTML='<p class="hint">Add a track to get started.</p>';return;}
+  if(!t){host.innerHTML='<div class="empty1"><h3>Start your song</h3><p class="hint">Add your first sound. You can add as many as you like, one at a time.</p>'+
+    '<div class="e1btns"><button class="primary" data-e1="inst">'+IC.keys+' Add an instrument</button><button data-e1="drum">'+IC.drums+' Add drums</button><button data-e1="voice">Add a voice (microphone)</button><button data-e1="loop">Add a ready-made loop</button></div>'+
+    '<p class="hint">Or tap <b>Starter</b> at the top for a complete song to play with.</p></div>';return;}
   if(t.kind==='voice'){
     host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="sndBtn" class="sndbtn'+(SND.open?' on':'')+'" aria-pressed="'+SND.open+'" title="Show or hide the effects for this track (they change the sound live)">'+IC.polish+'<span>Effects</span><b>'+esc(soundName(t))+'</b></button><button id="impBtn">Import a recording</button><button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+autoPanelHTML(t)+
       '<div class="microw"><button id="micBtn">Turn on microphone</button><select id="micSel" hidden aria-label="Choose microphone"></select><button id="liveTog" class="tog" aria-pressed="'+!!S.liveTune+'" title="Hear yourself auto-tuned in your headphones while you record. Adds a small delay.">Hear auto-tune live</button></div>'+
@@ -2718,6 +2720,8 @@ function addTrack(kind,inst){
   var main=$('main');setTimeout(function(){var c=document.querySelector('.tcard[data-id="'+t.id+'"]');if(c&&c.scrollIntoView)c.scrollIntoView({block:'nearest'});},30);
 }
 $('addInst').addEventListener('click',function(){openPicker(null);});
+$('editor').addEventListener('click',function(e){var b=e.target.closest('[data-e1]');if(!b)return;var k=b.dataset.e1;
+  if(k==='inst')openPicker(null);else if(k==='drum')addTrack('drum');else if(k==='voice')addTrack('voice');else openLoops();});
 $('addDrums').addEventListener('click',function(){addTrack('drum');});
 $('addVoice').addEventListener('click',function(){addTrack('voice');});
 $('addLoop').addEventListener('click',function(){openLoops();});
@@ -2874,11 +2878,8 @@ function starter(){
   setRef(prefTune(),true);S.fin=false;S.mst='';applyFin();
   S.parts=[{id:'p1',name:'Main'}];S.part='p1';S.arr=['p1'];S.arrOff=[{}];S.chords={};S.songMode=false;
   S.solo=null;S.swing=0;if(S.space!=='Studio'){S.space='Studio';if(A.c)A.rev.buffer=makeIR(A.c,S.space);}S.tracks.forEach(unwireTrack);S.tracks=[];S.name='My song';S.bpm=100;S.key=0;S.scale='Major';S.bars=4;
-  var d=mkTrack('drum');S.tracks.push(d);applyBeat(d,'Rock');
-  var p=mkTrack('inst','piano');S.tracks.push(p);
-  S.tracks.push(mkTrack('voice'));
-  if(A.c)S.tracks.forEach(wireTrack);
-  S.sel=p.id;S.lastInst=p.id;syncHeader();renderAll();
+  /* a new song starts empty: you choose the first instrument */
+  S.sel=null;S.lastInst=null;syncHeader();renderAll();
 }
 
 function anchorSave(name,data){

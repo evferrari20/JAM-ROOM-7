@@ -6,7 +6,7 @@ async def main():
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1300,'height':900})
         await pg.goto(JR);await pg.wait_for_timeout(800)
-        await pg.click('#welcomeX')
+        await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         for v in ['Jazz trio','60s psych','80s','Forest folk','Hip-hop','House']:
             await pg.click('#bStart');await pg.wait_for_timeout(200)
             try: await pg.click(f'.vibe[data-v="{v}"]')

@@ -8,7 +8,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.evaluate('''()=>{var c=[...document.querySelectorAll('.tcard')].find(x=>/piano/i.test(x.innerText));c.click()}''');await pg.wait_for_timeout(300)
         print('zones for C (I):',[await pg.evaluate(f'()=>__jr.ap.strip(0,{z}).join(" ")') for z in range(8)])
         await pg.select_option('#hPlay','strips');await pg.wait_for_timeout(300)

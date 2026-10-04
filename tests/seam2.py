@@ -15,6 +15,6 @@ JS='''async()=>{
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
-        pg=await b.new_page();await pg.goto(JR);await pg.wait_for_timeout(1000);await pg.click('#welcomeX')
+        pg=await b.new_page();await pg.goto(JR);await pg.wait_for_timeout(1000);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         print(await pg.evaluate(JS));await b.close()
 asyncio.run(main())

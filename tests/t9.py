@@ -7,7 +7,7 @@ async def main():
         pg=await b.new_page(viewport={'width':1440,'height':960})
         errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
         await pg.goto(JR);await pg.wait_for_timeout(1200)
-        await pg.click('#welcomeX')
+        await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.click('#bStart');await pg.wait_for_timeout(200)
         await pg.click('.vibe[data-v="Jazz trio"]');await pg.wait_for_timeout(500)
         vols0=await pg.evaluate('()=>__jr.S.tracks.map(t=>[t.name,t.vol,t.pan||0,t.rev])')

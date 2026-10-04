@@ -13,7 +13,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1300,'height':900})
-        await pg.goto(JR);await pg.wait_for_timeout(1000);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1000);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         out={}
         for v in sys.argv[1:] or ['Jazz trio','80s','Hip-hop','House','Pop']:
             await pg.click('#bStart');await pg.wait_for_timeout(200)

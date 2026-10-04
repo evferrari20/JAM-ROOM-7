@@ -7,7 +7,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         tests=[[60,64,67],[57,60,64],[64,67,71,74],[55,59,62,65],[60,63,66],[52,60,64,67],[60,62,67],[60,65,67],[48,55],[60,64,67,71],[62,65,69,72],[59,62,65,69]]
         print('names:',[await pg.evaluate(f'()=>__jr.ch.name({json.dumps(t)})') for t in tests])
         await pg.evaluate('()=>{__jr.S.key=0;__jr.S.scale="Major"}')

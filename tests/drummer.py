@@ -7,7 +7,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
         pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.evaluate('()=>{var t=__jr.S.tracks.find(t=>t.kind==="drum");t.notes=[];}')
         await pg.click('.tcard >> nth=1',position={'x':60,'y':12});await pg.click('.tcard >> nth=0',position={'x':60,'y':12});await pg.wait_for_timeout(300)
         print('selected',await pg.evaluate('()=>__jr.selTrack().kind'))

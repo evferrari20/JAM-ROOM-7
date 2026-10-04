@@ -18,8 +18,8 @@ def db(x):
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
-        pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
+        pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];await pg.add_init_script("try{localStorage.setItem('jr-sndp','0')}catch(e){}");pg.on('pageerror',lambda e:errs.append(str(e)))
+        await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX');await pg.evaluate('()=>{if(!__jr.S.tracks.length)__jr.classicStart();}');await pg.wait_for_timeout(300)
         await pg.click('#bStart');await pg.click('.vibe[data-v]');await pg.wait_for_timeout(1500)
         # a held chord on the Rhodes / keys track so levels are steady
         tid=await pg.evaluate('''()=>{var t=__jr.S.tracks.find(t=>t.kind==='inst'&&!/bass/.test(t.inst));t.notes=[];for(var b=0;b<__jr.LEN();b++)[60,64,67].forEach(m=>t.notes.push({s:b,d:1,m:m,v:.8}));

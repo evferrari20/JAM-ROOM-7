@@ -1,26 +1,25 @@
-"""Orchestra: start from a classic, orchestrate in each style, play and measure, render the score."""
+"""Orchestra workspace: own piece, ensemble set-up, sketch from a classic, write a section, add one instrument,
+play, and swap back to the Studio song untouched."""
 import os,asyncio
 from playwright.async_api import async_playwright
 JR=os.environ.get("JR") or "file://"+os.path.abspath(os.path.join(os.path.dirname(__file__),"..","dist","jam-room.html"))
-OUT=os.environ.get('SHOT','/tmp')
+T="()=>__jr.S.tracks.map(t=>(t.orow||t.kind)+':'+t.notes.length).join(' ')"
 async def main():
     async with async_playwright() as p:
-        b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
-        pg=await b.new_page(viewport={'width':1368,'height':912});errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+        b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required']);pg=await b.new_page(viewport={'width':1180,'height':820})
+        errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
         await pg.goto(JR);await pg.wait_for_timeout(1200);await pg.click('#welcomeX')
-        await pg.click('.modes [data-mode=orch]');await pg.wait_for_timeout(600)
-        if await pg.query_selector('#modal.show'):await pg.click('#mBox [data-x=close]')
-        await pg.click('[data-o=classic]');await pg.wait_for_timeout(300)
-        await pg.click('[data-cl="fur-elise-easy"]');await pg.wait_for_timeout(2500)
-        await pg.screenshot(path=OUT+'/orch_blocks.png')
-        for sty in ['romantic','film','pastoral','baroque','mysterious']:
-            await pg.select_option('#orSty',sty);await pg.wait_for_timeout(300)
-            parts=await pg.evaluate('''()=>{var mv=__orch.state().mv[__orch.state().cur];return Object.keys(mv.parts).map(k=>k+':'+mv.parts[k].length).join(' ')}''')
-            await pg.evaluate('''()=>{window.__pk=0;var a=__jr.curA(),buf=new Float32Array(1024);clearInterval(window.__t);window.__t=setInterval(function(){a.an.getFloatTimeDomainData(buf);for(var i=0;i<1024;i++)window.__pk=Math.max(window.__pk,Math.abs(buf[i]));},10);}''')
-            await pg.click('[data-o=play]');await pg.wait_for_timeout(5000);await pg.click('[data-o=play]')
-            print(sty,'peak',round(await pg.evaluate('()=>window.__pk'),3),'|',parts)
-        await pg.select_option('#orSty','romantic');await pg.wait_for_timeout(300)
-        await pg.click('[data-o=vscore]');await pg.wait_for_function('()=>document.querySelector("#orScore svg")||document.querySelector("#orScore .hint")',timeout=60000)
-        await pg.wait_for_timeout(800);await pg.screenshot(path=OUT+'/orch_score.png')
-        print('errors',errs[:5]);await b.close()
+        await pg.click('#bStart');await pg.click('.vibe[data-v="Pop"]');await pg.wait_for_timeout(1500)
+        studio=await pg.evaluate(T)
+        await pg.locator('.modes button').nth(1).click();await pg.wait_for_timeout(1200)
+        await pg.click('.osc[data-e=chamber]');await pg.wait_for_timeout(600)
+        await pg.click('#oClassic');await pg.wait_for_timeout(300);await pg.locator('.clist button').first.click();await pg.wait_for_timeout(2500)
+        await pg.click('[data-osec=Strings]');await pg.wait_for_timeout(300)
+        await pg.click('#oAdd');await pg.click('.oai [data-row=tp]');await pg.click('.mbox [data-x=close]');await pg.click('#oWrite');await pg.wait_for_timeout(300)
+        orch=await pg.evaluate(T);print('orchestra:',orch)
+        await pg.click('#bPlay');await pg.wait_for_timeout(1500);await pg.click('#bPlay')
+        await pg.locator('.modes button').nth(0).click();await pg.wait_for_timeout(1500)
+        back=await pg.evaluate(T);print('studio unchanged:',back==studio)
+        ok=('v1:' in orch and 'v1:0' not in orch and 'tp:0' not in orch and back==studio and not errs)
+        print('errors',errs);print('PASS' if ok else 'FAIL');await b.close()
 asyncio.run(main())
