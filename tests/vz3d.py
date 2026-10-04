@@ -26,6 +26,7 @@ async def main():
             await pg.evaluate('''()=>{var t=__jr.S.tracks.find(t=>t.kind==='inst'),c=__jr.curA().c;[60,64,67].forEach(m=>__jr.trackPlay(t,m,c.currentTime+.01,.8).release(c.currentTime+.6));}''')
             await pg.wait_for_timeout(160)
             cap=await pg.evaluate("(document.querySelector('.vz3-c')||{}).textContent||''")
+            if not cap:await pg.wait_for_timeout(400);cap=await pg.evaluate("(document.querySelector('.vz3-c')||{}).textContent||''")
             f=f'{OUT}/vz3d_{i}.png';await pg.locator('#viz .vz3').screenshot(path=f)
             st=ImageStat.Stat(Image.open(f).convert('L'));spread=st.stddev[0]
             if not cap or spread<8:bad.append((i,cap,round(spread,1)))
