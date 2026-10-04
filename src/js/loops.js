@@ -92,8 +92,8 @@ var LOOPS=[
 var LOOPUI={cat:'All',q:'',tag:'',prog:null};
 function harmScale(){var sc=SCALES[S.scale]||SCALES.Major;if(sc.length===7)return sc;return/minor|blues/i.test(S.scale)?SCALES.Minor:SCALES.Major;}
 function scTone(j){var sc=harmScale(),n=sc.length;return sc[((j%n)+n)%n]+12*Math.floor(j/n);}
-function chordLabel(deg){var r=scTone(deg),th=scTone(deg+2)-r,fi=scTone(deg+4)-r;return NOTE_NAMES[(S.key+r)%12]+(th===3?(fi===6?'°':'m'):(fi===8?'+':''));}
-function progLabel(p){return p.map(chordLabel).join(' – ');}
+function progChordName(deg){var r=scTone(deg),th=scTone(deg+2)-r,fi=scTone(deg+4)-r;return NOTE_NAMES[(S.key+r)%12]+(th===3?(fi===6?'°':'m'):(fi===8?'+':''));}
+function progLabel(p){return p.map(progChordName).join(' – ');}
 /* guess the song's chords: for every bar, which chord of the key fits the notes best */
 function detectProg(){
   var bars=S.bars,out=[],any=false;

@@ -1195,7 +1195,7 @@ function packsOffline(onProgress){
   });
 }
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},roll:function(){return R;},ap:{state:function(){return AP;},strip:function(c,z){return stripNotes(c,z);}},loops:{detect:function(){return detectProg();},all:function(){return LOOPS;},notes:function(L,b){return loopNotes(L,b);}},selTrack:function(){return selTrack();},drum:function(){return drum.apply(null,arguments);},loadKit:function(n){return loadKit(n);},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,pan:'pitch'},
  upright:{gain:0.96,rel:.3,lp0:3500,lpv:11000,pan:'pitch'},
@@ -2037,6 +2037,7 @@ function pressStart(pid,midis,elm,vel,raw){
   down[pid]={items:items,el:elm};if(elm)elm.classList.add('on');
 }
 function pressEnd(pid,force){
+  if(apEnd(pid)){if(AP.glide&&AP.glide.pid===pid)AP.glide=null;return;}
   var d=down[pid];if(!d)return;
   if(sustain&&!force){if(sus.indexOf(pid)<0)sus.push(pid);return;}
   delete down[pid];var si=sus.indexOf(pid);if(si>=0)sus.splice(si,1);
@@ -2176,6 +2177,8 @@ function renderDock(){
     h+='<button class="tog" id="hLock" aria-pressed="'+S.lock+'" title="When on, the black keys that are outside the key are moved to a nearby note. Turn off to play every note.">Scale lock</button>';
     h+='<button id="oDn" aria-label="Octave down" title="Arrow down">Octave −</button><button id="oUp" aria-label="Octave up" title="Arrow up">Octave +</button>';
     h+='<label>Keys <select id="hKeys" title="How the computer keyboard plays"><option value="piano"'+(S.keymode==='piano'?' selected':'')+'>Piano (2 rows)</option><option value="scale"'+(S.keymode==='scale'?' selected':'')+'>Scale + chords</option></select></label>';
+    h+='<label title="Play with a piano keyboard, or with chord strips like on a tablet">Play <select id="hPlay"><option value="keys"'+(S.playmode!=='strips'?' selected':'')+'>Keyboard</option><option value="strips"'+(S.playmode==='strips'?' selected':'')+'>Chord strips</option></select></label>';
+    var apf=apFamily(kt);h+='<label title="Hold a chord and the instrument plays a pattern in time with the song">Autoplay <select id="hAP"><option value="0">Off</option>'+(apf?AP_PATS[apf].map(function(p,i){return'<option value="'+(i+1)+'"'+(AP.mode===i+1?' selected':'')+'>'+(i+1)+' · '+p[0]+'</option>';}).join(''):'')+'</select></label>';
     h+='<label>Chords <select id="hChord"><option value="triad"'+(S.chordType==='triad'?' selected':'')+'>Triads</option><option value="7th"'+(S.chordType==='7th'?' selected':'')+'>7ths</option></select></label>';
   }
   h+='<label>Labels <select id="hLab" title="What to write on the keys and drums"><option value="notes"'+(KLAB==='notes'?' selected':'')+'>'+(drumMode?'Drum names':'Note names')+'</option><option value="keys"'+(KLAB==='keys'?' selected':'')+'>'+(drumMode?'Names + computer keys':'Computer keys')+'</option><option value="none"'+(KLAB==='none'?' selected':'')+'>'+(drumMode?'Names only':'None')+'</option></select></label>';
@@ -2193,9 +2196,12 @@ function renderDock(){
     var dk={};Object.keys(DRUMKEYS).forEach(function(c){dk[DRUMKEYS[c]]=codeLabel(c);});
     h+=kitHTML(kt,dk);
   }else{
+    if(S.playmode==='strips')h+=stripsHTML();
+    else{
     h+='<div class="chords">';
     for(var i=0;i<Math.min(SCALES[S.scale].length,7);i++)h+='<button class="chord" data-chord="'+i+'">'+(S.keymode==='scale'?'<em class="ck">'+(i+1)+'</em>':'')+'<b>'+esc(chordLabel(i))+'</b><small>'+ROMAN[i]+'</small></button>';
     h+='</div>'+kbHTML(host.clientWidth-20);
+    }
   }
   host.className='dock kb-'+S.kbsize;host.innerHTML=h;
   VIZ.mount(kt);
@@ -2207,10 +2213,14 @@ function touchVel(e,k){
   return .85;
 }
 $('dock').addEventListener('pointerdown',function(e){
-  var k=e.target.closest('[data-m],[data-chord]');if(!k||!$('dock').contains(k))return;
-  e.preventDefault();var vel=touchVel(e,k);
+  var k=e.target.closest('[data-m],[data-chord],[data-strip]');if(!k||!$('dock').contains(k))return;
+  e.preventDefault();var vel=k.dataset.strip!=null?(e.pointerType==='pen'&&e.pressure>0&&e.pressure!==.5?Math.max(.25,Math.min(1,.2+e.pressure*.9)):.82):touchVel(e,k);
   try{if(k.releasePointerCapture&&k.hasPointerCapture&&k.hasPointerCapture(e.pointerId))k.releasePointerCapture(e.pointerId);}catch(er){}
-  if(k.dataset.chord!=null)pressStart(e.pointerId,chordNotes(+k.dataset.chord),k,vel);
+  if(k.dataset.strip!=null){var sci=+k.dataset.strip,sz=+k.dataset.z;
+    if(AP.mode)apStart(e.pointerId,sci,sz,vel,k);else pressStart(e.pointerId,stripNotes(sci,sz),k,vel);
+    if(down[e.pointerId])down[e.pointerId].strip=true;else AP.glide={pid:e.pointerId,el:k};
+    return;}
+  if(k.dataset.chord!=null){if(AP.mode)apStart(e.pointerId,+k.dataset.chord,2,vel,k);else pressStart(e.pointerId,chordNotes(+k.dataset.chord),k,vel);}
   else{pressStart(e.pointerId,[+k.dataset.m],k,vel);if(down[e.pointerId]&&k.closest('.kb')){down[e.pointerId].glide=true;down[e.pointerId].vel=vel;}}
 });
 /* stop right-click / two-finger-tap / long-press menus from popping up while playing */
@@ -2219,6 +2229,13 @@ document.addEventListener('contextmenu',function(e){
 });
 document.addEventListener('selectstart',function(e){if(e.target.closest&&e.target.closest('.dock'))e.preventDefault();});
 document.addEventListener('pointermove',function(e){
+  /* sliding across chord-strip zones plays each zone you pass, like strumming */
+  var sd=down[e.pointerId],ag=AP.glide&&AP.glide.pid===e.pointerId?AP.glide:null;
+  if((sd&&sd.strip)||ag){var se=document.elementFromPoint(e.clientX,e.clientY),sk=se&&se.closest?se.closest('[data-strip]'):null;
+    if(sk&&sk!==(sd?sd.el:ag.el)){var ci2=+sk.dataset.strip,z2=+sk.dataset.z;
+      if(ag){apEnd(e.pointerId);apStart(e.pointerId,ci2,z2,.82,sk);ag.el=sk;}
+      else{pressEnd(e.pointerId,true);pressStart(e.pointerId,stripNotes(ci2,z2),sk,.78);if(down[e.pointerId])down[e.pointerId].strip=true;}}
+    return;}
   var d=down[e.pointerId];if(!d||!d.glide||!document.elementFromPoint)return;
   var el=document.elementFromPoint(e.clientX,e.clientY),k=el&&el.closest?el.closest('.kb [data-m]'):null;
   if(!k||k===d.el)return;
@@ -2263,6 +2280,8 @@ $('dock').addEventListener('click',function(e){
 });
 $('dock').addEventListener('change',function(e){
   if(e.target.id==='hChord'){S.chordType=e.target.value;renderDock();}
+  if(e.target.id==='hPlay'){S.playmode=e.target.value;try{localStorage.setItem('jr-play',S.playmode);}catch(er){}renderDock();if(S.playmode==='strips')toast('Chord strips: tap high on a strip for a higher chord, low for a lower one; the bottom zones play bass notes. Slide across to strum.');}
+  if(e.target.id==='hAP'){AP.mode=+e.target.value;try{localStorage.setItem('jr-ap',AP.mode);}catch(er){}if(AP.mode)toast('Autoplay '+apPatName(AP.mode)+': hold a chord and it plays in time');}
   if(e.target.id==='hQuant'){S.quant=+e.target.value;}
   if(e.target.id==='hKeys'){S.keymode=e.target.value;renderDock();}
   if(e.target.id==='hLab'){KLAB=e.target.value;try{localStorage.setItem('jr-klab',KLAB);}catch(er){}renderDock();return;}
@@ -2281,7 +2300,7 @@ document.addEventListener('keydown',function(e){
   if(e.repeat)return;
   var kt=keyTrack();if(!kt)return;
   if(kt.kind==='drum'){var pi=KM.drums[e.code];if(pi!=null){e.preventDefault();pressStart('k'+e.code,[pi],document.querySelector('.pad[data-m="'+pi+'"]'));}return;}
-  if(KM.chords[e.code]!=null){e.preventDefault();var ci=KM.chords[e.code];pressStart('k'+e.code,chordNotes(ci),document.querySelector('.chord[data-chord="'+ci+'"]'));return;}
+  if(KM.chords[e.code]!=null){e.preventDefault();var ci=KM.chords[e.code],cel=document.querySelector('.chord[data-chord="'+ci+'"]')||document.querySelector('.strip2[data-sci="'+ci+'"] [data-z="2"]');if(AP.mode)apStart('k'+e.code,ci,2,.82,cel);else pressStart('k'+e.code,chordNotes(ci),cel);return;}
   var m=KM.notes[e.code];
   if(m!=null){e.preventDefault();pressStart('k'+e.code,[m],document.querySelector('.kb [data-m="'+m+'"]'));}
 });
@@ -2299,6 +2318,7 @@ window.addEventListener('resize',function(){renderDock();if(R)R.resize();if(AUTO
 /*@include js/arrange.js*/
 /*@include js/drummer.js*/
 /*@include js/loops.js*/
+/*@include js/strips.js*/
 function tidyNotes(t,str,grid,only){
   var L=LEN(),g=1/grid,out=[];
   t._undo=JSON.parse(JSON.stringify(t.notes));
@@ -2931,7 +2951,7 @@ var GUIDE='<div class="guide"><h3>Guide</h3><div class="gnav">'+[['start','Start
 '<section class="gsec" id="g-effects"><h4>Mix and effects</h4><dl><dt>Pan and Tone</dt><dd>Pan places a track left or right; Tone makes it darker or brighter. Double-click either to reset.</dd>'+
 '<dt>Fuzz</dt><dd>Gritty distortion, great on guitars and bass.</dd><dt>Squash</dt><dd>Heavy compression that makes drums punchy and big.</dd><dt>Phaser</dt><dd>A slow swirling sweep, very 70s and very Tame Impala.</dd>'+
 '<dt>Chorus</dt><dd>Doubles the sound slightly out of tune for width and shimmer.</dd><dt>Tape</dt><dd>Warm saturation and gentle wobble, like an old tape machine.</dd><dt>Echo</dt><dd>Repeats in time with your tempo.</dd><dt>Style</dt><dd>Presets that set several effects at once.</dd></dl></section>'+
-'<section class="gsec" id="g-keys"><h4>Playing</h4><dl><dt>Scale lock</dt><dd>Keys outside your scale are greyed out and snap to the nearest right note.</dd>'+
+'<section class="gsec" id="g-keys"><h4>Playing</h4><dl><dt>Chord strips</dt><dd>Set <b>Play</b> to <b>Chord strips</b> for one tall strip per chord of your key, like on a tablet. Tap high on a strip for a higher-sounding chord and low for a lower one; the three zones at the bottom play bass notes. Slide your finger up or down a strip to strum through it.</dd><dt>Autoplay</dt><dd>Pick a pattern under <b>Autoplay</b>, then hold a chord (a strip or a chord button): the instrument plays it for you in time, as a strum, fingerpicking, an arpeggio, a pulse or a bass groove, depending on the instrument. Change chords whenever you like; it keeps time. Record while using Autoplay and the notes it plays go into your track.</dd><dt>Scale lock</dt><dd>Keys outside your scale are greyed out and snap to the nearest right note.</dd>'+
 '<dt>Keys: Piano (2 rows)</dt><dd>Your computer keyboard works like a piano. Bottom row <span class="kbd">Z</span> to <span class="kbd">/</span> is one octave (with <span class="kbd">S D G H J</span> as black keys); top row <span class="kbd">Q</span> to <span class="kbd">P</span> is the next octave up (numbers are black keys).</dd>'+
 '<dt>Keys: Scale + chords</dt><dd>Every letter key plays a note in your scale, so nothing sounds wrong, and number keys <span class="kbd">1</span> to <span class="kbd">7</span> play chords.</dd>'+
 '<dt>Chord buttons</dt><dd>One tap plays a full chord in your key. Roman numerals show the chord position (I, IV, V are the most common).</dd>'+
