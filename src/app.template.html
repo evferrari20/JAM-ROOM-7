@@ -927,19 +927,27 @@ function wireTrack(t){
   t.mid=c.createBiquadFilter();t.mid.type='peaking';t.mid.frequency.value=1000;t.mid.Q.value=.8;
   t.hi=c.createBiquadFilter();t.hi.type='highshelf';t.hi.frequency.value=t.eq?6000:3200;
   t.pn=c.createStereoPanner?c.createStereoPanner():c.createGain();
-  chainTrack(t);t.hi.connect(t.pn);t.pn.connect(A.master);t.pn.connect(t.send);t.send.connect(A.rev);t.pn.connect(t.dsend);t.dsend.connect(A.dly);t.an=c.createAnalyser();t.an.fftSize=512;t.pn.connect(t.an);
+  t.ag=null;t.af=null;chainTrack(t);t.pn.connect(A.master);t.pn.connect(t.send);t.send.connect(A.rev);t.pn.connect(t.dsend);t.dsend.connect(A.dly);t.an=c.createAnalyser();t.an.fftSize=512;t.pn.connect(t.an);
   applyMix(t);
   t.fxs=null;t.fxn=[];t.fxosc=[];rebuildFx(t);
   if(t.kind==='voice'){t.vin=c.createGain();t.pol=[];buildPolish(t);}
 }
 /* volume -> (compressor, only when used) -> 3-band EQ -> pan */
 function chainTrack(t){
+  /* vn -> [compressor] -> low / mid / high EQ -> [automation filter] -> automation gain -> pan */
   try{t.vn.disconnect();}catch(e){}if(t.cmp){try{t.cmp.disconnect();t.cmk.disconnect();}catch(e){}}
+  try{t.hi.disconnect();}catch(e){}if(t.af){try{t.af.disconnect();}catch(e){}}if(t.ag){try{t.ag.disconnect();}catch(e){}}
   var want=(t.comp||0)>.01;
   if(want&&!t.cmp){t.cmp=A.c.createDynamicsCompressor();t.cmk=A.c.createGain();}
   if(!want){t.cmp=null;t.cmk=null;}
   if(t.cmp){t.vn.connect(t.cmp);t.cmp.connect(t.cmk);t.cmk.connect(t.lo);}else t.vn.connect(t.lo);
   t.lo.connect(t.mid);t.mid.connect(t.hi);
+  if(!t.ag){t.ag=A.c.createGain();}
+  var wantF=autoNeedsFilter(t);
+  if(wantF&&!t.af){t.af=A.c.createBiquadFilter();t.af.type='lowpass';t.af.Q.value=.9;t.af.frequency.value=A.c.sampleRate*.45;}
+  if(!wantF)t.af=null;
+  if(t.af){t.hi.connect(t.af);t.af.connect(t.ag);}else t.hi.connect(t.ag);
+  if(t.pn)t.ag.connect(t.pn);
 }
 function applyMix(t){
   if(!t.lo)return;
@@ -950,7 +958,7 @@ function applyMix(t){
   if(t.pn.pan)t.pn.pan.value=t.pan||0;
   if(t.send)t.send.gain.value=t.rev;if(t.dsend)t.dsend.gain.value=t.echo||0;
 }
-function unwireTrack(t){try{if(t.vin){t.vin.disconnect();(t.pol||[]).forEach(function(n){n.disconnect();});}}catch(e){}t.vin=null;t.pol=[];try{teardownFx(t);[t.vn,t.cmp,t.cmk,t.lo,t.mid,t.hi,t.pn,t.send,t.dsend].forEach(function(n){if(n)n.disconnect();});}catch(e){}t.node=null;t.vn=null;t.send=null;t.dsend=null;t.cmp=null;t.cmk=null;t.lo=null;t.mid=null;t.hi=null;t.pn=null;}
+function unwireTrack(t){try{if(t.vin){t.vin.disconnect();(t.pol||[]).forEach(function(n){n.disconnect();});}}catch(e){}t.vin=null;t.pol=[];try{teardownFx(t);[t.vn,t.cmp,t.cmk,t.lo,t.mid,t.hi,t.af,t.ag,t.pn,t.send,t.dsend].forEach(function(n){if(n)n.disconnect();});}catch(e){}t.af=null;t.ag=null;t.node=null;t.vn=null;t.send=null;t.dsend=null;t.cmp=null;t.cmk=null;t.lo=null;t.mid=null;t.hi=null;t.pn=null;}
 
 /* ---- synth building blocks ---- */
 function G(c,out,t,peak,a,d,s){
@@ -1849,11 +1857,14 @@ function clicks(a,b,base,force){
   if(!force&&!S.metro)return;
   for(var k=Math.ceil(a);k<b;k++){click(P.T0+(base+k)*spb(),((k%4)+4)%4===0);}
 }
-function scheduleRange(a,b,base,pid){
+function scheduleRange(a,b,base,pid,slot){
+  if(slot==null)slot=-1;
   var sp=spb(),c=A.c,now=c.currentTime;
   clicks(a,b,base,false);
   S.tracks.forEach(function(t){
-    if(!audible(t)||!t.node)return;
+    if(!t.node)return;
+    autoSchedule(t,a,b,base,pid);
+    if(!audible(t)||slotOff(slot,t.id))return;
     if(t.kind==='voice'){
       if(a<=0&&b>0){partData(t,pid).takes.forEach(function(k){
         if(k.mute)return;
@@ -1873,6 +1884,7 @@ function scheduleRange(a,b,base,pid){
       }
     });
   });
+  P.autoFirst=false;
 }
 function tick(){
   if(!P.playing)return;
@@ -1882,7 +1894,7 @@ function tick(){
     var pass=Math.floor(P.schedB/L),base=pass*L;
     if(!loopOn()&&pass>=passes()){P.schedB=endB;break;}
     var to=Math.min(endB,base+L);
-    scheduleRange(P.schedB-base,to-base,base,passPart(pass));P.schedB=to;
+    scheduleRange(P.schedB-base,to-base,base,passPart(pass),songOn()?((pass%S.arr.length)+S.arr.length)%S.arr.length:-1);P.schedB=to;
   }
   P.live=P.live.filter(function(x){return x.end>now-3;});
   var endT=P.T0+L*passes()*sp+(P.exporting?1.8:.6);
@@ -1898,7 +1910,8 @@ async function start(rec,opts){
     S.tracks.forEach(function(t){allTakes(t).forEach(function(k){try{takeBuffer(k);}catch(e){}});});
     var cin=(rec&&S.count&&!opts.noCount)?4:0;
     P.playing=true;P.rec=!!rec;P.exporting=!!opts.exporting;P.live=[];P.recTrack=rec?sel:null;
-    P.T0=c.currentTime+.12+cin*spb();P.schedB=-cin;
+    var from=(!cin&&opts.from>0)?opts.from:0;
+    P.T0=c.currentTime+.12+cin*spb()-from*spb();P.schedB=from>0?from:-cin;autoReset();autoPrime();
     if(rec&&sel&&sel.kind==='voice')beginCapture(sel);
     P.timer=setInterval(tick,25);tick();loopUI();setTransportUI();
   }finally{P.starting=false;}
@@ -1908,7 +1921,7 @@ function stop(){
   clearInterval(P.timer);cancelAnimationFrame(P.raf);
   var now=A.c.currentTime;P.live.forEach(function(x){try{x.h.release(now);}catch(e){}});P.live=[];
   if(P.cap)endCapture(true);
-  var wasExport=P.exporting;P.playing=false;P.rec=false;P.exporting=false;
+  var wasExport=P.exporting;P.playing=false;P.rec=false;P.exporting=false;autoReset();
   setTransportUI();if(R)R.draw();pgPlayhead();songTick(null);
   if(wasExport)finishExport();
   markDirty();
@@ -1924,7 +1937,7 @@ function loopUI(){
     if(b<0)$('pos').textContent='Count '+Math.ceil(-b);
     else{var w=wrapBeat(b);$('pos').textContent=w==null?'Done':(songOn()?partName(passPart(Math.floor(b/LEN())))+' · ':'')+'Bar '+(Math.floor(w/4)+1)+' · '+(Math.floor(w%4)+1);}
     songTick(b);
-    if(R)R.draw();pgPlayhead();
+    if(R)R.draw();if(AUTOUI.draw&&!(R&&R.t===AUTOUI.t))AUTOUI.draw();pgPlayhead();
   })();
 }
 function setTransportUI(){
@@ -2276,9 +2289,11 @@ document.addEventListener('keyup',function(e){
   pressEnd('k'+e.code);
 });
 window.addEventListener('blur',function(){susOff();Object.keys(down).forEach(function(p){pressEnd(p,true);});});
-window.addEventListener('resize',function(){renderDock();if(R)R.resize();});
+window.addEventListener('resize',function(){renderDock();if(R)R.resize();if(AUTOUI.size)AUTOUI.size();});
 
 /*@include js/roll.js*/
+/*@include js/auto.js*/
+/*@include js/arrange.js*/
 function tidyNotes(t,str,grid,only){
   var L=LEN(),g=1/grid,out=[];
   t._undo=JSON.parse(JSON.stringify(t.notes));
@@ -2316,10 +2331,11 @@ function fxHTML(t){
     '<p class="hint">Inspired by the Tame Impala sound: fuzz pedal, phaser, tape warmth, tempo-synced echo and heavily squashed drums. Reverb is on the track card.</p></div>';
 }
 function renderEditor(){
-  var t=selTrack(),host=$('editor');R=null;
+  var t=selTrack(),host=$('editor');R=null;AUTOUI.draw=null;AUTOUI.size=null;
+  if(ARR.on){renderArrange(host);return;}
   if(!t){host.innerHTML='<p class="hint">Add a track to get started.</p>';return;}
   if(t.kind==='voice'){
-    host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="impBtn">Import a recording</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+
+    host.innerHTML='<div class="ehead"><strong>'+esc(t.name)+'</strong><button class="qh" data-help="voice" aria-label="Help" title="What is this?">?</button><button id="impBtn">Import a recording</button><button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button></div><input type="file" id="impFile" accept="audio/*" hidden>'+autoPanelHTML(t)+
       '<div class="microw"><button id="micBtn">Turn on microphone</button><select id="micSel" hidden aria-label="Choose microphone"></select><button id="liveTog" class="tog" aria-pressed="'+!!S.liveTune+'" title="Hear yourself auto-tuned in your headphones while you record. Adds a small delay.">Hear auto-tune live</button></div>'+
       '<div class="vrow"><label>Vocal sound <select id="polSel">'+Object.keys(POLISH).map(function(n){return'<option'+((t.polish||'Off')===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select></label><span class="hint" id="polTip">'+POLISH_TIP[t.polish||'Off']+'</span></div>'+
       '<p class="hint">Press the red record button to sing over your song for one pass. Use headphones so the microphone doesn\'t pick up the music. Each recording becomes a new take, so you can layer harmonies. No microphone access? Record on your phone and import the file.</p>'+
@@ -2343,6 +2359,7 @@ function renderEditor(){
       if(k.showPitch)pgDraw(k);
       if(k.tune){if(k.ty&&k.tsig===vtSig(k))takeStatus(k,VT.failed?'Tuned (basic engine)':'Tuned ✓');else tuneTake(k);}
     });
+    mountAuto(t);
     return;
   }
   var drums=t.kind==='drum';
@@ -2353,9 +2370,9 @@ function renderEditor(){
     head+='<label>Note length <select id="selLen">'+[[1,'1/16'],[2,'1/8'],[4,'1/4'],[8,'1/2'],[16,'1 bar']].map(function(o){return'<option value="'+o[0]+'"'+(S.len===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label>';
   }
   head+='<span class="tidy"><select id="tidyAmt" aria-label="How much to tidy" title="Gentle moves notes halfway to the beat and keeps your feel. Tight lines them up exactly."><option value="0.5,4">Gentle · 16ths</option><option value="1,4">Tight · 16ths</option><option value="0.5,2">Gentle · 8ths</option><option value="1,2">Tight · 8ths</option></select><button id="tidyBtn">Tidy timing</button>'+(t._undo?'<button id="undoTidy">Undo tidy</button>':'')+'</span>';
-  head+='<button id="clearNotes">Clear notes</button></div>';
-  host.innerHTML=head+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div><p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
-  mountRoll($('roll'),t);
+  head+='<button id="autoBtn" class="tog" aria-pressed="'+AUTOUI.on+'" title="Draw volume, pan, reverb and filter changes over time">Automation</button><button id="clearNotes">Clear notes</button></div>';
+  host.innerHTML=head+rollToolsHTML(t)+'<div class="roll'+(ROLL.vel?' withvel':'')+'" id="roll"></div><div class="vlane" id="vlane"'+(ROLL.vel?'':' hidden')+'><canvas></canvas></div>'+autoPanelHTML(t)+'<p class="hint">'+(drums?'Tap the grid to add a hit, tap a hit to select it, double-tap to remove it. Drag hits to move them; drag in the Velocity lane to make hits softer or louder.':'Tap the grid to add a note, tap a note to select it, double-tap to remove it. Drag a note to move it, drag its right edge to make it longer. Or press the red record button and play the keyboard below.')+'</p>'+fxHTML(t);
+  mountRoll($('roll'),t);mountAuto(t);
 }
 $('editor').addEventListener('change',function(e){
   var t=selTrack();if(!t)return;
@@ -2423,6 +2440,7 @@ $('editor').addEventListener('click',function(e){
   var t=selTrack();if(!t)return;var b=e.target.closest('button');if(!b)return;
   if(b.id==='micBtn'){if(mic){micOff();micList();}else{ensureMic().then(micList);}return;}
   if(b.id==='impBtn'){var inp=$('impFile');if(inp)inp.click();return;}
+  if(b.id==='autoBtn'){autoToggle();return;}
   if(b.id==='tidyBtn'){
     if(!t.notes.length){toast('No notes to tidy yet');return;}
     var tv=$('tidyAmt').value.split(',');tidyNotes(t,+tv[0],+tv[1],R&&R.t===t&&R.sel.size?R.sel:null);var keep=$('tidyAmt').value;renderEditor();$('tidyAmt').value=keep;markDirty();toast('Timing tidied. Tap Undo tidy to go back.');return;
@@ -2648,12 +2666,12 @@ function openPicker(target){
 /* =============== saving, loading, exporting =============== */
 (async function(){try{if(window.claude&&claude.use)DL=await claude.use('downloads');}catch(e){DL=null;}})();
 function snapshot(){
-  return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,arr:S.arr,songMode:!!S.songMode,
-    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,
+  return{v:1,name:S.name,swing:S.swing,space:S.space,bpm:S.bpm,key:S.key,scale:S.scale,bars:S.bars,loop:S.loop,metro:S.metro,count:S.count,liveTune:!!S.liveTune,master:S.master,tune:S.tune,fin:!!S.fin,mst:S.mst||'',parts:S.parts,part:S.part,arr:S.arr,arrOff:(arrNorm(),S.arrOff),songMode:!!S.songMode,
+    tracks:S.tracks.map(function(t){return{id:t.id,name:t.name,kind:t.kind,inst:t.inst,kit:t.kit,vol:t.vol,rev:t.rev,mute:t.mute,color:t.color,notes:t.notes,fx:t.fx,pan:t.pan,tone:t.tone,polish:t.polish,eq:t.eq,comp:t.comp,echo:t.echo,style:t.style,sb:t.sb,mac:t.mac,auto:t.auto||{},
       takes:t.takes.map(takeMeta),pd:pdMeta(t)};})};
 }
 function takeMeta(k){return{id:k.id,name:k.name,gain:k.gain,nudge:k.nudge,tune:k.tune,strength:k.strength,speed:k.speed,form:k.form||0,edits:k.edits||[],mute:k.mute,sr:k.sr};}
-function pdMeta(t){var o={};Object.keys(t.pd||{}).forEach(function(id){o[id]={notes:t.pd[id].notes,takes:(t.pd[id].takes||[]).map(takeMeta)};});return o;
+function pdMeta(t){var o={};Object.keys(t.pd||{}).forEach(function(id){o[id]={notes:t.pd[id].notes,takes:(t.pd[id].takes||[]).map(takeMeta),auto:t.pd[id].auto||{}};});return o;
 }
 function f2i16(f){var i=new Int16Array(f.length);for(var j=0;j<f.length;j++)i[j]=Math.max(-1,Math.min(1,f[j]))*32767;return i;}
 function i162f(i){var f=new Float32Array(i.length);for(var j=0;j<i.length;j++)f[j]=i[j]/32767;return f;}
@@ -2690,7 +2708,8 @@ function applyProject(d,aud,opts){
   setRef(d.tune!=null?+d.tune:prefTune(),true);S.fin=!!d.fin;S.mst=d.mst||'';applyFin();
   S.parts=(d.parts&&d.parts.length)?d.parts.map(function(p){return{id:p.id,name:p.name};}):[{id:'p1',name:'Main'}];
   S.part=S.parts.some(function(p){return p.id===d.part;})?d.part:S.parts[0].id;
-  S.arr=(d.arr||[S.part]).filter(function(id){return S.parts.some(function(p){return p.id===id;});});if(!S.arr.length)S.arr=[S.part];
+  var aoff=d.arrOff||[],apairs=(d.arr||[S.part]).map(function(id,i){return[id,aoff[i]||{}];}).filter(function(x){return S.parts.some(function(p){return p.id===x[0];});});
+  S.arr=apairs.map(function(x){return x[0];});S.arrOff=apairs.map(function(x){return x[1];});if(!S.arr.length){S.arr=[S.part];S.arrOff=[{}];}
   S.songMode=!!d.songMode;
   S.tracks=(d.tracks||[]).map(function(x){
     var t=Object.assign(mkTrack(x.kind,x.inst),x);t.node=null;t.vn=null;t.send=null;t.fxs=null;t.fx=Object.assign(fxZero(),x.fx||{});t.notes=x.notes||[];
@@ -2698,7 +2717,7 @@ function applyProject(d,aud,opts){
     t.pd={};
     Object.keys(x.pd||{}).forEach(function(pid){
       if(pid===S.part||!S.parts.some(function(p){return p.id===pid;}))return;
-      var q=x.pd[pid];t.pd[pid]={notes:q.notes||[],takes:(q.takes||[]).map(function(k){return mkTakeFrom(k,aud);}).filter(Boolean)};
+      var q=x.pd[pid];t.pd[pid]={notes:q.notes||[],takes:(q.takes||[]).map(function(k){return mkTakeFrom(k,aud);}).filter(Boolean),auto:q.auto||{}};
     });
     return t;
   });
@@ -2713,7 +2732,7 @@ function applyProject(d,aud,opts){
 function audFromRecord(rec){var m={};Object.keys(rec.audio||{}).forEach(function(id){m[id]={sr:rec.audio[id].sr,f:i162f(new Int16Array(rec.audio[id].pcm))};});return m;}
 function starter(){
   setRef(prefTune(),true);S.fin=false;S.mst='';applyFin();
-  S.parts=[{id:'p1',name:'Main'}];S.part='p1';S.arr=['p1'];S.songMode=false;
+  S.parts=[{id:'p1',name:'Main'}];S.part='p1';S.arr=['p1'];S.arrOff=[{}];S.songMode=false;
   S.solo=null;S.swing=0;if(S.space!=='Studio'){S.space='Studio';if(A.c)A.rev.buffer=makeIR(A.c,S.space);}S.tracks.forEach(unwireTrack);S.tracks=[];S.name='My song';S.bpm=100;S.key=0;S.scale='Major';S.bars=4;
   var d=mkTrack('drum');S.tracks.push(d);applyBeat(d,'Rock');
   var p=mkTrack('inst','piano');S.tracks.push(p);
@@ -2883,6 +2902,8 @@ var GUIDE='<div class="guide"><h3>Guide</h3><div class="gnav">'+[['start','Start
 '<section class="gsec" id="g-song"><h4>Building a song</h4><dl><dt>Song starter</dt><dd>Pick a vibe (Lo-fi, Pop, Psych, Hip-hop, R&amp;B, Funk or House) and get drums, a bass line, chords and a fuller chorus, already lined up into a song.</dd>'+
 '<dt>Parts</dt><dd>A part is one section of your song, like a verse or chorus, with its own notes and recordings. Tap a part to edit it. ＋ Part adds one, either as a copy of the part you are on or empty. ⋯ renames, copies or deletes.</dd>'+
 '<dt>Song order</dt><dd>Line parts up in any order and repeat them as often as you like. Turn on <b>▶ Play whole song</b> to hear everything in order, or switch to <b>Loop this part</b> while you work on one section. Recording always loops the part you are editing.</dd>'+
+'<dt>Arrange</dt><dd>Shows the whole song as a timeline: one column per section, one row per instrument, with a small picture of the notes. Tap a cell to drop that instrument out of that section (a quiet intro, a drum break) without making a new part. Drag a section name to move it, and use the bar underneath to duplicate, remove or <b>Make it unique</b> (gives that section its own copy of the part so you can vary it). <b>Play from section</b> starts playback there; double-tap a section to edit its notes.</dd>'+
+'<dt>Automation</dt><dd>In the note editor, turn on <b>Automation</b> to draw how Volume, Pan, Reverb or Filter change over time. Tap the lane to add a point, drag points, double-tap to remove one, or pick a ready-made shape like Fade in, Swing left and right, or Sweep open. Volume is a percentage of the mixer level, so the mixer still works. Each part has its own automation.</dd>'+
 '<dt>↶ Undo and ↷ Redo</dt><dd>Undo anything: notes, deleted tracks or takes, effects, new parts, even a song starter. Shortcuts: <span class="kbd">Ctrl</span>/<span class="kbd">Cmd</span> + <span class="kbd">Z</span>, add <span class="kbd">Shift</span> to redo.</dd>'+
 '<dt>Mixer</dt><dd>Every track side by side with a level meter, volume, pan, reverb, mute and solo, plus a master volume. Press play and balance by ear; if a meter turns red, turn that track down.</dd>'+
 '<dt>WAV export</dt><dd>In Save &amp; share, Download WAV makes a full-quality file of your whole song (or the part you are on), faster than real time.</dd></dl></section>'+
@@ -2947,29 +2968,29 @@ setTransportUI();showWelcome();
 var PART_NAMES=['Intro','Verse','Pre-chorus','Chorus','Bridge','Drop','Outro'];
 function partById(id){return S.parts.filter(function(p){return p.id===id;})[0]||null;}
 function partName(id){var p=partById(id);return p?p.name:'Part';}
-function partData(t,pid){if(!pid||pid===S.part)return{notes:t.notes,takes:t.takes};return(t.pd&&t.pd[pid])||{notes:[],takes:[]};}
+function partData(t,pid){if(!pid||pid===S.part)return{notes:t.notes,takes:t.takes,auto:t.auto};return(t.pd&&t.pd[pid])||{notes:[],takes:[]};}
 function allTakes(t){var a=t.takes.slice();Object.keys(t.pd||{}).forEach(function(id){a=a.concat(t.pd[id].takes||[]);});return a;}
 function songOn(){return!!S.songMode&&S.arr.length>0&&!P.rec;}
 function passes(){return songOn()?S.arr.length:1;}
 function passPart(pass){if(!songOn())return S.part;var n=S.arr.length;return S.arr[((pass%n)+n)%n];}
 function switchPart(pid){
   if(pid===S.part||!partById(pid))return;
-  S.tracks.forEach(function(t){t.pd=t.pd||{};t.pd[S.part]={notes:t.notes,takes:t.takes};var d=t.pd[pid]||{notes:[],takes:[]};t.notes=d.notes;t.takes=d.takes;delete t.pd[pid];});
+  S.tracks.forEach(function(t){t.pd=t.pd||{};t.pd[S.part]={notes:t.notes,takes:t.takes,auto:t.auto||{}};var d=t.pd[pid]||{notes:[],takes:[]};t.notes=d.notes;t.takes=d.takes;t.auto=d.auto||{};delete t.pd[pid];});
   S.part=pid;renderSong();renderEditor();markDirty();
 }
 function copyTake(k){return Object.assign({},k,{id:nid('k'),edits:JSON.parse(JSON.stringify(k.edits||[])),job:null,want:null,_rt:null,showPitch:false});}
 function nextPartName(){for(var i=0;i<PART_NAMES.length;i++){var n=PART_NAMES[i];if(!S.parts.some(function(p){return p.name===n;}))return n;}return'Part '+(S.parts.length+1);}
 function addPart(name,copy){
   var id=nid('p');S.parts.push({id:id,name:name});
-  S.tracks.forEach(function(t){t.pd=t.pd||{};t.pd[id]=copy?{notes:JSON.parse(JSON.stringify(t.notes)),takes:t.takes.map(copyTake)}:{notes:[],takes:[]};});
-  S.arr.push(id);switchPart(id);
+  S.tracks.forEach(function(t){t.pd=t.pd||{};t.pd[id]=copy?{notes:JSON.parse(JSON.stringify(t.notes)),takes:t.takes.map(copyTake),auto:JSON.parse(JSON.stringify(t.auto||{}))}:{notes:[],takes:[],auto:{}};});
+  arrInsert(S.arr.length,id,{});switchPart(id);
 }
 function deletePart(id){
   if(S.parts.length<2)return;
   if(id===S.part)switchPart(S.parts.filter(function(p){return p.id!==id;})[0].id);
   S.parts=S.parts.filter(function(p){return p.id!==id;});
   S.tracks.forEach(function(t){if(t.pd)delete t.pd[id];});
-  S.arr=S.arr.filter(function(x){return x!==id;});if(!S.arr.length)S.arr=[S.part];
+  arrNorm();for(var ai=S.arr.length-1;ai>=0;ai--)if(S.arr[ai]===id)arrRemove(ai);if(!S.arr.length){S.arr=[S.part];S.arrOff=[{}];}
   renderSong();markDirty();
 }
 function songLenText(){var sec=Math.round(S.arr.length*LEN()*spb());return S.arr.length+' section'+(S.arr.length>1?'s':'')+' · '+Math.floor(sec/60)+':'+('0'+(sec%60)).slice(-2);}
@@ -2977,7 +2998,7 @@ function renderSong(){
   var h=$('song');if(!h)return;
   var html='<div class="srow"><span class="hlabel">Parts</span><button class="qh" data-help="song" aria-label="Help" title="What is this?">?</button>'+
     S.parts.map(function(p){return'<button class="pchip" data-pid="'+p.id+'" aria-pressed="'+(p.id===S.part)+'" title="Edit this part">'+esc(p.name)+'</button>';}).join('')+
-    '<button id="partAdd" title="Add a part, like a chorus">＋ Part</button><button id="partOpts" title="Rename, copy or delete this part" aria-label="Part options">⋯</button></div>';
+    '<button id="partAdd" title="Add a part, like a chorus">＋ Part</button><button id="partOpts" title="Rename, copy or delete this part" aria-label="Part options">⋯</button><button id="arrBtn" class="tog" aria-pressed="'+ARR.on+'" title="See the whole song as a timeline and arrange it">Arrange</button></div>';
   if(S.parts.length>1){
     html+='<div class="srow"><span class="hlabel">Song</span><button id="songMode" class="tog" aria-pressed="'+!!S.songMode+'" title="On: Play runs through every section in order. Off: Play loops the part you are editing.">'+(S.songMode?'Play whole song':'Loop this part')+'</button><div class="slots">'+
       S.arr.map(function(pid,i){return'<span class="slot" data-i="'+i+'"><select data-i="'+i+'" aria-label="Section '+(i+1)+'">'+S.parts.map(function(p){return'<option value="'+p.id+'"'+(p.id===pid?' selected':'')+'>'+esc(p.name)+'</option>';}).join('')+'</select><button data-rm="'+i+'" aria-label="Remove section">✕</button></span>';}).join('')+
@@ -2989,17 +3010,19 @@ function songTick(b){
   var h=$('song');if(!h)return;var on=-1;
   if(b!=null&&b>=0&&songOn())on=Math.floor(b/LEN())%S.arr.length;
   h.querySelectorAll('.slot').forEach(function(el){el.classList.toggle('now',+el.dataset.i===on);});
+  if(ARR.on)document.querySelectorAll('#editor .arsec[data-i],#editor .arcell').forEach(function(el){el.classList.toggle('now',+el.dataset.i===on);});
 }
 $('song').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b||b.dataset.help)return;
   if(b.dataset.pid){switchPart(b.dataset.pid);return;}
   if(b.id==='partAdd'){partModal('add');return;}
   if(b.id==='partOpts'){partModal('opts');return;}
+  if(b.id==='arrBtn'){arrToggle();return;}
   if(b.id==='songMode'){S.songMode=!S.songMode;renderSong();markDirty();toast(S.songMode?'Play now runs through the whole song':'Play now loops the part you\'re editing');return;}
-  if(b.id==='slotAdd'){S.arr.push(S.arr[S.arr.length-1]||S.part);renderSong();markDirty();return;}
-  if(b.dataset.rm!=null){if(S.arr.length<2){toast('A song needs at least one section');return;}S.arr.splice(+b.dataset.rm,1);renderSong();markDirty();}
+  if(b.id==='slotAdd'){arrInsert(S.arr.length,S.arr[S.arr.length-1]||S.part,{});renderSong();if(ARR.on)renderEditor();markDirty();return;}
+  if(b.dataset.rm!=null){if(S.arr.length<2){toast('A song needs at least one section');return;}arrRemove(+b.dataset.rm);renderSong();if(ARR.on)renderEditor();markDirty();}
 });
-$('song').addEventListener('change',function(e){var i=e.target.dataset.i;if(i==null)return;S.arr[+i]=e.target.value;renderSong();markDirty();});
+$('song').addEventListener('change',function(e){var i=e.target.dataset.i;if(i==null)return;S.arr[+i]=e.target.value;renderSong();if(ARR.on)renderEditor();markDirty();});
 function partModal(mode){
   var cur=partById(S.part);
   if(mode==='add'){
@@ -3106,7 +3129,7 @@ function buildVibe(name){
   S.name=name+' song';S.bpm=V.bpm;S.key=V.keys[Math.floor(Math.random()*V.keys.length)];S.scale=V.scale;S.bars=4;S.swing=V.sw;
   S.space=V.space;if(A.c)A.rev.buffer=makeIR(A.c,S.space);
   var pv={id:nid('p'),name:'Verse'},pc={id:nid('p'),name:'Chorus'};
-  S.parts=[pv,pc];S.part=pv.id;S.arr=[pv.id,pc.id,pv.id,pc.id];S.songMode=true;
+  S.parts=[pv,pc];S.part=pv.id;S.arr=[pv.id,pc.id,pv.id,pc.id];S.arrOff=[{},{},{},{}];S.songMode=true;
   function add(kind,inst,vol){var t=mkTrack(kind,inst);t.vol=vol;S.tracks.push(t);return t;}
   var dr=add('drum',null,.8),bs=add('inst',V.bass,.78),ch=add('inst',V.chord,.6),ly=add('inst',V.layer,.42);add('voice',null,.9);
   dr.kit=V.kit;
@@ -3169,12 +3192,12 @@ function encodeWav(buf){
   return new Blob([ab],{type:'audio/wav'});
 }
 async function offRender(oc,N,L,lead,song){
-  var saveA=A,saveLive=P.live,saveT0=P.T0,saveExp=P.exporting,saveMetro=S.metro,FL=['node','vn','send','dsend','lo','mid','hi','cmp','cmk','pn','fxs','fxn','fxosc','vin','pol','an'];
+  var saveA=A,saveLive=P.live,saveT0=P.T0,saveExp=P.exporting,saveMetro=S.metro,FL=['node','vn','send','dsend','lo','mid','hi','cmp','cmk','af','ag','pn','fxs','fxn','fxosc','vin','pol','an'];
   var saved=S.tracks.map(function(t){var o={};FL.forEach(function(f){o[f]=t[f];t[f]=null;});return o;});
   try{
     A={c:oc,off:true};buildGraph(oc);
-    P.exporting=true;S.metro=false;P.live=[];P.T0=lead;
-    for(var pass=0;pass<N;pass++)scheduleRange(0,L,pass*L,song?S.arr[pass]:S.part);
+    P.exporting=true;S.metro=false;P.live=[];P.T0=lead;autoPrime();
+    for(var pass=0;pass<N;pass++)scheduleRange(0,L,pass*L,song?S.arr[pass]:S.part,song?pass:-1);
     var r=oc.startRendering();
     return(r&&r.then)?await r:await new Promise(function(res){oc.oncomplete=function(e){res(e.renderedBuffer);};});
   }finally{

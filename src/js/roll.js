@@ -96,7 +96,7 @@ function mountRoll(host,t){
       else{var mm=hi-r;if(mm%12===0){g.fillStyle=C.ink;g.font='700 11px system-ui, sans-serif';g.fillText('C'+(Math.floor(mm/12)-1),8,yy+rh/2);}else if(inScale(mm)&&rh>=16){g.fillStyle=C.muted;g.font='600 10px system-ui, sans-serif';g.fillText(NOTE_NAMES[mm%12],8,yy+rh/2);}}
     }
     g.fillStyle=C.cell;g.fillRect(Gw-1,HDR,1,h-HDR);g.fillRect(0,HDR-1,w,1);
-    drawLane();
+    drawLane();if(AUTOUI.draw&&AUTOUI.t===t)AUTOUI.draw();
   }
   function drawLane(){
     if(!vg)return;var d=R.d||1,w=vc.width/d,h=VH,sx=host.scrollLeft,C=theme();

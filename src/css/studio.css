@@ -192,6 +192,14 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .rtools .tpose button{padding:5px 7px;font-family:var(--mono);font-size:11.5px}
 .roll.withvel{height:min(calc(44vh - 62px),318px)}
 .vlane[hidden]{display:none}
+.apanel{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.apanel[hidden]{display:none}
+.apanel .arow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.apanel .arow .hint{font-size:12px}
+.apanel .seg2 button{display:inline-flex;align-items:center;gap:5px;font-size:12.5px}
+.adot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brass)}
+.alane{height:96px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--roll-bg)}
+.alane canvas{display:block;touch-action:none;cursor:crosshair}
 .vlane{margin-top:4px;height:58px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--roll-bg)}
 .vlane canvas{display:block;touch-action:none;cursor:ns-resize}
 .fx{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
@@ -378,6 +386,29 @@ body.focus .dock .pad:not(.dz){height:auto}
 .mbtns [data-m=mute][aria-pressed="true"]{background:rgba(217,88,58,.16);color:#ef8a6f;border-color:rgba(217,88,58,.4)}
 .mxd{font-size:11.5px;min-height:34px}
 .mxmb{font-size:12px;padding:6px 8px}
+
+/* arrange view */
+.arr{display:grid;gap:3px;overflow-x:auto;padding:2px 2px 8px;align-items:stretch}
+.arh{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);align-self:end;padding:0 4px 6px}
+.arsec{position:relative;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--pc) 22%,var(--panel));border:1px solid color-mix(in srgb,var(--pc) 45%,transparent);border-top:3px solid var(--pc);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;min-width:0}
+.arsec b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arsec small{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.arsec.on{box-shadow:0 0 0 2px var(--ink)}
+.arsec.now{background:color-mix(in srgb,var(--pc) 42%,var(--panel))}
+.arsec.drag{opacity:.55;cursor:grabbing}
+.arsec.dropl{box-shadow:-4px 0 0 var(--brass)}.arsec.dropr{box-shadow:4px 0 0 var(--brass)}
+.arsec.add{align-items:center;font-size:18px;background:var(--bg2);border:1px dashed var(--line2);border-top:1px dashed var(--line2);cursor:pointer;color:var(--muted)}
+.arn{display:flex;align-items:center;justify-content:flex-start;gap:7px;padding:6px 8px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--tc);font-size:12.5px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden}
+.arn span:last-child{overflow:hidden;text-overflow:ellipsis}
+.arn .si{color:var(--tc)}.arn .si svg{width:15px;height:15px}
+.arcell{height:52px;padding:0;border-radius:6px;background:var(--roll-bg);border:1px solid var(--line);overflow:hidden;display:block}
+.arcell canvas{display:block;margin:1px}
+.arcell.on{border-color:var(--line2)}
+.arcell.now{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.arcell[aria-pressed="false"]{background:var(--bg)}
+.arbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 12px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--line)}
+.arbar b{margin-right:4px}
+.arbar button:disabled{opacity:.4}
 
 /* mastering + polish */
 .mcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
