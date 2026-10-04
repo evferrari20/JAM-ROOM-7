@@ -1064,25 +1064,62 @@ V.subbass=function(c,out,f,t,v){
 
 /* ---- recorded instrument samples (decoded on demand) ---- */
 /* sample bank: one line per sample "id key data", data in a base-85 alphabet that is safe inside HTML */
-var SMP='',SD={};
 var B85='!#$%()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}~',B85D=new Uint8Array(128);
-(function(){for(var i=0;i<85;i++)B85D[B85.charCodeAt(i)]=i;
-  try{SMP=document.getElementById('smp').textContent;}catch(e){SMP='';}
-  var p=0,L=SMP.length;
-  while(p<L){
-    var nl=SMP.indexOf('\n',p);if(nl<0)nl=L;
-    var a=SMP.indexOf(' ',p),b=a<0?-1:SMP.indexOf(' ',a+1);
-    if(a>p&&b>a&&b<nl){var id=SMP.slice(p,a),k=SMP.slice(a+1,b);(SD[id]||(SD[id]={}));(SD[id][k]||(SD[id][k]=[])).push([b+1,nl]);}
-    p=nl+1;
-  }
+(function(){for(var i=0;i<85;i++)B85D[B85.charCodeAt(i)]=i;})();
+var SMP='',SD={},SMAN={};
+/* Sound packs. SMAN (from the build) lists each instrument's clips: [key, layer, roundRobin, offset, length].
+   On the website a pack is a separate file loaded when first needed (and kept offline by sw.js);
+   in the single-file build the packs are inline as base-85 text lines "id data". */
+(function(){
+  try{SMAN=JSON.parse(document.getElementById('sman').textContent)||{};}catch(e){SMAN={};}
+  SD=SMAN;
+  try{var el=document.getElementById('smp');SMP=el?el.textContent:'';}catch(e){SMP='';}
 })();
-function b85buf(r){
-  var s=r[0],e=r[1],n=e-s,full=Math.floor(n/5),rem=n%5,out=new Uint8Array(full*4+(rem?rem-1:0)),o=0,i,j,v;
+function b85dec(s,e){
+  var n=e-s,full=Math.floor(n/5),rem=n%5,out=new Uint8Array(full*4+(rem?rem-1:0)),o=0,i,j,v;
   for(i=0;i<full;i++){v=0;for(j=0;j<5;j++)v=v*85+B85D[SMP.charCodeAt(s+i*5+j)];out[o++]=v>>>24;out[o++]=(v>>>16)&255;out[o++]=(v>>>8)&255;out[o++]=v&255;}
   if(rem){v=0;for(j=0;j<5;j++)v=v*85+(j<rem?B85D[SMP.charCodeAt(s+full*5+j)]:84);var bb=[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255];for(j=0;j<rem-1;j++)out[o++]=bb[j];}
   return out.buffer;
 }
-window.__jr={SD:SD,b85buf:b85buf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
+var PACKQ={};
+/* packs never change (hash in the name): keep them in the browser cache so they work offline, even before sw.js takes over */
+function cachedFetch(u){
+  var C=window.caches;
+  function net(){return fetch(u).then(function(r){if(!r.ok)throw new Error('pack '+r.status);if(C){var cp=r.clone();C.open('jr-packs').then(function(c){c.put(u,cp);}).catch(function(){});}return r.arrayBuffer();});}
+  if(!C)return net();
+  return C.open('jr-packs').then(function(c){return c.match(u);}).then(function(h){return h?h.arrayBuffer():net();},net);
+}
+function packBuf(id){
+  if(PACKQ[id])return PACKQ[id];var e=SMAN[id];if(!e)return Promise.reject(new Error('no pack '+id));
+  var p;
+  if(e.u)p=cachedFetch(e.u);
+  else p=new Promise(function(res,rej){
+    var k='\n'+id+' ',a=SMP.indexOf(k);if(a<0){rej(new Error('missing '+id));return;}
+    a+=k.length;var b=SMP.indexOf('\n',a);if(b<0)b=SMP.length;setTimeout(function(){res(b85dec(a,b));},0);
+  });
+  PACKQ[id]=p.then(function(ab){delete PACKQ[id];return ab;},function(err){delete PACKQ[id];throw err;});
+  return PACKQ[id];
+}
+/* decode every clip of a pack: resolves to [{m,l,rr,buf}] */
+function packClips(id,c){
+  var e=SMAN[id];
+  return packBuf(id).then(function(ab){
+    return Promise.all(e.r.map(function(r){return decodeBuf(c,ab.slice(r[3],r[3]+r[4])).then(function(buf){return{m:+r[0],l:r[1],rr:r[2],buf:buf};});}));
+  });
+}
+/* offline: fetch every pack once so the service worker keeps it */
+function packsOffline(onProgress){
+  var ids=Object.keys(SMAN).filter(function(id){return SMAN[id].u;}),done=0,bytes=0,tot=ids.reduce(function(a,id){return a+SMAN[id].n;},0);
+  if(!ids.length)return Promise.resolve(true);
+  var q=ids.slice(),fails=0;
+  function next(){var id=q.shift();if(!id)return Promise.resolve();return cachedFetch(SMAN[id].u).catch(function(){fails++;}).then(function(){done++;bytes+=SMAN[id].n;if(onProgress)onProgress(bytes/tot,done,ids.length);return next();});}
+  return Promise.all([next(),next(),next()]).then(function(){
+    try{caches.open('jr-packs').then(function(c){c.keys().then(function(ks){var keep={};ids.forEach(function(id){keep[new URL(SMAN[id].u,location.href).href]=1;});ks.forEach(function(k){if(!keep[k.url])c.delete(k);});});});}catch(e){}
+    return fails===0;
+  });
+}
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+window.__jr={SD:SD,packBuf:packBuf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;},renderDock:function(){renderDock();},trackPlay:function(){return trackPlay.apply(null,arguments);}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,soft:'piano_s',pan:'pitch'},
  piano_s:{gain:1,rel:.35,lp0:4500,lpv:12000},
@@ -1182,27 +1219,42 @@ function sampReady(id){return deps(id).every(function(d){return SI[d]&&SI[d].rea
 function loadOne(id){
   var si=SI[id];if(!si||!SD[id])return Promise.resolve();if(si.p)return si.p;
   var c=ensureAudio();si.bufs=[];
-  si.p=Promise.all(Object.keys(SD[id]).map(function(k){
-    return decodeBuf(c,b85buf(SD[id][k][0])).then(function(buf){if(si.loop)prepLoop(buf);si.bufs.push({m:+k,buf:buf});});
-  })).then(function(){si.bufs.sort(function(a,b){return a.m-b.m;});si.ready=si.bufs.length>0;}).catch(function(){si.p=null;});
+  si.p=packClips(id,c).then(function(arr){
+    arr.forEach(function(x){if(si.loop)prepLoop(x.buf);});
+    /* layers[l] = notes sorted by pitch, each with its round-robin takes */
+    var L=[];arr.forEach(function(x){var ly=L[x.l]||(L[x.l]=[]),n=null;for(var i=0;i<ly.length;i++)if(ly[i].m===x.m){n=ly[i];break;}if(!n){n={m:x.m,rr:[]};ly.push(n);}n.rr[x.rr]=x.buf;});
+    L=L.filter(Boolean);L.forEach(function(ly){ly.sort(function(a,b){return a.m-b.m;});ly.forEach(function(n){n.rr=n.rr.filter(Boolean);n.buf=n.rr[0];});});
+    si.L=L;si.bufs=L[L.length-1]||[];si.ready=si.bufs.length>0;
+  }).catch(function(){si.p=null;});
   return si.p;
 }
 function ensureSamples(id){return Promise.all(deps(id).map(loadOne));}
 function loadTrackSamples(t){if(t&&t.kind==='inst')ensureSamples(t.inst);if(t&&t.kind==='drum')loadKit(t.kit);}
 function loadDrumKits(){return Promise.all(S.tracks.filter(function(t){return t.kind==='drum';}).map(function(t){return loadKit(t.kit);}));}
-function nearestBuf(si,m){var best=si.bufs[0];for(var i=1;i<si.bufs.length;i++)if(Math.abs(si.bufs[i].m-m)<Math.abs(best.m-m))best=si.bufs[i];return best;}
+function nearestIn(ly,m){var best=ly[0];for(var i=1;i<ly.length;i++)if(Math.abs(ly[i].m-m)<Math.abs(best.m-m))best=ly[i];return best;}
+function nearestBuf(si,m){return nearestIn(si.bufs,m);}
+/* a take of the nearest sampled note in layer ly; alternates takes so repeated notes don't sound identical */
+function pickTake(ly,m){var n=nearestIn(ly,m);if(!n.rr||n.rr.length<2)return n;var k=n._k=((n._k||0)+1+Math.floor(Math.random()*(n.rr.length-1)))%n.rr.length;return{m:n.m,buf:n.rr[k]};}
 function sampleVoice(id,c,out,m,t,v){
   var si=SI[id],dest=out,srcs=[];
   if(si.pan==='pitch'&&c.createStereoPanner){var pn=c.createStereoPanner();pn.pan.value=Math.max(-.55,Math.min(.55,(m-60)/40));pn.connect(out);dest=pn;}
-  var fl=F(c,'lowpass',si.lp0+v*si.lpv,.4),g=G(c,dest,t,.9*si.gain*(.4+.6*v),si.att||.002,10,1);fl.connect(g);
+  var lpf=si.lp0+v*si.lpv;if(si.L&&si.L.length>2)lpf=Math.max(lpf,7000+v*11000);/* real soft/loud recordings already carry the tone change */
+  var fl=F(c,'lowpass',lpf,.4),g=G(c,dest,t,.9*si.gain*(.4+.6*v),si.att||.002,10,1);fl.connect(g);
   function add(sx,b,gain){
     var s=c.createBufferSource();s.buffer=b.buf;s.playbackRate.value=Math.pow(2,(m-b.m)/12)*(REF/440);s.detune.value=(Math.random()-.5)*5;
     if(sx.loop&&!b.buf._nl){s.loop=true;s.loopStart=b.buf._ls;s.loopEnd=b.buf._le;}
     var gg=c.createGain();gg.gain.value=gain;s.connect(gg);gg.connect(fl);s.start(t);srcs.push(s);
   }
   var soft=si.soft&&SI[si.soft]&&SI[si.soft].ready?SI[si.soft]:null;
-  if(soft){var x=Math.max(0,Math.min(1,(v-.35)/.45));if(x>.02)add(si,nearestBuf(si,m),Math.sqrt(x));if(x<.98)add(soft,nearestBuf(soft,m),Math.sqrt(1-x));}
-  else add(si,nearestBuf(si,m),1);
+  if(si.L&&si.L.length>1){
+    /* real velocity layers: blend the two nearest (equal power) */
+    var nL=si.L.length,x=Math.max(0,Math.min(1,(v-.15)/.85))*(nL-1),l0=Math.floor(x),fr=x-l0,l1=Math.min(nL-1,l0+1);
+    if(fr<.04||l1===l0)add(si,pickTake(si.L[l0],m),1);
+    else if(fr>.96)add(si,pickTake(si.L[l1],m),1);
+    else{add(si,pickTake(si.L[l0],m),Math.cos(fr*Math.PI/2));add(si,pickTake(si.L[l1],m),Math.sin(fr*Math.PI/2));}
+  }
+  else if(soft){var x=Math.max(0,Math.min(1,(v-.35)/.45));if(x>.02)add(si,nearestBuf(si,m),Math.sqrt(x));if(x<.98)add(soft,nearestBuf(soft,m),Math.sqrt(1-x));}
+  else add(si,si.L?pickTake(si.bufs,m):nearestBuf(si,m),1);
   return{g:g,srcs:srcs,rt:si.rel};
 }
 var SV={};
@@ -1234,14 +1286,17 @@ function loadKit(name){
   var bk=kitBank(name),K=KB[bk]||(KB[bk]={p:null,ready:false,bufs:{}});
   if(K.p)return K.p;if(!SD[bk])return Promise.resolve();
   var c=ensureAudio();
-  K.p=Promise.all(Object.keys(SD[bk]).map(function(pi){
-    return Promise.all(SD[bk][pi].map(function(r){return decodeBuf(c,b85buf(r));})).then(function(arr){K.bufs[pi]=arr;});
-  })).then(function(){K.ready=true;}).catch(function(){K.p=null;});
+  K.p=packClips(bk,c).then(function(arr){
+    /* per pad: layers (soft..hard), each a list of round-robin takes */
+    arr.forEach(function(x){var pd=K.bufs[x.m]||(K.bufs[x.m]=[]),ly=pd[x.l]||(pd[x.l]=[]);ly[x.rr]=x.buf;});
+    Object.keys(K.bufs).forEach(function(pi){K.bufs[pi]=K.bufs[pi].filter(Boolean).map(function(ly){return ly.filter(Boolean);});});
+    K.ready=true;
+  }).catch(function(){K.p=null;});
   return K.p;
 }
 function drumSample(c,out,pi,t,v,K){
-  var arr=KB[K.bank||'kit'].bufs[pi],b;
-  if(arr.length>=4){var half=v<.62?[0,1]:[2,3];b=arr[half[Math.random()<.5?0:1]];}else b=arr[Math.floor(Math.random()*arr.length)];
+  var lay=KB[K.bank||'kit'].bufs[pi],b,li=Math.max(0,Math.min(lay.length-1,Math.floor(Math.max(0,v-.12)/.88*lay.length))),ly=lay[li];
+  b=ly[Math.floor(Math.random()*ly.length)];
   var s=c.createBufferSource();s.buffer=b;s.playbackRate.value=K.rate*(1+(Math.random()-.5)*.012);
   var g=c.createGain();g.gain.setValueAtTime((.3+.7*v)*K.gain*((K.pg||PG)[pi]||1),t);
   if(K.tight)g.gain.setTargetAtTime(0.0001,t+(pi===7?.35:pi===4?.12:.08),pi===7?.25:.05);

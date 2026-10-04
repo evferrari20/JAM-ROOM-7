@@ -18,12 +18,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 tools/assemble.py
-      - run: |
-          mkdir site
-          cp dist/jam-room.html site/index.html
-          cp dist/jam-room.html site/jam-room.html
-          cp dist/jam-room.html site/jam-room-share.html
-          touch site/.nojekyll
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
