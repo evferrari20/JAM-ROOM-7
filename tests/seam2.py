@@ -1,4 +1,4 @@
-import os;JR="file://"+os.path.abspath(os.path.join(os.path.dirname(__file__),"..","dist","jam-room.html"))
+import os;JR=os.environ.get("JR") or "file://"+os.path.abspath(os.path.join(os.path.dirname(__file__),"..","dist","jam-room.html"))
 import asyncio
 from playwright.async_api import async_playwright
 JS='''async()=>{

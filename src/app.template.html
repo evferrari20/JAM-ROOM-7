@@ -139,6 +139,18 @@ input[type=range]{accent-color:var(--accent);width:100%;min-width:60px}
   .kb{height:112px}
 }
 @media (prefers-reduced-motion:reduce){.meter i{transition:none}.toast{transition:none}}
+
+.sc-entry{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.04);margin:10px 0}
+.sc-entry p{margin:2px 0 0}
+.shl.chk{display:flex;gap:8px;align-items:center;flex-direction:row}
+.sc-steps{display:flex;gap:6px;margin:8px 0 12px}
+.sc-dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:rgba(255,255,255,.06);color:inherit;opacity:.7}
+.sc-dot.cur{outline:2px solid currentColor;opacity:1}.sc-dot.good{background:#2f6b4f;opacity:1}.sc-dot.bad{background:#8a3b2a;opacity:1}
+.sc-card{padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.04);margin-bottom:12px}
+.sc-card ol{margin:8px 0 0 18px;padding:0}.sc-card li{margin:4px 0}
+.sc-n{font-size:12px;opacity:.65;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.sc-canvas{width:100%;height:90px;border-radius:8px;display:block;margin:8px 0}
+.grow{flex:1}
 </style>
 <style id="polish">
 body{background:var(--bg-grad) fixed}
@@ -1157,7 +1169,7 @@ function mkTrack(kind,inst){
 /* =============== audio engine =============== */
 var SPACES={Room:{len:.9,pre:.004,damp:.55,er:.6},Studio:{len:1.6,pre:.012,damp:.45,er:.45},Hall:{len:3.2,pre:.025,damp:.35,er:.3},Plate:{len:2.2,pre:.002,damp:.12,er:0},Cathedral:{len:6,pre:.04,damp:.3,er:.2}};
 function makeIR(c,type){
-  var P2=SPACES[type]||SPACES.Studio,sr=c.sampleRate,n=Math.floor(sr*P2.len),pre=Math.floor(sr*P2.pre),b=c.createBuffer(2,n+pre,sr);
+  var P2=SPACES[type]||SPACES.Studio,sr=c.sampleRate,n=Math.floor(sr*Math.min(P2.len,LITE?2:4.5)),pre=Math.floor(sr*P2.pre),b=c.createBuffer(2,n+pre,sr);
   for(var ch=0;ch<2;ch++){
     var d=b.getChannelData(ch),y=0,i;
     for(i=0;i<n;i++){
@@ -1170,12 +1182,17 @@ function makeIR(c,type){
 }
 function startMeter(){
   var buf=new Float32Array(A.an.fftSize),lvl=0;
-  (function f(){
-    A.an.getFloatTimeDomainData(buf);var pk=0;for(var i=0;i<buf.length;i+=2){var a=Math.abs(buf[i]);if(a>pk)pk=a;}
-    lvl=Math.max(pk,lvl*.88);var el=$('vu');if(el){el.style.width=Math.min(100,lvl*100)+'%';el.parentNode.classList.toggle('hot',lvl>.97);}
+  var last=0;
+  (function f(ts){
     requestAnimationFrame(f);
-  })();
+    if(ts-last<FRAME_MS||!A.an||A.off||VIS_PAUSE)return;last=ts;
+    A.an.getFloatTimeDomainData(buf);var pk=0;for(var i=0;i<buf.length;i+=2){var a=Math.abs(buf[i]);if(a>pk)pk=a;}
+    var was=lvl;lvl=Math.max(pk,lvl*.8);if(lvl<.002&&was<.002)return;
+    var el=$('vu');if(el){el.style.width=Math.min(100,lvl*100)+'%';el.parentNode.classList.toggle('hot',lvl>.97);}
+  })(0);
 }
+var LITE=(function(){try{return localStorage.getItem('jr-lite')==='1';}catch(e){return false;}})();
+var MAXV=LITE?24:48,FRAME_MS=LITE?66:33,VIS_PAUSE=false;
 var LAT=(function(){try{var v=localStorage.getItem('jr-lat');return(v==='interactive'||v==='playback')?v:'balanced';}catch(e){return'balanced';}})();
 function ensureAudio(){
   if(A.c){if(A.c.state==='suspended'&&!A.off)A.c.resume();return A.c;}
@@ -1224,16 +1241,18 @@ function soundTest(){
 }
 function buildGraph(c){
   A.master=c.createGain();A.master.gain.value=S.master!=null?S.master:.85;A.hp=F(c,'highpass',24,.7);
-  A.comp=c.createDynamicsCompressor();A.comp.threshold.value=-14;A.comp.knee.value=20;A.comp.ratio.value=3;A.comp.attack.value=.005;A.comp.release.value=.2;
-  A.lim=c.createDynamicsCompressor();A.lim.threshold.value=-6;A.lim.knee.value=0;A.lim.ratio.value=20;A.lim.attack.value=.002;A.lim.release.value=.08;
+  A.comp=c.createDynamicsCompressor();A.comp.threshold.value=-16;A.comp.knee.value=12;A.comp.ratio.value=2.5;A.comp.attack.value=.01;A.comp.release.value=.3;
+  A.lim=c.createDynamicsCompressor();A.lim.threshold.value=-3;A.lim.knee.value=6;A.lim.ratio.value=12;A.lim.attack.value=.004;A.lim.release.value=.35;
+  /* pre-gain: leave headroom so the limiter only catches stray peaks instead of working all the time (it was clamping 66-95% of the time, which dirties bass) */
+  A.pre=c.createGain();A.pre.gain.value=.7;
   A.an=c.createAnalyser();A.an.fftSize=1024;
   A.trim=c.createGain();A.trim.gain.value=.9;
-  A.master.connect(A.hp);A.fl=F(c,'lowshelf',110,.7);A.fh=F(c,'highshelf',7500,.7);A.hp.connect(A.fl);A.fl.connect(A.fh);A.fh.connect(A.comp);A.comp.connect(A.lim);A.lim.connect(A.trim);A.trim.connect(c.destination);A.trim.connect(A.an);A.out=A.trim;
+  A.master.connect(A.hp);A.fl=F(c,'lowshelf',110,.7);A.fh=F(c,'highshelf',7500,.7);A.hp.connect(A.fl);A.fl.connect(A.fh);A.fh.connect(A.pre);A.pre.connect(A.comp);A.comp.connect(A.lim);A.lim.connect(A.trim);A.trim.connect(c.destination);A.trim.connect(A.an);A.out=A.trim;
   A.rev=c.createConvolver();A.rev.buffer=makeIR(c,S.space);var ro=c.createGain();ro.gain.value=.8;A.rev.connect(ro);ro.connect(A.master);
   S.tracks.forEach(wireTrack);
   applyFin();
 }
-function applyFin(){if(!A||!A.fl)return;var on=!!S.fin;A.fl.gain.value=on?1.6:0;A.fh.gain.value=on?2.2:0;A.comp.threshold.value=on?-17:-14;A.comp.ratio.value=on?3.6:3;}
+function applyFin(){if(!A||!A.fl)return;var on=!!S.fin;A.fl.gain.value=on?1.6:0;A.fh.gain.value=on?2.2:0;A.comp.threshold.value=on?-19:-16;A.comp.ratio.value=on?3:2.5;}
 function audible(t){return!t.mute&&(S.solo===null||S.solo.indexOf(t.id)>=0);}
 function applyGains(){if(!A.c)return;S.tracks.forEach(function(t){if(t.vn)t.vn.gain.setTargetAtTime(audible(t)?t.vol:0,A.c.currentTime,.015);});}
 function normSolo(){
@@ -1535,7 +1554,7 @@ function b85buf(r){
   if(rem){v=0;for(j=0;j<5;j++)v=v*85+(j<rem?B85D[SMP.charCodeAt(s+full*5+j)]:84);var bb=[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255];for(j=0;j<rem-1;j++)out[o++]=bb[j];}
   return out.buffer;
 }
-window.__jr={SD:SD,b85buf:b85buf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();}};
+window.__jr={SD:SD,b85buf:b85buf,A:A,S:S,mtof:function(m){return mtof(m);},ref:function(){return REF;},playInst:function(){return playInst.apply(null,arguments);},ensureSamples:ensureSamples,getSI:function(){return SI;},setRef:setRef,offRender:function(){return offRender.apply(null,arguments);},LEN:function(){return LEN();},spb:function(){return spb();},loadDrumKits:function(){return loadDrumKits();},curA:function(){return A;}};
 var SI={
  piano:{gain:1.15,rel:.35,lp0:4500,lpv:12000,soft:'piano_s',pan:'pitch'},
  piano_s:{gain:1,rel:.35,lp0:4500,lpv:12000},
@@ -1621,8 +1640,14 @@ function prepLoop(buf){
   }
   var xf=Math.floor(Math.min(.14*sr,ls-1,(le-ls)/3));
   if(le-ls<sr*.3||xf<64){buf._nl=true;return;}
-  for(var i=0;i<xf;i++){var w=i/xf;d[le-xf+i]=d[le-xf+i]*(1-w)+d[ls-xf+i]*w;}
-  buf._ls=ls/sr;buf._le=le/sr;
+  /* blend every channel (stereo recordings too), then copy the start of the loop just past its end: when a note is pitched up or down
+     the browser blends neighbouring samples, and at the wrap it reads a few samples beyond the loop end. Those must match the loop start. */
+  for(var ch=0;ch<buf.numberOfChannels;ch++){
+    var dc=buf.getChannelData(ch),i;
+    for(i=0;i<xf;i++){var w=i/xf;dc[le-xf+i]=dc[le-xf+i]*(1-w)+dc[ls-xf+i]*w;}
+    for(i=0;i<256&&le+i<n;i++)dc[le+i]=dc[ls+i];
+  }
+  buf._ls=(ls+.5)/sr;buf._le=(le+.5)/sr;
 }
 function deps(id){var x=SI[id];if(!x)return[id];if(x.deps)return x.deps;return x.soft?[id,x.soft]:[id];}
 function sampReady(id){return deps(id).every(function(d){return SI[d]&&SI[d].ready;});}
@@ -1750,12 +1775,21 @@ function drum(c,out,pi,t,v,kitName){
   return{release:function(){}};
 }
 
+/* Voice limit: live playing and playback share one pool. When too many notes ring at once the oldest is faded out
+   quickly (not cut), so the audio thread never gets more work than the device can finish in time. */
+var VOX=[];
+function voiceRoom(c){
+  var now=c.currentTime;VOX=VOX.filter(function(x){return x.end>now;});
+  while(VOX.length>=MAXV){var o=VOX.shift();try{o.o.g.gain.setTargetAtTime(0.0001,now,.012);}catch(e){}o.o.srcs.forEach(function(s){try{s.stop(now+.08);}catch(e){}});}
+}
 function playInst(name,c,out,m,t,v){
   var fn=(SV[name]&&sampReady(name))?SV[name]:(V[name]||V[FB[name]]||V.piano);
-  var o=fn(c,out,mtof(m),t,v,m);
+  var live=A.c===c&&!A.off;if(live)voiceRoom(c);
+  var o=fn(c,out,mtof(m),t,v,m),rec={o:o,end:Infinity};if(live&&o.srcs&&o.srcs.length)VOX.push(rec);
   return{release:function(tr){
     try{tr=Math.max(tr,o.g._t+o.g._a+.005);o.g.gain.setTargetAtTime(0.0001,tr,o.rt/3);}catch(e){}
-    var st=tr+o.rt*1.6+.05;o.srcs.forEach(function(s){try{s.stop(st);}catch(e){}});
+    /* stop only once the fade is ~60 dB down; stopping earlier left a tiny tick at the end of long notes */
+    var st=tr+o.rt*2.4+.05;o.srcs.forEach(function(s){try{s.stop(st);}catch(e){}});rec.end=st;
   }};
 }
 function trackPlay(t,m,tm,v){var c=A.c;return t.kind==='drum'?drum(c,t.node,m,tm,v,t.kit):playInst(t.inst,c,t.node,m,tm,v);}
@@ -2241,14 +2275,16 @@ function stop(){
 }
 function loopUI(){
   cancelAnimationFrame(P.raf);
-  (function frame(){
+  var lastF=0;
+  (function frame(ts){
     if(!P.playing){return;}
+    P.raf=requestAnimationFrame(frame);
+    if(VIS_PAUSE||(ts&&ts-lastF<FRAME_MS))return;lastF=ts||0;
     var b=curBeat();
     if(b<0)$('pos').textContent='Count '+Math.ceil(-b);
     else{var w=wrapBeat(b);$('pos').textContent=w==null?'Done':(songOn()?partName(passPart(Math.floor(b/LEN())))+' · ':'')+'Bar '+(Math.floor(w/4)+1)+' · '+(Math.floor(w%4)+1);}
     songTick(b);
     if(R)R.draw();pgPlayhead();
-    P.raf=requestAnimationFrame(frame);
   })();
 }
 var ICON={play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>',rec:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>'};
@@ -3838,6 +3874,8 @@ function openOutput(){
     (can?'<p class="hint">Choose where Jam Room plays. If sound goes to the wrong place, tap Fix sound.</p><div class="row"><button data-x="spk">Speakers</button><button data-x="hp">Headphones</button><button data-x="auto">Automatic</button></div><div class="outlist" id="outList"></div>'+(navigator.mediaDevices&&navigator.mediaDevices.selectAudioOutput?'<div class="row"><button data-x="choose">Choose in browser…</button></div>':'')
          :'<p class="hint">'+(ios?'iPad and iPhone choose where sound plays, not the page. To switch between the speaker, headphones or a Bluetooth speaker: swipe down from the top-right corner to open Control Center, press and hold the music box, tap the AirPlay icon, then pick your iPad, headphones or speaker.':'This browser cannot choose the output device from inside the page. Use your computer’s sound menu (the speaker icon near the clock) to pick speakers or headphones, then tap Fix sound.')+'</p><div class="outlist" id="outList"></div>')+
     (ios?'<p class="hint">Sound plays through the speakers even when your iPad’s silent switch is on.</p>':'')+
+    '<div class="sc-entry"><div><b>Hearing crackle?</b><p class="hint">A one-minute listening test that finds what causes it on this device.</p></div><button class="primary" data-x="sc">Run sound check</button></div>'+
+    '<label class="shl chk"><input type="checkbox" id="liteChk"'+(LITE?' checked':'')+'> Low-power sound <span class="hint">(fewer notes at once, shorter reverb, calmer animations; for slower computers)</span></label>'+
     '<label class="shl">Sound smoothness<select id="latSel">'+latOpts.map(function(o){return'<option value="'+o[0]+'"'+(o[0]===LAT?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label><p class="hint">If you hear crackling, choose Smooth. Changing this restarts Jam Room and saves your song first.</p>'+
     '<div class="row" style="justify-content:space-between"><span class="row"><button data-x="fix">Fix sound</button><button data-x="test">Play test sound</button></span><button class="primary" data-x="close">Done</button></div>',
   async function(e){
@@ -3846,6 +3884,7 @@ function openOutput(){
     var x=b.dataset.x;
     if(x==='close')closeModal();
     else if(x==='test')soundTest();
+    else if(x==='sc')openSoundCheck();
     else if(x==='auto')pick('','');
     else if(x==='names')getNames();
     else if(x==='fix'){SINK.id='';SINK.label='';saveSink();var c=ensureAudio();wakeAudio();await applySink(c);try{await c.resume();}catch(er){}if(can)refresh();toast('Sound reset. Playing a test beep.');setTimeout(soundTest,250);}
@@ -3857,9 +3896,105 @@ function openOutput(){
     }
   });
   $('mBox').classList.add('med');draw();if(can)refresh();
+  $('liteChk').addEventListener('change',function(){try{localStorage.setItem('jr-lite',this.checked?'1':'0');}catch(er){}toast('Restarting with the new setting…');dbPut('__auto__').then(function(){setTimeout(function(){location.reload();},400);});});
   $('latSel').addEventListener('change',function(){var v=this.value;try{localStorage.setItem('jr-lat',v);}catch(er){}toast('Restarting with the new setting…');dbPut('__auto__').then(function(){setTimeout(function(){location.reload();},400);});});
 }
 $('bOut').addEventListener('click',openOutput);
+
+/* ================= SOUND CHECK (find the crackle) =================
+   Plays six short clips, each adding one more part of the sound engine. The first clip that crackles shows the cause.
+   Also measures how fast this device can make sound (offline render speed). */
+var SC_STEPS=[
+ {k:'tone',t:'A plain tone',d:'Just a steady beep, straight to the speakers. Nothing from Jam Room is involved.'},
+ {k:'raw',t:'Piano, nothing else',d:'Recorded piano chords played directly, without the mixer or effects.'},
+ {k:'chain',t:'Piano through the mixer',d:'The same chords through Jam Room’s volume and tone stage.'},
+ {k:'rev',t:'Piano with reverb',d:'Adds the room echo (reverb).'},
+ {k:'busy',t:'A busy song, screen still',d:'Drums, bass and chords together, with screen animations paused.'},
+ {k:'draw',t:'A busy song, screen moving',d:'The same song while the screen animates heavily.'}];
+function scChords(c,dest,t0,dur,inst){
+  var prog=[[48,60,64,67],[45,57,60,64],[41,57,60,65],[43,55,59,62]],sp=.5,i=0;
+  for(var t=t0;t<t0+dur-.6;t+=sp*2,i++){var ch=prog[i%4];ch.forEach(function(m){playInst(inst||'piano',c,dest,m,t,.75).release(t+sp*1.8);});}
+}
+function scBusy(c,dest,t0,dur){
+  scChords(c,dest,t0,dur,'piano');var sp=.25,b=[36,36,33,29,31];
+  for(var k=0,t=t0;t<t0+dur-.4;t+=sp,k++){
+    drum(c,dest,3,t,.6,'Studio');if(k%4===0)drum(c,dest,0,t,.9,'Studio');if(k%8===4)drum(c,dest,1,t,.85,'Studio');
+    if(k%2===0)playInst('ebass',c,dest,b[(k>>3)%5],t,.8).release(t+sp*1.6);
+    if(k%4===2)playInst('strings',c,dest,72+[0,4,7][k%3],t,.5).release(t+sp*3);
+  }
+}
+async function scPrep(){await Promise.all([ensureSamples('piano'),ensureSamples('ebass'),ensureSamples('strings'),loadKit('Studio')]);}
+function scRun(k,dur){
+  var c=ensureAudio(),t0=c.currentTime+.15,bus=c.createGain(),stop=[],end=t0+dur;bus.gain.value=.8;
+  if(k==='tone'){var o=c.createOscillator(),g=c.createGain();o.frequency.value=330;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.18,t0+.05);g.gain.setValueAtTime(.18,end-.1);g.gain.linearRampToValueAtTime(0,end);o.connect(g);g.connect(c.destination);o.start(t0);o.stop(end+.05);}
+  else if(k==='raw'){bus.connect(c.destination);bus.gain.value=.45;scChords(c,bus,t0,dur);}
+  else{
+    bus.connect(A.master);var sd=null;if(k!=='chain'){sd=c.createGain();sd.gain.value=.3;bus.connect(sd);sd.connect(A.rev);}
+    if(k==='rev'||k==='chain')scChords(c,bus,t0,dur);else scBusy(c,bus,t0,dur);
+  }
+  var cv=$('scCanvas'),raf=0;VIS_PAUSE=(k==='busy');
+  if(k==='draw'&&cv){var x=cv.getContext('2d');(function f(ts){var w=cv.width=cv.clientWidth*2,h=cv.height=cv.clientHeight*2;for(var i=0;i<400;i++){x.fillStyle='hsl('+((i*7+ts/5)%360)+',45%,45%)';x.fillRect((i*37+ts/3)%w,(i*53)%h,40,40);}raf=requestAnimationFrame(f);})(0);}
+  return{end:end,stop:function(){cancelAnimationFrame(raf);VIS_PAUSE=false;try{bus.gain.setTargetAtTime(0,c.currentTime,.02);}catch(e){}setTimeout(function(){try{bus.disconnect();}catch(e){}},400);}};
+}
+async function scBench(){
+  /* render 6 s of the busy song through a copy of the master chain, as fast as possible; how many times faster than real time? */
+  var c=ensureAudio(),sr=c.sampleRate,oc=new OfflineAudioContext(2,sr*6,sr),saveA=A,res=null;
+  try{A={c:oc,off:true};buildGraph(oc);var bus=oc.createGain();bus.connect(A.master);var sd=oc.createGain();sd.gain.value=.3;bus.connect(sd);sd.connect(A.rev);scBusy(oc,bus,.05,6);
+    var t=performance.now();A=saveA;await oc.startRendering();res=6/((performance.now()-t)/1000);}
+  catch(e){res=null;}finally{A=saveA;}
+  return res;
+}
+function scBrowser(){var u=navigator.userAgent;return/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'Other';}
+function openSoundCheck(){
+  var R={},cur=0,run=null,speed=null,busyMsg='';
+  function info(){var c=A.c||ensureAudio();return{sr:c.sampleRate,base:Math.round((c.baseLatency||0)*1000),out:Math.round((c.outputLatency||0)*1000)};}
+  function code(){var i=info();return'JR-SC '+scBrowser()+' '+i.sr+'Hz b'+i.base+' o'+i.out+' '+LAT[0]+(LITE?'L':'')+' '+SC_STEPS.map(function(st,j){return(j+1)+(R[st.k]==null?'?':R[st.k]?'X':'ok');}).join(' ')+(speed?' x'+speed.toFixed(1):'');}
+  function diagnose(){
+    var first=-1;SC_STEPS.forEach(function(st,j){if(first<0&&R[st.k])first=j;});
+    var slow=speed!=null&&speed<10;
+    if(first<0)return['<b>Everything played clean.</b> If a song still crackles, note which song and when, and send me the code below.',''];
+    var k=SC_STEPS[first].k;
+    if(k==='tone')return['<b>Even a plain beep crackles, so the problem is outside Jam Room</b>, in Windows sound settings or the device itself. Try these, one at a time:<ol><li>Right-click the speaker icon by the clock → Sound settings → your speakers → turn <b>Audio enhancements</b> off.</li><li>Plug in the charger and set Power mode to <b>Best performance</b> (Battery saver slows audio).</li><li>Close other apps and tabs that play sound.</li><li>Run Windows Update (it updates the Surface audio driver).</li><li>Try the other browser (Chrome vs Edge).</li></ol>',''];
+    if(k==='raw')return['<b>The recordings crackle even on their own.</b> This points at the browser’s audio timing on this device. I’ve switched on the safest settings; send me the code below.','fix'];
+    if(k==='chain')return['<b>The crackle starts at the mixer’s volume stage.</b> Send me the code below so I can change that stage.','fix'];
+    if(k==='rev')return['<b>The reverb is too heavy for this device.</b> Low-power sound uses a lighter reverb.','fix'];
+    if(k==='busy')return['<b>It crackles when many notes play at once</b>'+(slow?' (this device is slow at making sound)':'')+'. Low-power sound and Smooth fix this by playing fewer notes at once and giving the sound more time.','fix'];
+    return['<b>It crackles only while the screen is busy.</b> Low-power sound calms the animations.','fix'];
+  }
+  function draw(){
+    var h='<h3>Sound check</h3>';
+    if(cur<SC_STEPS.length){
+      var st=SC_STEPS[cur];
+      h+='<p class="hint">Use the speakers or headphones where you hear the crackle. Listen to each clip (6 seconds) and say whether it was clean.</p>'+
+        '<div class="sc-steps">'+SC_STEPS.map(function(x,j){return'<span class="sc-dot'+(j===cur?' cur':'')+(R[x.k]===true?' bad':R[x.k]===false?' good':'')+'">'+(j+1)+'</span>';}).join('')+'</div>'+
+        '<div class="sc-card"><div class="sc-n">Clip '+(cur+1)+' of '+SC_STEPS.length+'</div><b>'+st.t+'</b><p class="hint">'+st.d+'</p>'+(st.k==='draw'?'<canvas id="scCanvas" class="sc-canvas"></canvas>':'')+
+        '<div class="row"><button class="primary" data-x="play">'+(run?'Playing…':'Play clip')+'</button><span class="grow"></span><button data-x="ok">Clean</button><button data-x="bad" class="warn">Crackly</button></div></div>'+
+        '<div class="row" style="justify-content:space-between"><button data-x="back"'+(cur?'':' disabled')+'>Back</button><button data-x="close">Close</button></div>';
+    }else{
+      var d=diagnose();
+      h+='<div class="sc-card">'+d[0]+'</div>'+
+        '<p class="hint">Speed test: '+(speed==null?busyMsg||'measuring…':'this device makes sound <b>'+speed.toFixed(0)+'× faster</b> than needed'+(speed<10?' (on the slow side, so Low-power sound is a good idea)':' (plenty of headroom)'))+'</p>'+
+        '<label class="shl">Send this code to Claude<input id="scCode" readonly value="'+esc(code())+'"></label>'+
+        '<div class="row" style="justify-content:space-between"><span class="row"><button data-x="again">Start over</button><button data-x="copy">Copy code</button></span><span class="row">'+(d[1]==='fix'&&!(LITE&&LAT==='playback')?'<button class="primary" data-x="fix">Use the safest settings</button>':'')+'<button data-x="close">Done</button></span></div>';
+    }
+    $('mBox').innerHTML=h;
+  }
+  function stopRun(){if(run){run.stop();run=null;}}
+  openModal('',async function(e){
+    var b=e.target.closest('button');if(!b)return;var x=b.dataset.x;
+    if(x==='close'){stopRun();closeModal();return;}
+    if(x==='play'){if(run)return;wakeAudio();await scPrep();run=scRun(SC_STEPS[cur].k,6);draw();var me=run;setTimeout(function(){if(run===me){stopRun();draw();}},6400);return;}
+    if(x==='ok'||x==='bad'){stopRun();R[SC_STEPS[cur].k]=x==='bad';cur++;draw();
+      if(cur===SC_STEPS.length&&speed==null){busyMsg='measuring…';scBench().then(function(v){speed=v;if(v==null)busyMsg='not available in this browser';draw();});}return;}
+    if(x==='back'){stopRun();cur=Math.max(0,cur-1);draw();return;}
+    if(x==='again'){R={};cur=0;draw();return;}
+    if(x==='copy'){var i=$('scCode');i.select();try{navigator.clipboard.writeText(i.value).then(function(){toast('Code copied');},function(){document.execCommand('copy');toast('Code copied');});}catch(er){document.execCommand('copy');toast('Code copied');}return;}
+    if(x==='fix'){try{localStorage.setItem('jr-lite','1');localStorage.setItem('jr-lat','playback');}catch(er){}toast('Restarting with the safest settings…');dbPut('__auto__').then(function(){setTimeout(function(){location.reload();},400);});}
+  });
+  $('mBox').classList.add('med');draw();
+}
+window.__jr.soundCheck=openSoundCheck;window.__jr.scBench=scBench;
+
 if(A.c===null&&0){}
 
 (async function boot(){
