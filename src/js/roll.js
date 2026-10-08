@@ -88,7 +88,7 @@ function mountRoll(host,t){
     });
     if(box){g.fillStyle='rgba(212,166,94,.12)';g.strokeStyle=C.brass;g.lineWidth=1;g.setLineDash([4,3]);
       var bx=Math.min(box.x0,box.x1)-sx,by=Math.min(box.y0,box.y1)-sy,bw=Math.abs(box.x1-box.x0),bh=Math.abs(box.y1-box.y0);g.fillRect(bx,by,bw,bh);g.strokeRect(bx+.5,by+.5,bw,bh);g.setLineDash([]);}
-    if(P.playing){var b=wrapBeat(curBeat());if(b!=null){var px=Gw+b*4*cw-sx;if(px>=Gw){g.fillStyle=C.head;g.fillRect(px,HDR,2,h-HDR);}}}
+    if(P.playing){var b=wrapBeat(curBeat());if(b!=null){var px=Gw+b*4*cw-sx;if(!drag&&(px>w-24||px<Gw)&&w>Gw+60){host.scrollLeft=Math.max(0,b*4*cw-(w-Gw)*.15);return;}if(px>=Gw){g.fillStyle=C.head;g.fillRect(px,HDR,2,h-HDR);}}}
     g.fillStyle=C.panel;g.fillRect(Gw,0,w-Gw,HDR);g.fillRect(0,HDR,Gw,h-HDR);g.fillRect(0,0,Gw,HDR);
     g.fillStyle=C.muted;g.font='600 11px system-ui, sans-serif';g.textBaseline='middle';g.textAlign='left';
     for(s=s0;s<=s1;s+=1){if(s%16)continue;var bx2=Gw+s*cw-sx;if(bx2>=Gw&&s<steps())g.fillText(String(s/16+1),bx2+4,HDR/2);}
@@ -232,7 +232,8 @@ function mountRoll(host,t){
   host.addEventListener('scroll',function(){draw();});
   size();selCount();
   var bassy=['ebass','sbass','sub808','cello','jazzbass','slapbass','contrabass','subbass','tuba','timpani'].indexOf(t.inst)>=0;
-  host.scrollTop=drums?0:(hi-(bassy?55:76))*rh;
+  var mids=t.notes.map(function(n){return n.m;}).sort(function(x,y){return x-y;}),mid=mids.length?mids[mids.length>>1]:(bassy?48:69);
+  host.scrollTop=drums?0:Math.max(0,(hi-mid)*rh-Math.max(0,(host.clientHeight-HDR)/2));
   R.lo=lo;R.hi=hi;R.rows=rows;R.drums=drums;R.cw=function(){return cw;};R.Gw=Gw;R.removeNotes=removeNotes;R.dedupe=dedupe;
 }
 function rollZoom(dir,e){

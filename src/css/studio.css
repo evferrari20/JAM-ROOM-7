@@ -911,7 +911,9 @@ body.bigview .etitle{display:none}
   body.bigview .etools{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
   body.bigview .etools>*{flex:none}
   body.bigview .editor{padding:8px;gap:8px}
-  body.bigview #sndPanel,body.bigview #sndBtn{display:none}
 }
 body.bigview .editor>*{flex-shrink:0}body.bigview .editor>.rollwrap{flex-shrink:1}
 @media (max-height:500px) and (orientation:landscape){body.bigview .bvbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}}
+body.bigview .editor>#sndPanel{order:5}
+@media (max-width:700px){body.bigview .rollwrap{flex:none}body.bigview .roll{height:60vh}}
+@media (max-height:500px) and (orientation:landscape){body.bigview .rollwrap{flex:none}body.bigview .roll{height:72vh}}
