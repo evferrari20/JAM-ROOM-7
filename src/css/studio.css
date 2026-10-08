@@ -885,3 +885,33 @@ body.calm .vz-head,body.calm .vz-pipe.lit,body.calm .vz-bar.lit{filter:none}
   .main>.col,.main>.editor{overflow:visible;grid-row:auto}
   .main>.editor{order:-1}
 }
+/* Big view: only the notes (plus a slim bar), keys on request */
+.bvbar{display:none}
+body.bigview .top .bar2,body.bigview .main>.col,body.bigview .main>.welcome{display:none!important}
+body.bigview .main{display:flex!important;flex-direction:column}
+body.bigview .bvbar{display:flex;flex:none;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+body.bigview .bvbar select{flex:1 1 140px;min-width:0;max-width:260px}
+body.bigview .bvbar button{min-height:40px;display:inline-flex;align-items:center;gap:6px}
+body.bigview .bvbar .i{width:18px;height:18px}
+body.bigview .main>.editor{flex:1;min-height:0;overflow-y:auto}
+body.bigview .rollwrap,body.bigview .roll{min-height:260px}
+body.bigview:not(.bvkeys) .dock{display:none}
+.bigbtn[aria-pressed="true"]{background:var(--accent);color:#10201a}
+@media (max-width:700px),(max-height:500px) and (orientation:landscape){
+  .bigbtn{flex:none;min-height:40px;white-space:nowrap}
+  body.bigview .bvbar{padding:6px 8px}
+  body.bigview .bvbar select{flex:0 0 150px}
+  body.bigview .bvbar button{flex:none;white-space:nowrap}
+  body.bigview .rollwrap,body.bigview .roll{min-height:200px}
+}
+body.bigview .bvbar{order:-2}
+body.bigview .etitle{display:none}
+@media (max-width:700px),(max-height:500px) and (orientation:landscape){
+  .bigbtn span{display:inline!important}.bigbtn.tool{width:auto;padding:0 12px;height:40px}
+  body.bigview .etools{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  body.bigview .etools>*{flex:none}
+  body.bigview .editor{padding:8px;gap:8px}
+  body.bigview #sndPanel,body.bigview #sndBtn{display:none}
+}
+body.bigview .editor>*{flex-shrink:0}body.bigview .editor>.rollwrap{flex-shrink:1}
+@media (max-height:500px) and (orientation:landscape){body.bigview .bvbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}}

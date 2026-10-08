@@ -36,6 +36,7 @@
     <div class="transport">
       <button id="bPlay" class="round play" aria-label="Play"></button>
       <button id="bRec" class="round rec" aria-label="Record"></button>
+      <button id="bBig" class="tool bigbtn" aria-pressed="false" data-ic="full" title="Big view: the notes and your instruments fill the screen"><span>Big view</span></button>
       <div class="lcd">
         <div class="lcd-cell"><small>Position</small><div class="pos" id="pos" aria-live="off">Bar 1 · 1</div></div>
         <div class="lcd-cell bpm"><small>Tempo</small><div class="bpmrow"><button id="bpmDn" aria-label="Slower">−</button><input id="bpm" type="number" min="40" max="220" value="100" aria-label="Tempo in beats per minute"><button id="bpmUp" aria-label="Faster">+</button></div></div>
@@ -98,6 +99,7 @@
       <button id="addLoop">+ Loop</button>
     </div>
   </section>
+  <div class="bvbar" id="bvbar"></div>
   <section class="editor" id="editor"></section>
 </div>
 
@@ -3014,6 +3016,33 @@ $('bFull').addEventListener('click',function(){
   if(!req){toast('On iPhone: tap Share, then Add to Home Screen, and open Jam Room from your home screen');return;}
   try{var p=req.call(d);if(p&&p.catch)p.catch(function(){toast(window.claude?'Full screen is blocked inside Claude. Use your hosted copy, or press F11 (Windows) or Ctrl+Cmd+F (Mac).':'Full screen was blocked. Try F11 (Windows) or Ctrl+Cmd+F (Mac).');});}catch(e){toast('Full screen isn\'t available here. Try F11 (Windows) or Ctrl+Cmd+F (Mac).');}
 });
+/* Big view: hides everything except the notes, with a slim bar to switch track, change the sound,
+   add an instrument and show the keys. Made for phones, works everywhere. */
+var BIG={on:false,keys:false};
+function bvDraw(){
+  var h=$('bvbar');if(!h)return;if(!BIG.on){h.innerHTML='';return;}
+  var t=selTrack();
+  h.innerHTML='<select id="bvTrack" aria-label="Track">'+(S.tracks.length?S.tracks.map(function(x){return'<option value="'+x.id+'"'+(t&&x.id===t.id?' selected':'')+'>'+esc(x.name)+'</option>';}).join(''):'<option>No tracks yet</option>')+'</select>'+
+    (t&&t.kind==='inst'?'<button data-bv="snd">'+IC.keys+' Change sound</button>':'')+
+    '<button data-bv="add">+ Add</button>'+
+    '<button data-bv="keys" class="tog" aria-pressed="'+BIG.keys+'">'+(BIG.keys?'Hide keys':'Show keys')+'</button>'+
+    '<button data-bv="exit" class="primary">Done</button>';
+}
+function setBig(on){
+  BIG.on=on;document.body.classList.toggle('bigview',on);document.body.classList.toggle('bvkeys',on&&BIG.keys);
+  $('bBig').setAttribute('aria-pressed',on);bvDraw();
+  if(R&&R.resize)setTimeout(function(){R.resize();},60);
+}
+$('bBig').addEventListener('click',function(){setBig(!BIG.on);});
+$('bvbar').addEventListener('change',function(e){if(e.target.id==='bvTrack'&&e.target.value)selectTrack(e.target.value);});
+$('bvbar').addEventListener('click',function(e){
+  var b=e.target.closest('[data-bv]');if(!b)return;var k=b.dataset.bv,t=selTrack();
+  if(k==='snd'&&t)openPicker(t);
+  else if(k==='add')openPicker(null);
+  else if(k==='keys'){BIG.keys=!BIG.keys;setBig(true);renderDock();}
+  else if(k==='exit')setBig(false);
+});
+(function(){var re=renderEditor;renderEditor=function(){re.apply(this,arguments);bvDraw();};var rt=renderTracks;renderTracks=function(){rt.apply(this,arguments);bvDraw();};})();
 $('bpmDn').addEventListener('click',function(){setBpm(S.bpm-1);});
 $('bpmUp').addEventListener('click',function(){setBpm(S.bpm+1);});
 $('bpm').addEventListener('change',function(){setBpm($('bpm').value);});
