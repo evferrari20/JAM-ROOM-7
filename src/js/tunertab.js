@@ -7,6 +7,9 @@
   if(!btn||!view)return;
   var modes=[].slice.call(document.querySelectorAll('.modes [data-mode]'));
   var frame=null,open=false,prev=[];
+  /* iPhone/iPad: Jam Room keeps the page in 'playback' audio mode (silent-switch fix). The microphone needs
+     'play-and-record' while the tuner is showing; Jam Room's own mode comes back when you leave. */
+  function session(t){try{if(navigator.audioSession)navigator.audioSession.type=t;}catch(e){}}
   function post(msg){try{if(frame&&frame.contentWindow)frame.contentWindow.postMessage(msg,'*');}catch(e){}}
   function show(){
     if(open)return;open=true;
@@ -15,6 +18,7 @@
     modes.forEach(function(b){b.setAttribute('aria-pressed','false');});
     btn.setAttribute('aria-pressed','true');
     document.body.classList.add('mode-tuner');
+    session('play-and-record');
     if(!frame){
       frame=document.createElement('iframe');
       frame.title='Tuner';
@@ -32,6 +36,7 @@
     btn.setAttribute('aria-pressed','false');
     modes.forEach(function(b,i){b.setAttribute('aria-pressed',prev[i]);});
     post('jr-tuner-hide');
+    session('playback');
     try{window.dispatchEvent(new Event('resize'));}catch(e){}
   }
   btn.addEventListener('click',show);

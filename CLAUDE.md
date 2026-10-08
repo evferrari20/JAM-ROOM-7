@@ -19,6 +19,8 @@ The deliverable is a **single self-contained HTML file** (about 15.6 MB, mostly 
 - `tests/`: Playwright scripts (`limiter_probe.py`, `soundcheck.py`, `site.py`, `viz.py`, `onset.py`, `click3.py`, ...). They use `dist/jam-room.html` or `$JR`.
 - `CREDITS.md`: where the samples came from and their licences.
 - `src/tuner.html`: the Tuner, a separate self-contained page (microphone tuner, 10 instrument guides, walkthroughs, piano check). The build copies it to `site/tuner.html` (precached by `sw.js`) and puts it inline in the single file (`#tunersrc`). Jam Room shows it through the **Tuner** tab (`src/js/tunertab.js`, `src/css/tunertab.css`) in an iframe, so opening it never touches the song or the other sections. Test it on the site with a fake mic: Chromium `--use-file-for-fake-audio-capture=file.wav`.
+  - Pitch detection is the McLeod method (same maths as the `pitchy` library, written inline). It locks onto a note only when the sound is clear, then keeps following that note as it fades, folding harmonic slips back onto it. Settings (`MIN_LEVEL`, `MIN_CLARITY`, `KEEP_CLARITY`, `PEAK_PICK`) were tuned on real recordings: `python3 tests/tuner/extract.py` then `node tests/tuner/bench.mjs` compares the working copy with the last commit (clean, phone-like and quiet-phone conditions, plus no-instrument noise/hum).
+  - iPhone: the mic needs `navigator.audioSession.type = 'play-and-record'`; Jam Room uses `'playback'`, so the Tuner tab switches it while open.
 
 ## How the code is organised (inside app.template.html)
 - Audio chain (`buildGraph`): tracks -> master -> highpass -> finishing EQ (`applyFin`) -> compressor -> limiter -> trim -> destination (+ analyser `A.an`). `A` holds the audio context and nodes.

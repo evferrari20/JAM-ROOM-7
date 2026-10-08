@@ -535,7 +535,7 @@ details[open] summary{margin-bottom:8px}
 
   let audioCtx = null, analyser = null, stream = null, source = null, wakeLock = null;
   let buf = null, running = false, rafId = 0, lastAnalysis = 0;
-  let smoothFreq = 0, lastHeard = 0;
+  let smoothFreq = 0, lastHeard = 0, lastLoud = 0, startedAt = 0, lastHintAt = 0, noiseFloor = 0;
   const history = [];
 
   // Walkthrough: { kind: 'tune'|'check', items: [{label, freq, title, hint}], step, held, done[], samples[], results[], pauseUntil }
@@ -740,7 +740,7 @@ details[open] summary{margin-bottom:8px}
   }
   function goToStep(s) {
     if (!walk || s < 0 || s >= walk.items.length) return;
-    walk.step = s; walk.held = 0; walk.samples = []; walk.pauseUntil = 0;
+    walk.step = s; walk.held = 0; walk.lastTs = 0; walk.samples = []; walk.pauseUntil = 0;
     renderWalk();
   }
   function renderWalk() {
@@ -818,9 +818,14 @@ details[open] summary{margin-bottom:8px}
   function walkTick(ts, cents) {
     if (!walk || walk.step >= walk.items.length || ts < walk.pauseUntil) return;
     if (walk.kind === 'tune') {
+      // Real strings fade and the mic drops out for a moment: add up time spent in tune, and only start over
+      // when the reading is clearly off. ~0.7 s in tune is enough.
+      const dt = walk.lastTs ? Math.min(ts - walk.lastTs, 120) : 0;
+      walk.lastTs = ts;
+      if (Math.abs(cents) <= 5) walk.held += dt;
+      else if (Math.abs(cents) > 9) walk.held = 0;
       if (Math.abs(cents) <= 5) {
-        if (!walk.held) walk.held = ts;
-        if (ts - walk.held > 1200) {
+        if (walk.held > 700) {
           walk.done[walk.step] = true;
           el.hint.textContent = 'Got it ✓';
           highlightString(walk.items[walk.step].idx, true);
@@ -828,8 +833,6 @@ details[open] summary{margin-bottom:8px}
           const s = walk.step;
           setTimeout(() => { if (walk && walk.step === s) { walk.step++; walk.held = 0; renderWalk(); } }, 900);
         }
-      } else {
-        walk.held = 0;
       }
     } else {
       // Only measure the key we asked for; a different key (or the last one still ringing) doesn't count
@@ -840,7 +843,7 @@ details[open] summary{margin-bottom:8px}
       }
       walk.samples.push(cents);
       el.hint.textContent = 'Measuring… keep holding';
-      if (walk.samples.length >= 18) {
+      if (walk.samples.length >= 14) {
         const sorted = [...walk.samples].sort((x, y) => x - y);
         walk.results[walk.step] = sorted[Math.floor(sorted.length / 2)];
         walk.done[walk.step] = true;
@@ -853,8 +856,7 @@ details[open] summary{margin-bottom:8px}
   }
   function walkSignalLost() {
     if (!walk) return;
-    walk.held = 0;
-    if (walk.kind === 'check' && walk.step < walk.items.length && !walk.done[walk.step]) walk.samples = [];
+    walk.lastTs = 0; // the time-in-tune so far is kept; a fresh pluck carries on from there
   }
 
   // ---------- Audio helpers ----------
@@ -887,64 +889,110 @@ details[open] summary{margin-bottom:8px}
     osc.stop(now + 2.05); osc2.stop(now + 2.05);
   }
 
-  // ---------- Pitch detection (YIN) ----------
+  // ---------- Pitch detection: McLeod Pitch Method (MPM) ----------
+  // The method used by well-tested open-source tuners (for example the "pitchy" library, MIT): normalised
+  // autocorrelation, computed with an FFT so it stays cheap on phones, then the first strong peak is the pitch.
+  // It also gives a "clarity" score, so noise and fading notes can be ignored without a loudness cut-off.
+  function makeMPM(N) {
+    let M = 1; while (M < 2 * N) M <<= 1;
+    const re = new Float64Array(M), im = new Float64Array(M), nsdf = new Float64Array(N);
+    const rev = new Uint32Array(M), cos = new Float64Array(M / 2), sin = new Float64Array(M / 2);
+    const bits = Math.log2(M);
+    for (let i = 0; i < M; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+    for (let i = 0; i < M / 2; i++) { cos[i] = Math.cos(2 * Math.PI * i / M); sin[i] = -Math.sin(2 * Math.PI * i / M); }
+    function fft(inverse) {
+      for (let i = 0; i < M; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+      for (let size = 2; size <= M; size <<= 1) {
+        const half = size >> 1, step = M / size;
+        for (let start = 0; start < M; start += size) {
+          for (let k = 0; k < half; k++) {
+            const wr = cos[k * step], wi = inverse ? -sin[k * step] : sin[k * step];
+            const a = start + k, b = a + half;
+            const tr = re[b] * wr - im[b] * wi, ti = re[b] * wi + im[b] * wr;
+            re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+          }
+        }
+      }
+    }
+    // returns { freq, clarity, rms } (freq 0 when nothing usable)
+    return function detect(x, sr, minF, maxF, k) {
+      let mean = 0; for (let i = 0; i < N; i++) mean += x[i]; mean /= N;
+      let rms = 0;
+      for (let i = 0; i < N; i++) { const v = x[i] - mean; re[i] = v; im[i] = 0; rms += v * v; }
+      for (let i = N; i < M; i++) { re[i] = 0; im[i] = 0; }
+      rms = Math.sqrt(rms / N);
+      if (rms < 1e-5) return { freq: 0, clarity: 0, rms };
+      fft(false);
+      for (let i = 0; i < M; i++) { re[i] = re[i] * re[i] + im[i] * im[i]; im[i] = 0; }
+      fft(true); // autocorrelation, times M
+      const tauMax = Math.min(N - 2, Math.ceil(sr / minF)), tauMin = Math.max(1, Math.floor(sr / maxF));
+      for (let t = 0; t <= tauMax + 1; t++) re[t] /= M;
+      let m = 2 * re[0];
+      for (let t = 0; t <= tauMax + 1; t++) {
+        nsdf[t] = m > 0 ? 2 * re[t] / m : 0;
+        const a = x[t] - mean, b = x[N - 1 - t] - mean; m -= a * a + b * b;
+      }
+      // key maxima: highest point between each upward and downward zero crossing
+      let best = -1, bestVal = 0, nMax = 0;
+      const keys = [];
+      let looking = false, mi = -1, mv = -Infinity;
+      for (let t = 1; t <= tauMax; t++) {
+        if (nsdf[t - 1] <= 0 && nsdf[t] > 0) { looking = true; mi = t; mv = nsdf[t]; }
+        else if (nsdf[t - 1] > 0 && nsdf[t] <= 0) { looking = false; if (mi >= tauMin) keys.push(mi); mi = -1; }
+        else if (looking && nsdf[t] > mv) { mv = nsdf[t]; mi = t; }
+      }
+      if (looking && mi >= tauMin && mi < tauMax) keys.push(mi);
+      for (const t of keys) if (nsdf[t] > nMax) nMax = nsdf[t];
+      for (const t of keys) if (nsdf[t] >= k * nMax) { best = t; break; }
+      if (best < 1) return { freq: 0, clarity: 0, rms };
+      const y0 = nsdf[best - 1], y1 = nsdf[best], y2 = nsdf[best + 1];
+      const den = y0 - 2 * y1 + y2;
+      let shift = den !== 0 ? 0.5 * (y0 - y2) / den : 0;
+      if (shift > 1 || shift < -1) shift = 0;
+      bestVal = y1 - 0.25 * (y0 - y2) * shift;
+      return { freq: sr / (best + shift), clarity: Math.min(1, bestVal), rms };
+    };
+  }
+
   const MIN_FREQ = 27;   // a bit below B0 (30.9 Hz)
   const MAX_FREQ = 1600; // above E6
-  let yinDiff = null;
-
-  function detectPitch(data, sr) {
-    const n = data.length;
-    let rms = 0;
-    for (let i = 0; i < n; i++) rms += data[i] * data[i];
-    rms = Math.sqrt(rms / n);
-    if (rms < 0.006) return { freq: 0, rms };
-
-    const tauMax = Math.min(Math.floor(sr / MIN_FREQ), Math.floor(n / 2));
-    const tauMin = Math.max(2, Math.floor(sr / MAX_FREQ));
-    const W = n - tauMax;
-    if (!yinDiff || yinDiff.length < tauMax + 2) yinDiff = new Float32Array(tauMax + 2);
-    const d = yinDiff;
-    const threshold = 0.12;
-
-    d[0] = 1;
-    let runningSum = 0, found = -1, best = -1, bestVal = Infinity;
-    for (let tau = 1; tau <= tauMax; tau++) {
-      let sum = 0;
-      for (let j = 0; j < W; j++) {
-        const diff = data[j] - data[j + tau];
-        sum += diff * diff;
-      }
-      runningSum += sum;
-      d[tau] = runningSum > 0 ? sum * tau / runningSum : 1;
-      if (tau >= tauMin) {
-        if (d[tau] < bestVal) { bestVal = d[tau]; best = tau; }
-        // once under the threshold, walk to the bottom of that dip, then stop
-        if (found < 0 && d[tau] < threshold) found = tau;
-        if (found >= 0 && d[tau] > d[tau - 1]) { found = tau - 1; break; }
-      }
+  // Settings chosen by testing 370 real recorded notes (guitars, basses, violin family, piano, banjo, winds)
+  // clean, through a phone-like mic, and very quietly: see the commit message.
+  const MIN_LEVEL = 0.0008;  // almost silent; clarity (below) is what rejects noise
+  const MIN_CLARITY = 0.8;   // how clearly the sound repeats (1 = perfectly); needed to lock onto a new note
+  const KEEP_CLARITY = 0.45; // once locked on, keep following the same note down to this, as it fades
+  const PEAK_PICK = 0.95;    // MPM "k": take the first peak this close to the best one (guards against octave mistakes)
+  let mpm = null, mpmSize = 0;
+  // `current` = the note being followed (0 if none). A fading or noisy note gives weaker readings and the odd jump to a
+  // harmonic (an octave or an octave-and-a-fifth away): while following a note, those are folded back onto it.
+  const FOLDS = [-2400, -1902, -1200, 1200, 1902, 2400];
+  function detectPitch(data, sr, current) {
+    if (!mpm || mpmSize !== data.length) { mpm = makeMPM(data.length); mpmSize = data.length; }
+    const r = mpm(data, sr, MIN_FREQ, MAX_FREQ, PEAK_PICK);
+    const none = { freq: 0, rms: r.rms, clarity: r.clarity };
+    if (!(r.freq > 0) || r.rms < MIN_LEVEL) return none;
+    if (r.clarity >= MIN_CLARITY) return r; // a clear reading always wins, so a wrong lock gets corrected
+    if (current > 0 && r.clarity >= KEEP_CLARITY) {
+      let c = 1200 * Math.log2(r.freq / current);
+      for (const k of FOLDS) if (Math.abs(c - k) < 50) { r.freq *= Math.pow(2, -k / 1200); c -= k; break; }
+      if (Math.abs(c) < 60) return r;
     }
-    const tau = found >= 0 ? found : (bestVal < 0.25 ? best : -1);
-    if (tau < 0) return { freq: 0, rms };
-
-    // Parabolic interpolation for sub-sample accuracy
-    let refined = tau;
-    if (tau > 1 && tau < tauMax) {
-      const a = d[tau - 1], b = d[tau], c = d[tau + 1];
-      const denom = a - 2 * b + c;
-      if (denom !== 0) refined = tau + 0.5 * (a - c) / denom;
-    }
-    return { freq: sr / refined, rms };
+    return none;
   }
 
   // ---------- Main loop ----------
   function tick(ts) {
     rafId = requestAnimationFrame(tick);
-    if (ts - lastAnalysis < 45) return;
+    if (ts - lastAnalysis < 30) return;
     lastAnalysis = ts;
 
     analyser.getFloatTimeDomainData(buf);
-    const { freq, rms } = detectPitch(buf, audioCtx.sampleRate);
-    el.level.style.width = Math.min(100, rms * 400) + '%';
+    const { freq, rms, clarity } = detectPitch(buf, audioCtx.sampleRate, smoothFreq);
+    // level bar in decibels, so a quiet guitar still visibly moves it (-70 dB = empty, -10 dB = full)
+    const db = 20 * Math.log10(rms + 1e-9);
+    el.level.style.width = clamp((db + 70) / 60, 0, 1) * 100 + '%';
+    noiseFloor = noiseFloor ? (rms < noiseFloor ? noiseFloor * 0.9 + rms * 0.1 : noiseFloor * 0.998 + rms * 0.002) : rms;
+    if (rms > Math.max(0.002, noiseFloor * 3)) lastLoud = ts;
 
     if (freq > 0) {
       // Median of the last few readings, then smoothing; a big jump means a new note, so snap to it
@@ -952,17 +1000,22 @@ details[open] summary{margin-bottom:8px}
       if (history.length > 5) history.shift();
       const med = [...history].sort((x, y) => x - y)[Math.floor(history.length / 2)];
       if (!smoothFreq || Math.abs(1200 * Math.log2(med / smoothFreq)) > 40) smoothFreq = med;
-      else smoothFreq += (med - smoothFreq) * 0.35;
+      else smoothFreq += (med - smoothFreq) * 0.35 * clamp((clarity - 0.35) / 0.5, 0.25, 1); // weaker readings move it less
       lastHeard = ts;
       update(smoothFreq, ts);
-    } else if (lastHeard && ts - lastHeard > 1200) {
+    } else if (lastHeard && ts - lastHeard > 1500) {
       history.length = 0;
       smoothFreq = 0;
       lastHeard = 0;
       walkSignalLost();
       resetReadout(true);
-    } else if (lastHeard && ts - lastHeard > 250) {
-      walkSignalLost();
+    } else if (!lastHeard && ts - startedAt > 3000 && ts - lastHintAt > 1000 && !(walk && ts < walk.pauseUntil)) {
+      // nothing usable for a while: say why, so it never just looks dead
+      lastHintAt = ts;
+      el.hint.style.color = '';
+      el.hint.textContent = ts - lastLoud > 3000
+        ? 'I can’t hear anything yet. Hold the phone closer to the instrument.'
+        : 'I hear sound, but not one clear note. Play a single string and let it ring.';
     }
   }
 
@@ -1047,30 +1100,36 @@ details[open] summary{margin-bottom:8px}
     }
     el.start.disabled = true;
     setStatus('Asking for the microphone…');
+    // iPhone: switch to the play-and-record audio mode BEFORE asking for the mic (playback-only mode can leave the mic silent),
+    // and start the audio engine now, while this is still the user's tap (later, Safari may keep it paused).
+    setSession('play-and-record');
+    if (!audioCtx) { audioCtx = toneCtx || new AC(); toneCtx = null; }
+    audioCtx.resume().catch(() => {});
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
     } catch (err) {
       el.start.disabled = false;
+      setSession('auto');
       const blocked = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       setStatus(blocked
         ? 'Microphone is blocked. On iPhone: tap aA in the address bar › Website Settings › Microphone › Allow, then reload.'
         : 'Couldn’t open the microphone: ' + ((err && err.message) || err), true);
       return;
     }
-    // Create the audio engine after the mic is open: on iPhone this keeps the mic and the engine at the same sample rate.
-    if (toneCtx) { toneCtx.close().catch(() => {}); toneCtx = null; }
-    audioCtx = new AC();
     audioCtx.onstatechange = () => { if (running && audioCtx && audioCtx.state !== 'running') setStatus('Paused by the phone. Tap anywhere to continue.', true); };
     source = audioCtx.createMediaStreamSource(stream);
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 4096;
     source.connect(analyser);
+    // a silent link to the speakers makes sure every browser keeps the microphone audio flowing
+    const mute = audioCtx.createGain(); mute.gain.value = 0; analyser.connect(mute); mute.connect(audioCtx.destination);
     buf = new Float32Array(analyser.fftSize);
     try { await audioCtx.resume(); } catch (e) {}
 
     running = true;
+    startedAt = performance.now(); lastLoud = 0; lastHintAt = 0; noiseFloor = 0;
     el.start.disabled = false;
     el.start.textContent = 'Stop';
     el.start.classList.add('listening');
@@ -1087,6 +1146,7 @@ details[open] summary{margin-bottom:8px}
     if (audioCtx) audioCtx.close().catch(() => {});
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     stream = audioCtx = analyser = source = null;
+    setSession('auto');
     history.length = 0; smoothFreq = 0; lastHeard = 0;
     el.level.style.width = '0';
     el.start.textContent = 'Start tuning';
