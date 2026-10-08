@@ -2826,6 +2826,7 @@ function f2i16(f){var i=new Int16Array(f.length);for(var j=0;j<f.length;j++)i[j]
 function i162f(i){var f=new Float32Array(i.length);for(var j=0;j<i.length;j++)f[j]=i[j]/32767;return f;}
 function toB64(i16){var u8=new Uint8Array(i16.buffer),s='';for(var i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);}
 function fromB64(b){var s=atob(b),u8=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u8[i]=s.charCodeAt(i);return new Int16Array(u8.buffer);}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});}catch(e){}
 function dbOpen(){return new Promise(function(res,rej){var r=indexedDB.open('jamroom',1);r.onupgradeneeded=function(){r.result.createObjectStore('p',{keyPath:'name'});};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};});}
 function rq(req){return new Promise(function(res,rej){req.onsuccess=function(){res(req.result);};req.onerror=function(){rej(req.error);};});}
 async function dbPut(name){
@@ -2948,7 +2949,7 @@ function finishExport(){if(expo&&expo.rec&&expo.rec.state!=='inactive'){try{expo
 
 function openMenu(){
   dbAll().then(function(all){
-    var list=all.filter(function(r){return r.name!=='__auto__';}).sort(function(a,b){return b.updated-a.updated;});
+    var list=all.filter(function(r){return r.name.slice(0,2)!=='__';}).sort(function(a,b){return b.updated-a.updated;});
     openModal('<h3>Save &amp; share</h3>'+
       '<div class="row"><input type="text" id="pName" value="'+esc(S.name)+'" maxlength="40" aria-label="Song name"><button class="primary" data-x="save">Save on this device</button></div>'+
       '<h4>Saved songs</h4><div class="list">'+(list.length?list.map(function(r){return'<div class="item"><span>'+esc(r.name)+'</span><small>'+new Date(r.updated).toLocaleDateString()+'</small><button data-open="'+esc(r.name)+'">Open</button><button data-del="'+esc(r.name)+'" aria-label="Delete saved song">✕</button></div>';}).join(''):'<p class="hint">Nothing saved yet. Your work is also saved automatically while you play.</p>')+'</div>'+
