@@ -1,0 +1,26 @@
+name: Publish Jam Room
+# Builds dist/jam-room.html and puts it on the gh-pages branch, which GitHub Pages serves as a web link.
+on:
+  push:
+    branches: [main, claude/lucid-feynman-19lewz]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 tools/assemble.py
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          force_orphan: true
