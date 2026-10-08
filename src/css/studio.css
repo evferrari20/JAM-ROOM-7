@@ -850,3 +850,38 @@ body.calm .vz-head,body.calm .vz-pipe.lit,body.calm .vz-bar.lit{filter:none}
 .e1btns{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:16px 0}.e1btns button{padding:11px 16px;font-size:14.5px}
 .dempty{padding:18px;text-align:center;color:var(--wood-muted)}
 .rollwrap{min-height:200px}
+/* ---------- phones: compact layout (portrait narrow, or landscape short) ---------- */
+@media (max-width:700px),(max-height:500px) and (orientation:landscape){
+  .top .bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;padding:6px 8px}
+  .top .bar::-webkit-scrollbar{display:none}
+  .top .bar>*{flex:none}
+  .brand,.ver,.top .spacer-flex,.bar2 .tsep{display:none}
+  .modes button{padding:5px 8px}
+  .round{width:36px;height:36px}.round svg{width:16px;height:16px}
+  .lcd{padding:2px 3px}.lcd-cell{padding:0 6px}.lcd small{display:none}.pos{font-size:13px;min-width:74px}.bpmrow input{font-size:13px;width:36px}
+  .lcd-cell.lvl{display:none}
+  .top .seg .tog{width:32px;height:32px}
+  #bMenu.tool span{display:none}#bMenu.tool{width:36px;height:34px;padding:0}
+  .bar2 .tool span{display:none}.bar2 .tool{width:34px;height:34px;padding:0}
+  .bar2 select,.bar2 #bTune{font-size:12.5px!important;padding:5px 22px 5px 7px}
+  .bar2 #bTune{padding:5px 8px}
+  .viz,#hViz,#hViz3,.hrow .who,.vtip{display:none!important}
+  .dock{padding:4px 8px 6px;gap:5px}
+  .hrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.hrow>*{flex:none}
+  .hrow label{font-size:0;gap:0}.hrow label select{font-size:12.5px}
+  .chord{padding:4px 2px}.chord small{display:none}
+  .editor{padding:8px}
+  .empty1{margin:10px auto;padding:16px}
+  .main>.col{padding:8px}
+}
+@media (max-height:500px) and (orientation:landscape){
+  .main{grid-template-columns:1fr!important}
+  .main>.col{display:none}
+  .chords{display:none}
+  .rollwrap,.roll{min-height:140px}
+}
+@media (max-width:700px){
+  .main{grid-template-columns:1fr;grid-template-rows:none;grid-auto-rows:max-content}
+  .main>.col,.main>.editor{overflow:visible;grid-row:auto}
+  .main>.editor{order:-1}
+}
