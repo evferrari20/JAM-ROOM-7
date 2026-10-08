@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jam Room Tuner</title>
+<meta name="description" content="Chromatic tuner for guitar, bass, ukulele, violin, cello, mandolin, banjo and more. Uses your microphone.">
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --surface: #ffffff;
+    --surface-2: #eeece7;
+    --text: #1d1c1a;
+    --muted: #6b6862;
+    --border: #dcd9d2;
+    --accent: #2f6fdb;
+    --good: #1f9d55;
+    --warn: #c98a0b;
+    --bad: #d2452f;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212;
+      --surface: #1c1c1c;
+      --surface-2: #262626;
+      --text: #f1efea;
+      --muted: #a09c94;
+      --border: #333230;
+      --accent: #6b9cf0;
+      --good: #3ccf7b;
+      --warn: #e7b23a;
+      --bad: #f06a52;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121212;
+    --surface: #1c1c1c;
+    --surface-2: #262626;
+    --text: #f1efea;
+    --muted: #a09c94;
+    --border: #333230;
+    --accent: #6b9cf0;
+    --good: #3ccf7b;
+    --warn: #e7b23a;
+    --bad: #f06a52;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  h1 { font-size: 1.25rem; margin: 0; letter-spacing: .01em; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+
+  .controls { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: .8rem; color: var(--muted); }
+  select, button {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  select { width: 100%; min-width: 0; }
+  button { cursor: pointer; }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stepper { display: flex; align-items: center; gap: 4px; }
+  .stepper button { padding: 10px 12px; min-width: 40px; }
+  .stepper output { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--text); font-size: 1rem; }
+
+  /* Readout */
+  .readout { text-align: center; padding: 24px 16px 20px; }
+  .note {
+    font-size: clamp(4.5rem, 22vw, 7rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.02em;
+    transition: color .15s;
+    min-height: 1em;
+  }
+  .note sub { font-size: .35em; font-weight: 600; vertical-align: baseline; color: var(--muted); margin-left: 2px; }
+  .note.idle { color: var(--muted); opacity: .5; }
+  .note.good { color: var(--good); }
+  .note.warn { color: var(--warn); }
+  .note.bad  { color: var(--bad); }
+  .sub-readout {
+    display: flex; justify-content: center; gap: 20px;
+    color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 8px; font-size: .95rem;
+  }
+  .hint { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+
+  /* Meter */
+  .meter { position: relative; height: 64px; margin: 20px 4px 4px; }
+  .meter .scale { position: absolute; inset: 0; }
+  .tick { position: absolute; bottom: 18px; width: 2px; margin-left: -1px; background: var(--border); height: 14px; border-radius: 1px; }
+  .tick.major { height: 24px; background: var(--muted); }
+  .tick.center { height: 34px; background: var(--good); width: 3px; margin-left: -1.5px; }
+  .tick-label { position: absolute; bottom: 0; transform: translateX(-50%); font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .zone { position: absolute; bottom: 18px; height: 34px; background: var(--good); opacity: .12; border-radius: 4px; }
+  .needle {
+    position: absolute; bottom: 14px; left: 50%;
+    width: 6px; height: 46px; margin-left: -3px;
+    border-radius: 3px;
+    background: var(--muted);
+    transition: left .12s ease-out, background-color .15s, opacity .3s;
+    opacity: .35;
+  }
+  .needle.active { opacity: 1; }
+  .needle.good { background: var(--good); }
+  .needle.warn { background: var(--warn); }
+  .needle.bad  { background: var(--bad); }
+
+  /* Strings */
+  .strings-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+  .strings-head span { font-size: .8rem; color: var(--muted); }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); cursor: pointer; user-select: none; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  .strings { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .string {
+    flex: 1 1 0; min-width: 52px; max-width: 80px;
+    padding: 12px 4px; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-weight: 700; font-size: 1.1rem;
+    transition: background-color .15s, border-color .15s, color .15s;
+  }
+  .string small { font-weight: 500; font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .string.target { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+  .string.tuned { border-color: var(--good); color: var(--good); }
+  .chromatic-msg { color: var(--muted); text-align: center; font-size: .9rem; margin: 4px 0; }
+  .ref-row { display: flex; gap: 8px; margin-top: 12px; }
+  .ref-row button { flex: 1; }
+
+  /* Start */
+  .start {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    border-radius: 14px;
+  }
+  .start.listening { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+  .status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1.2em; }
+  .status.error { color: var(--bad); }
+
+  .level { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; margin-top: 14px; }
+  .level > div { height: 100%; width: 0; background: var(--accent); transition: width .08s linear; }
+
+  @media (max-width: 380px) {
+    .controls { grid-template-columns: 1fr; }
+    .stepper { justify-content: space-between; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .needle, .level > div { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Jam Room Tuner</h1>
+  </header>
+
+  <section class="card controls" aria-label="Settings">
+    <label class="field">Instrument / tuning
+      <select id="instrument"></select>
+    </label>
+    <label class="field">Reference pitch (A4)
+      <div class="stepper">
+        <button type="button" id="a4down" aria-label="Lower reference pitch">−</button>
+        <output id="a4out">440 Hz</output>
+        <button type="button" id="a4up" aria-label="Raise reference pitch">+</button>
+      </div>
+    </label>
+  </section>
+
+  <section class="card readout" aria-live="polite">
+    <div id="note" class="note idle">–</div>
+    <div class="sub-readout">
+      <span id="freq">— Hz</span>
+      <span id="cents">— ¢</span>
+    </div>
+    <div id="hint" class="hint"></div>
+    <div class="meter" aria-hidden="true">
+      <div class="scale" id="scale"></div>
+      <div class="needle" id="needle"></div>
+    </div>
+    <div class="level" aria-hidden="true"><div id="level"></div></div>
+  </section>
+
+  <section class="card" id="stringsCard">
+    <div class="strings-head">
+      <span id="stringsLabel">Strings</span>
+      <label class="toggle"><input type="checkbox" id="auto" checked> Auto-detect string</label>
+    </div>
+    <div class="strings" id="strings"></div>
+    <div class="ref-row">
+      <button type="button" id="playRef">▶ Play reference tone</button>
+    </div>
+  </section>
+
+  <button type="button" class="start" id="start">Start tuning</button>
+  <div class="status" id="status">Uses your microphone. Nothing is recorded or sent anywhere.</div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Instruments ----------
+  const INSTRUMENTS = [
+    { group: 'General', items: [
+      { id: 'chromatic', name: 'Chromatic (any instrument)', strings: [] },
+    ]},
+    { group: 'Guitar', items: [
+      { id: 'guitar', name: 'Guitar — Standard (EADGBE)', strings: ['E2','A2','D3','G3','B3','E4'] },
+      { id: 'guitar-dropd', name: 'Guitar — Drop D', strings: ['D2','A2','D3','G3','B3','E4'] },
+      { id: 'guitar-halfdown', name: 'Guitar — Half step down', strings: ['Eb2','Ab2','Db3','Gb3','Bb3','Eb4'] },
+      { id: 'guitar-dadgad', name: 'Guitar — DADGAD', strings: ['D2','A2','D3','G3','A3','D4'] },
+      { id: 'guitar-openg', name: 'Guitar — Open G', strings: ['D2','G2','D3','G3','B3','D4'] },
+      { id: 'guitar-opend', name: 'Guitar — Open D', strings: ['D2','A2','D3','F#3','A3','D4'] },
+      { id: 'guitar-7', name: 'Guitar — 7-string', strings: ['B1','E2','A2','D3','G3','B3','E4'] },
+    ]},
+    { group: 'Bass', items: [
+      { id: 'bass4', name: 'Bass — 4-string (EADG)', strings: ['E1','A1','D2','G2'] },
+      { id: 'bass4-dropd', name: 'Bass — Drop D', strings: ['D1','A1','D2','G2'] },
+      { id: 'bass5', name: 'Bass — 5-string (BEADG)', strings: ['B0','E1','A1','D2','G2'] },
+    ]},
+    { group: 'Ukulele', items: [
+      { id: 'uke', name: 'Ukulele — Standard (GCEA)', strings: ['G4','C4','E4','A4'] },
+      { id: 'uke-lowg', name: 'Ukulele — Low G', strings: ['G3','C4','E4','A4'] },
+      { id: 'uke-bari', name: 'Ukulele — Baritone (DGBE)', strings: ['D3','G3','B3','E4'] },
+    ]},
+    { group: 'Orchestral strings', items: [
+      { id: 'violin', name: 'Violin', strings: ['G3','D4','A4','E5'] },
+      { id: 'viola', name: 'Viola', strings: ['C3','G3','D4','A4'] },
+      { id: 'cello', name: 'Cello', strings: ['C2','G2','D3','A3'] },
+      { id: 'doublebass', name: 'Double bass', strings: ['E1','A1','D2','G2'] },
+    ]},
+    { group: 'Folk', items: [
+      { id: 'mandolin', name: 'Mandolin', strings: ['G3','D4','A4','E5'] },
+      { id: 'banjo', name: 'Banjo — 5-string Open G', strings: ['G4','D3','G3','B3','D4'] },
+      { id: 'banjo-tenor', name: 'Banjo — Tenor (CGDA)', strings: ['C3','G3','D4','A4'] },
+    ]},
+  ];
+  const BY_ID = {};
+  INSTRUMENTS.forEach(g => g.items.forEach(i => { BY_ID[i.id] = i; }));
+
+  // ---------- Note math ----------
+  const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  function parseNote(s) {
+    const m = /^([A-G])([#b]?)(-?\d)$/.exec(s);
+    let n = SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    return (parseInt(m[3], 10) + 1) * 12 + n; // MIDI number
+  }
+  const midiToFreq = (midi, a4) => a4 * Math.pow(2, (midi - 69) / 12);
+  const freqToMidi = (f, a4) => 69 + 12 * Math.log2(f / a4);
+  const midiName = m => NAMES[((m % 12) + 12) % 12];
+  const midiOctave = m => Math.floor(m / 12) - 1;
+  const prettyNote = s => s.replace('#', '♯').replace(/([A-G])b/, '$1♭');
+
+  // ---------- State ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('tuner.' + k); return v === null ? d : v; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('tuner.' + k, v); } catch {} },
+  };
+  let a4 = clamp(parseInt(store.get('a4', '440'), 10) || 440, 415, 466);
+  let instrument = BY_ID[store.get('instrument', 'guitar')] || BY_ID.guitar;
+  let autoString = true;
+  let lockedIdx = 0;
+
+  let audioCtx = null, analyser = null, stream = null, source = null;
+  let buf = null, running = false, rafId = 0, lastAnalysis = 0;
+  let smoothFreq = 0, lastHeard = 0;
+  const history = [];
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const el = {
+    instrument: $('instrument'), a4out: $('a4out'), a4up: $('a4up'), a4down: $('a4down'),
+    note: $('note'), freq: $('freq'), cents: $('cents'), hint: $('hint'),
+    scale: $('scale'), needle: $('needle'), level: $('level'),
+    strings: $('strings'), stringsCard: $('stringsCard'), stringsLabel: $('stringsLabel'),
+    auto: $('auto'), playRef: $('playRef'), start: $('start'), status: $('status'),
+  };
+
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  // Instrument picker
+  INSTRUMENTS.forEach(g => {
+    const og = document.createElement('optgroup');
+    og.label = g.group;
+    g.items.forEach(i => {
+      const o = document.createElement('option');
+      o.value = i.id; o.textContent = i.name;
+      og.appendChild(o);
+    });
+    el.instrument.appendChild(og);
+  });
+  el.instrument.value = instrument.id;
+  el.instrument.addEventListener('change', () => {
+    instrument = BY_ID[el.instrument.value];
+    store.set('instrument', instrument.id);
+    lockedIdx = 0;
+    renderStrings();
+    resetReadout();
+  });
+
+  // Reference pitch
+  function renderA4() { el.a4out.textContent = a4 + ' Hz'; renderStrings(); }
+  el.a4up.addEventListener('click', () => { a4 = clamp(a4 + 1, 415, 466); store.set('a4', a4); renderA4(); });
+  el.a4down.addEventListener('click', () => { a4 = clamp(a4 - 1, 415, 466); store.set('a4', a4); renderA4(); });
+
+  // Meter scale
+  (function buildScale() {
+    const zone = document.createElement('div');
+    zone.className = 'zone';
+    zone.style.left = (50 - 5) + '%';
+    zone.style.width = '10%';
+    el.scale.appendChild(zone);
+    for (let c = -50; c <= 50; c += 5) {
+      const t = document.createElement('div');
+      t.className = 'tick' + (c === 0 ? ' center' : c % 25 === 0 ? ' major' : '');
+      t.style.left = (50 + c) + '%';
+      el.scale.appendChild(t);
+      if (c % 25 === 0) {
+        const l = document.createElement('div');
+        l.className = 'tick-label';
+        l.style.left = (50 + c) + '%';
+        l.textContent = c > 0 ? '+' + c : String(c);
+        el.scale.appendChild(l);
+      }
+    }
+  })();
+
+  // Strings
+  function stringTargets() {
+    return instrument.strings.map(s => {
+      const midi = parseNote(s);
+      return { label: s, midi, freq: midiToFreq(midi, a4) };
+    });
+  }
+  function renderStrings() {
+    const targets = stringTargets();
+    el.strings.innerHTML = '';
+    if (!targets.length) {
+      el.stringsLabel.textContent = 'Chromatic mode';
+      el.auto.parentElement.hidden = true;
+      el.playRef.textContent = '▶ Play A4 reference';
+      const p = document.createElement('p');
+      p.className = 'chromatic-msg';
+      p.textContent = 'Play any note — the tuner shows the closest pitch.';
+      el.strings.appendChild(p);
+      return;
+    }
+    el.stringsLabel.textContent = targets.length + ' strings · low → high';
+    el.auto.parentElement.hidden = false;
+    targets.forEach((t, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'string';
+      b.dataset.idx = i;
+      b.innerHTML = `${prettyNote(t.label.replace(/-?\d$/, ''))}<small>${t.freq.toFixed(1)}</small>`;
+      b.setAttribute('aria-label', `String ${i + 1}: ${t.label}, ${t.freq.toFixed(1)} hertz`);
+      b.addEventListener('click', () => {
+        lockedIdx = i;
+        autoString = false;
+        el.auto.checked = false;
+        highlightString(i, false);
+        playTone(t.freq);
+      });
+      el.strings.appendChild(b);
+    });
+    el.playRef.textContent = '▶ Play reference tone';
+    highlightString(autoString ? -1 : lockedIdx, false);
+  }
+  function highlightString(idx, tuned) {
+    [...el.strings.querySelectorAll('.string')].forEach((b, i) => {
+      b.classList.toggle('target', i === idx);
+      b.classList.toggle('tuned', i === idx && tuned);
+    });
+  }
+  el.auto.addEventListener('change', () => {
+    autoString = el.auto.checked;
+    highlightString(autoString ? -1 : lockedIdx, false);
+  });
+
+  // ---------- Reference tone ----------
+  let toneCtx = null;
+  function playTone(freq) {
+    const ctx = audioCtx || toneCtx || (toneCtx = new (window.AudioContext || window.webkitAudioContext)());
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    osc2.type = 'sine';
+    osc.frequency.value = freq;
+    osc2.frequency.value = freq * 2;
+    const g2 = ctx.createGain(); g2.gain.value = 0.25;
+    osc.connect(g); osc2.connect(g2).connect(g);
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.25, now + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+    osc.start(now); osc2.start(now);
+    osc.stop(now + 2.05); osc2.stop(now + 2.05);
+  }
+  el.playRef.addEventListener('click', () => {
+    const targets = stringTargets();
+    if (!targets.length) return playTone(a4);
+    playTone(targets[autoString ? lastAutoIdx : lockedIdx].freq);
+  });
+  let lastAutoIdx = 0;
+
+  // ---------- Pitch detection (YIN) ----------
+  const MIN_FREQ = 27;   // a bit below B0 (30.9 Hz)
+  const MAX_FREQ = 1600; // above E6
+  let yinDiff = null;
+
+  function detectPitch(data, sr) {
+    const n = data.length;
+    let rms = 0;
+    for (let i = 0; i < n; i++) rms += data[i] * data[i];
+    rms = Math.sqrt(rms / n);
+    if (rms < 0.008) return { freq: 0, rms };
+
+    const tauMax = Math.min(Math.floor(sr / MIN_FREQ), Math.floor(n / 2));
+    const tauMin = Math.max(2, Math.floor(sr / MAX_FREQ));
+    const W = n - tauMax;
+    if (!yinDiff || yinDiff.length < tauMax + 2) yinDiff = new Float32Array(tauMax + 2);
+    const d = yinDiff;
+    const threshold = 0.12;
+
+    d[0] = 1;
+    let running = 0, found = -1, best = -1, bestVal = Infinity;
+    for (let tau = 1; tau <= tauMax; tau++) {
+      let sum = 0;
+      for (let j = 0; j < W; j++) {
+        const diff = data[j] - data[j + tau];
+        sum += diff * diff;
+      }
+      running += sum;
+      d[tau] = running > 0 ? sum * tau / running : 1;
+      if (tau >= tauMin) {
+        if (d[tau] < bestVal) { bestVal = d[tau]; best = tau; }
+        // once under threshold, walk to the bottom of that dip, then stop
+        if (found < 0 && d[tau] < threshold) found = tau;
+        if (found >= 0 && d[tau] > d[tau - 1]) { found = tau - 1; break; }
+      }
+    }
+    let tau = found >= 0 ? found : (bestVal < 0.25 ? best : -1);
+    if (tau < 0) return { freq: 0, rms };
+
+    // Parabolic interpolation for sub-sample accuracy
+    let refined = tau;
+    if (tau > 1 && tau < tauMax) {
+      const a = d[tau - 1], b = d[tau], c = d[tau + 1];
+      const denom = a - 2 * b + c;
+      if (denom !== 0) refined = tau + 0.5 * (a - c) / denom;
+    }
+    return { freq: sr / refined, rms, clarity: 1 - d[tau] };
+  }
+
+  // ---------- Main loop ----------
+  function tick(ts) {
+    rafId = requestAnimationFrame(tick);
+    if (ts - lastAnalysis < 45) return;
+    lastAnalysis = ts;
+
+    analyser.getFloatTimeDomainData(buf);
+    const { freq, rms } = detectPitch(buf, audioCtx.sampleRate);
+    el.level.style.width = Math.min(100, rms * 400) + '%';
+
+    if (freq > 0) {
+      // Median filter + smoothing; reset on big jumps (new note)
+      history.push(freq);
+      if (history.length > 5) history.shift();
+      const med = [...history].sort((x, y) => x - y)[Math.floor(history.length / 2)];
+      if (!smoothFreq || Math.abs(1200 * Math.log2(med / smoothFreq)) > 40) smoothFreq = med;
+      else smoothFreq += (med - smoothFreq) * 0.35;
+      lastHeard = ts;
+      update(smoothFreq);
+    } else if (ts - lastHeard > 1200 && lastHeard) {
+      history.length = 0;
+      smoothFreq = 0;
+      lastHeard = 0;
+      resetReadout(true);
+    }
+  }
+
+  function update(freq) {
+    const targets = stringTargets();
+    let noteText, octave, targetFreq, stringIdx = -1;
+
+    if (targets.length) {
+      let idx = lockedIdx;
+      if (autoString) {
+        let bestDist = Infinity;
+        targets.forEach((t, i) => {
+          const dist = Math.abs(Math.log2(freq / t.freq));
+          if (dist < bestDist) { bestDist = dist; idx = i; }
+        });
+        lastAutoIdx = idx;
+      }
+      const t = targets[idx];
+      noteText = t.label.replace(/-?\d$/, '');
+      octave = t.label.match(/-?\d$/)[0];
+      targetFreq = t.freq;
+      stringIdx = idx;
+    } else {
+      const midi = Math.round(freqToMidi(freq, a4));
+      noteText = midiName(midi);
+      octave = midiOctave(midi);
+      targetFreq = midiToFreq(midi, a4);
+    }
+
+    const cents = 1200 * Math.log2(freq / targetFreq);
+    const abs = Math.abs(cents);
+    const cls = abs <= 5 ? 'good' : abs <= 15 ? 'warn' : 'bad';
+
+    el.note.className = 'note ' + cls;
+    el.note.innerHTML = `${prettyNote(noteText)}<sub>${octave}</sub>`;
+    el.freq.textContent = freq.toFixed(1) + ' Hz';
+    el.cents.textContent = (cents >= 0 ? '+' : '−') + Math.abs(cents).toFixed(0) + ' ¢';
+
+    el.needle.className = 'needle active ' + cls;
+    el.needle.style.left = (50 + clamp(cents, -50, 50)) + '%';
+
+    if (abs <= 5) el.hint.textContent = 'In tune ✓';
+    else if (abs > 50) el.hint.textContent = cents < 0 ? 'Way flat — tighten ↑' : 'Way sharp — loosen ↓';
+    else el.hint.textContent = cents < 0 ? 'Flat — tune up ↑' : 'Sharp — tune down ↓';
+    el.hint.style.color = `var(--${cls})`;
+
+    if (targets.length) highlightString(stringIdx, abs <= 5);
+  }
+
+  function resetReadout(keepNote) {
+    el.note.className = 'note idle';
+    if (!keepNote) el.note.textContent = '–';
+    el.freq.textContent = '— Hz';
+    el.cents.textContent = '— ¢';
+    el.hint.textContent = running ? 'Listening… play a string' : '';
+    el.hint.style.color = '';
+    el.needle.className = 'needle';
+    el.needle.style.left = '50%';
+    if (instrument.strings.length) highlightString(autoString ? -1 : lockedIdx, false);
+  }
+
+  // ---------- Start / stop ----------
+  async function start() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('This browser can’t access the microphone. Try Chrome, Safari or Firefox over HTTPS.', true);
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+    } catch (err) {
+      setStatus(err && err.name === 'NotAllowedError'
+        ? 'Microphone access was blocked. Allow it in your browser settings and try again.'
+        : 'Couldn’t open the microphone: ' + (err && err.message || err), true);
+      return;
+    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 4096;
+    source.connect(analyser);
+    buf = new Float32Array(analyser.fftSize);
+
+    running = true;
+    el.start.textContent = 'Stop';
+    el.start.classList.add('listening');
+    setStatus('Listening. Pluck one string at a time and let it ring.');
+    resetReadout();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stop() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (audioCtx) audioCtx.close();
+    stream = audioCtx = analyser = source = null;
+    history.length = 0; smoothFreq = 0; lastHeard = 0;
+    el.level.style.width = '0';
+    el.start.textContent = 'Start tuning';
+    el.start.classList.remove('listening');
+    setStatus('Stopped. Uses your microphone. Nothing is recorded or sent anywhere.');
+    resetReadout();
+  }
+
+  function setStatus(msg, isError) {
+    el.status.textContent = msg;
+    el.status.classList.toggle('error', !!isError);
+  }
+
+  el.start.addEventListener('click', () => (running ? stop() : start()));
+  document.addEventListener('visibilitychange', () => { if (document.hidden && running) stop(); });
+
+  renderA4();
+})();
+</script>
+</body>
+</html>
