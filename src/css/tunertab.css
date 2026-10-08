@@ -1,0 +1,6 @@
+/* Tuner tab: shows the separate tuner page (tuner.html) under the top bar, the same way Learn takes over the screen.
+   Only hides things while the tab is open; nothing else in Jam Room changes. */
+body.mode-tuner .main,body.mode-tuner .dock,body.mode-tuner .bar2,body.mode-tuner .transport,body.mode-tuner .tools,body.mode-tuner .top .seg,body.mode-tuner #bMenu,body.mode-tuner #learn,body.mode-tuner #orch{display:none!important}
+body.mode-tuner #tunerView{display:flex!important}
+.tunerview{flex:1;min-height:0;background:var(--bg2)}
+.tunerview iframe{flex:1;width:100%;height:100%;border:0;display:block;background:var(--bg2)}

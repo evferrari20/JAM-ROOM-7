@@ -67,7 +67,8 @@ def learn_blocks(inline):
 def main():
     os.makedirs('dist', exist_ok=True)
     s = template()
-    ver = hashlib.sha1(s.encode()).hexdigest()[:10]
+    tuner = open('src/tuner.html').read()  # Tuner: its own page; travels inline in the single file
+    ver = hashlib.sha1((s + tuner).encode()).hexdigest()[:10]
     # 1) single file: packs inline as base-85 text, one line per pack
     lines = []
     for pid in all_packs():
@@ -76,6 +77,7 @@ def main():
         '<script type="application/json" id="sman">' + json.dumps(manifest(None), separators=(',', ':')) + '</script>\n'
         '<script type="text/plain" id="smp">\n' + '\n'.join(lines) + '\n</script>')
     single = single.replace('@@BUILD@@', ver).replace('@@LEARN@@', learn_blocks(True))
+    single = single.replace('<!--@@TUNER@@-->', '<script type="text/plain" id="tunersrc">' + tuner.replace('</script', '<\\/script') + '</script>')
     open('dist/jam-room.html', 'w').write(single)
     # 2) website: page + hashed packs + service worker
     shutil.rmtree('site', ignore_errors=True); os.makedirs('site/s')
@@ -91,7 +93,9 @@ def main():
     shutil.copy('src/vendor/opensheetmusicdisplay.min.js', 'site/learn/osmd.min.js')
     os.makedirs('site/vendor'); shutil.copy('src/vendor/lame.min.js', 'site/vendor/lame.min.js')
     shutil.copy('src/vendor/three.module.min.js', 'site/vendor/three.module.min.js')
+    page = page.replace('<!--@@TUNER@@-->', '')
     for n in ('index.html', 'jam-room.html', 'jam-room-share.html'): open('site/' + n, 'w').write(page)
+    open('site/tuner.html', 'w').write(tuner)
     sw = open('src/sw.js').read().replace('@@BUILD@@', ver)
     open('site/sw.js', 'w').write(sw)
     open('site/manifest.webmanifest', 'w').write(json.dumps({

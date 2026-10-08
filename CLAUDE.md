@@ -18,6 +18,7 @@ The deliverable is a **single self-contained HTML file** (about 15.6 MB, mostly 
 - `tools/calibrate.py OLD_COMMIT ids...`: matches loudness of rebuilt packs to an older build (stores `gain`/`pg`).
 - `tests/`: Playwright scripts (`limiter_probe.py`, `soundcheck.py`, `site.py`, `viz.py`, `onset.py`, `click3.py`, ...). They use `dist/jam-room.html` or `$JR`.
 - `CREDITS.md`: where the samples came from and their licences.
+- `src/tuner.html`: the Tuner, a separate self-contained page (microphone tuner, 10 instrument guides, walkthroughs, piano check). The build copies it to `site/tuner.html` (precached by `sw.js`) and puts it inline in the single file (`#tunersrc`). Jam Room shows it through the **Tuner** tab (`src/js/tunertab.js`, `src/css/tunertab.css`) in an iframe, so opening it never touches the song or the other sections. Test it on the site with a fake mic: Chromium `--use-file-for-fake-audio-capture=file.wav`.
 
 ## How the code is organised (inside app.template.html)
 - Audio chain (`buildGraph`): tracks -> master -> highpass -> finishing EQ (`applyFin`) -> compressor -> limiter -> trim -> destination (+ analyser `A.an`). `A` holds the audio context and nodes.

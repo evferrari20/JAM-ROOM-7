@@ -13,6 +13,7 @@
 <style>/*@include css/studio.css*/</style>
 <style>/*@include css/kit.css*/</style>
 <style>/*@include css/learn.css*/</style>
+<style>/*@include css/tunertab.css*/</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
@@ -31,7 +32,7 @@
 <header class="top">
   <div class="bar">
     <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--wood)"/><path d="M7 23V10M11.5 23V7M16 23V12M20.5 23V8M25 23v-9" stroke="var(--brass)" stroke-width="2.4" stroke-linecap="round"/></svg><span>Jam Room</span></div>
-    <div class="modes" role="tablist" aria-label="Section"><button data-mode="studio" aria-pressed="true" data-ic="studio"><span>Studio</span></button><button data-mode="orch" aria-pressed="false" data-ic="violin"><span>Orchestra</span></button><button data-mode="learn" aria-pressed="false" data-ic="learn"><span>Learn</span></button></div>
+    <div class="modes" role="tablist" aria-label="Section"><button data-mode="studio" aria-pressed="true" data-ic="studio"><span>Studio</span></button><button data-mode="orch" aria-pressed="false" data-ic="violin"><span>Orchestra</span></button><button data-mode="learn" aria-pressed="false" data-ic="learn"><span>Learn</span></button><button id="bTuner" aria-pressed="false" data-ic="tuner" title="Tune your guitar, bass, violin and more with the microphone"><span>Tuner</span></button></div>
     <div class="transport">
       <button id="bPlay" class="round play" aria-label="Play"></button>
       <button id="bRec" class="round rec" aria-label="Record"></button>
@@ -103,6 +104,8 @@
 <footer class="dock" id="dock"></footer>
 <section class="learn" id="learn" hidden></section>
 <section class="orch" id="orch" hidden></section>
+<section class="tunerview" id="tunerView" hidden></section>
+<!--@@TUNER@@-->
 
 <input type="file" id="file" accept=".json,application/json" hidden>
 <div class="toast" id="toast" role="status"></div>
@@ -653,6 +656,7 @@ var IC={
  pen:SVGI('<path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3 3"/>'),
  learn:SVGI('<path d="M2.5 8.5 12 4l9.5 4.5L12 13z"/><path d="M6.5 10.5v5c0 1.4 2.5 3 5.5 3s5.5-1.6 5.5-3v-5"/><path d="M21.5 8.5v6"/>'),
  studio:SVGI('<path d="M3 17V7M7 20V4M11 15V9M15 18V6M19 14v-4"/>'),
+ tuner:SVGI('<path d="M8.5 3v7.5a3.5 3.5 0 0 0 7 0V3"/><path d="M12 14v7"/>'),
  chev:SVGI('<path d="m6 9 6 6 6-6"/>')
 };
 var GICON={'Pianos & keys':IC.keys,'Organs & reeds':IC.organ,'Mellotron':IC.tape,'Guitars':IC.guitar,'Bass':IC.bass,'Strings':IC.violin,'Brass':IC.brass,'Woodwinds':IC.wind,'World & folk':IC.world,'Mallets & bells':IC.bell,'Voices':IC.voice,'Synths':IC.synth};
@@ -2998,6 +3002,7 @@ $('space').addEventListener('change',function(){S.space=this.value;if(A.c)A.rev.
 $('bGuide').addEventListener('click',function(){openGuide('start');});
 document.querySelectorAll('[data-ic]').forEach(function(b){var ic=IC[b.dataset.ic];if(ic)b.insertAdjacentHTML('afterbegin',ic);});
 document.querySelectorAll('.modes [data-mode]').forEach(function(b){b.addEventListener('click',function(){LEARN.setMode(b.dataset.mode);});});
+/*@include js/tunertab.js*/
 function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
 function syncFull(){var b=$('bFull');if(b){b.title=fsEl()?'Exit full screen':'Full screen';b.setAttribute('aria-label',b.title);b.classList.toggle('on',!!fsEl());}}
 document.addEventListener('fullscreenchange',syncFull);document.addEventListener('webkitfullscreenchange',syncFull);
