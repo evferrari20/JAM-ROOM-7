@@ -4,177 +4,205 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jam Room Tuner</title>
-<meta name="description" content="Chromatic tuner for guitar, bass, ukulele, violin, cello, mandolin, banjo and more. Uses your microphone.">
+<meta name="description" content="Tuner for guitar, bass, ukulele, violin, viola, cello, mandolin, banjo, piano and wind instruments, with step-by-step walkthroughs. Uses your microphone.">
+<meta name="theme-color" content="#0a130f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tuner">
+<meta name="format-detection" content="telephone=no">
 <style>
+  /* Jam Room look: deep pine green with brass accents. One dark theme, on purpose. */
   :root {
-    --bg: #f6f5f2;
-    --surface: #ffffff;
-    --surface-2: #eeece7;
-    --text: #1d1c1a;
-    --muted: #6b6862;
-    --border: #dcd9d2;
-    --accent: #2f6fdb;
-    --good: #1f9d55;
-    --warn: #c98a0b;
-    --bad: #d2452f;
-    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #121212;
-      --surface: #1c1c1c;
-      --surface-2: #262626;
-      --text: #f1efea;
-      --muted: #a09c94;
-      --border: #333230;
-      --accent: #6b9cf0;
-      --good: #3ccf7b;
-      --warn: #e7b23a;
-      --bad: #f06a52;
-      --shadow: none;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #121212;
-    --surface: #1c1c1c;
-    --surface-2: #262626;
-    --text: #f1efea;
-    --muted: #a09c94;
-    --border: #333230;
-    --accent: #6b9cf0;
-    --good: #3ccf7b;
-    --warn: #e7b23a;
-    --bad: #f06a52;
-    --shadow: none;
+    --bg: #0a130f;
+    --panel: #11201a;
+    --raise: #1c3329;
+    --hover: #21392f;
+    --line: #22382e;
+    --line2: #2d4a3d;
+    --ink: #ece5d3;
+    --ink2: #c9c2b0;
+    --muted: #8b9f93;
+    --accent: #6db58f;
+    --accent-ink: #07130d;
+    --accent-soft: rgba(109,181,143,.14);
+    --brass: #d4a65e;
+    --brass-soft: rgba(212,166,94,.14);
+    --good: #6db58f;
+    --warn: #d4a65e;
+    --bad: #e0694b;
+    --r: 14px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', Roboto, sans-serif;
+    --font-d: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Mono', ui-monospace, Menlo, monospace;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
   html, body { margin: 0; }
   body {
     background: var(--bg);
-    color: var(--text);
-    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    font: 16px/1.45 var(--font);
     min-height: 100vh;
     -webkit-tap-highlight-color: transparent;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
   main {
     max-width: 560px;
     margin: 0 auto;
-    padding: 20px 16px 40px;
+    padding: 16px 16px 48px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
   }
-  h1 { font-size: 1.25rem; margin: 0; letter-spacing: .01em; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { font: 700 1.3rem/1.2 var(--font-d); margin: 0; }
+  h1 span { color: var(--brass); }
+  h2 { font: 700 1.1rem/1.25 var(--font-d); margin: 0; text-wrap: balance; }
+  h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
+  a { color: var(--accent); }
+  .back { font-size: .9rem; text-decoration: none; color: var(--muted); }
 
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
     padding: 16px;
   }
 
   .controls { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
-  label.field { display: flex; flex-direction: column; gap: 6px; font-size: .8rem; color: var(--muted); }
+  .field { display: flex; flex-direction: column; gap: 6px; font-size: .8rem; color: var(--muted); min-width: 0; }
   select, button {
     font: inherit;
-    color: var(--text);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
+    font-size: 16px; /* 16px stops iPhone Safari from zooming in on tap */
+    color: var(--ink);
+    background: var(--raise);
+    border: 1px solid var(--line2);
     border-radius: 10px;
     padding: 10px 12px;
+    min-height: 44px;
+    touch-action: manipulation;
   }
   select { width: 100%; min-width: 0; }
   button { cursor: pointer; }
-  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:active { background: var(--hover); }
+  button:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 650; }
+  button.ghost { background: transparent; }
 
   .stepper { display: flex; align-items: center; gap: 4px; }
-  .stepper button { padding: 10px 12px; min-width: 40px; }
-  .stepper output { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--text); font-size: 1rem; }
+  .stepper button { min-width: 44px; padding: 10px; }
+  .stepper output { min-width: 66px; text-align: center; font: 600 1rem var(--mono); color: var(--ink); }
 
   /* Readout */
-  .readout { text-align: center; padding: 24px 16px 20px; }
+  .readout { text-align: center; padding: 18px 16px 16px; }
   .note {
-    font-size: clamp(4.5rem, 22vw, 7rem);
-    font-weight: 700;
-    line-height: 1;
+    font: 700 clamp(4.5rem, 24vw, 7rem)/1 var(--font-d);
     letter-spacing: -.02em;
     transition: color .15s;
-    min-height: 1em;
+    margin-top: 6px;
   }
-  .note sub { font-size: .35em; font-weight: 600; vertical-align: baseline; color: var(--muted); margin-left: 2px; }
-  .note.idle { color: var(--muted); opacity: .5; }
+  .note sub { font-size: .32em; font-weight: 600; vertical-align: baseline; color: var(--muted); margin-left: 2px; }
+  .note.idle { color: var(--muted); opacity: .45; }
   .note.good { color: var(--good); }
   .note.warn { color: var(--warn); }
   .note.bad  { color: var(--bad); }
   .sub-readout {
-    display: flex; justify-content: center; gap: 20px;
-    color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 8px; font-size: .95rem;
+    display: flex; justify-content: center; gap: 18px; flex-wrap: wrap;
+    color: var(--muted); font: .92rem var(--mono); margin-top: 8px;
   }
-  .hint { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+  .hint { margin-top: 8px; font-weight: 650; min-height: 1.45em; }
 
-  /* Meter */
-  .meter { position: relative; height: 64px; margin: 20px 4px 4px; }
+  .meter { position: relative; height: 64px; margin: 16px 6px 4px; }
   .meter .scale { position: absolute; inset: 0; }
-  .tick { position: absolute; bottom: 18px; width: 2px; margin-left: -1px; background: var(--border); height: 14px; border-radius: 1px; }
+  .tick { position: absolute; bottom: 18px; width: 2px; margin-left: -1px; background: var(--line2); height: 14px; border-radius: 1px; }
   .tick.major { height: 24px; background: var(--muted); }
   .tick.center { height: 34px; background: var(--good); width: 3px; margin-left: -1.5px; }
-  .tick-label { position: absolute; bottom: 0; transform: translateX(-50%); font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .zone { position: absolute; bottom: 18px; height: 34px; background: var(--good); opacity: .12; border-radius: 4px; }
+  .tick-label { position: absolute; bottom: 0; transform: translateX(-50%); font: .68rem var(--mono); color: var(--muted); }
+  .flatsharp { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin: 0 4px; text-transform: uppercase; letter-spacing: .08em; }
+  .zone { position: absolute; bottom: 18px; height: 34px; background: var(--good); opacity: .14; border-radius: 4px; }
   .needle {
     position: absolute; bottom: 14px; left: 50%;
     width: 6px; height: 46px; margin-left: -3px;
     border-radius: 3px;
     background: var(--muted);
     transition: left .12s ease-out, background-color .15s, opacity .3s;
-    opacity: .35;
+    opacity: .3;
   }
   .needle.active { opacity: 1; }
   .needle.good { background: var(--good); }
   .needle.warn { background: var(--warn); }
   .needle.bad  { background: var(--bad); }
+  .level { height: 4px; background: var(--raise); border-radius: 2px; overflow: hidden; margin-top: 12px; }
+  .level > div { height: 100%; width: 0; background: var(--brass); transition: width .08s linear; }
+
+  /* Walkthrough panel */
+  .walk {
+    text-align: left;
+    background: var(--brass-soft);
+    border: 1px solid color-mix(in srgb, var(--brass) 45%, transparent);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+  }
+  .walk-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .78rem; color: var(--brass); text-transform: uppercase; letter-spacing: .08em; font-weight: 650; }
+  .walk-top button { min-height: 32px; padding: 4px 10px; font-size: .85rem; text-transform: none; letter-spacing: 0; }
+  .walk-title { font: 700 1.15rem/1.3 var(--font-d); margin-top: 6px; }
+  .walk-hint { color: var(--ink2); font-size: .92rem; margin-top: 2px; }
+  .walk-dots { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .walk-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--line2); }
+  .walk-dots span.done { background: var(--good); }
+  .walk-dots span.now { background: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
+  .walk-nav { display: flex; gap: 8px; margin-top: 10px; }
+  .walk-nav button { flex: 1; min-height: 40px; padding: 6px 10px; font-size: .95rem; }
+  .walk-results { margin: 8px 0 0; padding: 0; list-style: none; font: .92rem var(--mono); display: grid; gap: 4px; }
+  .walk-results li { display: flex; justify-content: space-between; gap: 12px; }
 
   /* Strings */
   .strings-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
-  .strings-head span { font-size: .8rem; color: var(--muted); }
-  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); cursor: pointer; user-select: none; }
-  .toggle input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  .strings-head > span { font-size: .8rem; color: var(--muted); }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--ink2); cursor: pointer; user-select: none; min-height: 32px; }
+  .toggle input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
   .strings { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
   .string {
-    flex: 1 1 0; min-width: 52px; max-width: 80px;
-    padding: 12px 4px; border-radius: 12px;
+    flex: 1 1 0; min-width: 46px; max-width: 80px;
+    padding: 10px 2px; border-radius: 12px;
     display: flex; flex-direction: column; align-items: center; gap: 2px;
     font-weight: 700; font-size: 1.1rem;
     transition: background-color .15s, border-color .15s, color .15s;
   }
-  .string small { font-weight: 500; font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .string.target { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
-  .string.tuned { border-color: var(--good); color: var(--good); }
-  .chromatic-msg { color: var(--muted); text-align: center; font-size: .9rem; margin: 4px 0; }
+  .string small { font: 500 .66rem var(--mono); color: var(--muted); }
+  .string.target { border-color: var(--brass); background: var(--brass-soft); }
+  .string.tuned { border-color: var(--good); color: var(--good); background: var(--accent-soft); }
+  .chromatic-msg { color: var(--muted); text-align: center; font-size: .92rem; margin: 2px 0; }
   .ref-row { display: flex; gap: 8px; margin-top: 12px; }
   .ref-row button { flex: 1; }
 
   /* Start */
-  .start {
-    width: 100%;
-    padding: 16px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-    border-radius: 14px;
-  }
-  .start.listening { background: var(--surface-2); color: var(--text); border-color: var(--border); }
-  .status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1.2em; }
+  .start { width: 100%; padding: 16px; font-size: 1.05rem; border-radius: var(--r); min-height: 56px; }
+  .start.listening { background: var(--raise); color: var(--ink); border-color: var(--line2); }
+  .status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1.2em; margin-top: -4px; }
   .status.error { color: var(--bad); }
 
-  .level { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; margin-top: 14px; }
-  .level > div { height: 100%; width: 0; background: var(--accent); transition: width .08s linear; }
+  /* Guide */
+  .guide p { margin: 8px 0 0; color: var(--ink2); }
+  .guide ol, .guide ul { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; color: var(--ink2); }
+  .guide li::marker { color: var(--brass); font-weight: 700; }
+  .guide strong { color: var(--ink); }
+  .guide .walk-btn { width: 100%; margin-top: 14px; }
+  .guide table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .guide th, .guide td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .guide th { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+  .guide td:last-child { color: var(--brass); font-weight: 700; white-space: nowrap; }
+  .table-wrap { overflow-x: auto; }
+  details { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+  summary { cursor: pointer; font-weight: 650; color: var(--ink); min-height: 32px; display: flex; align-items: center; }
+  details[open] summary { margin-bottom: 8px; }
 
-  @media (max-width: 380px) {
+  @media (max-width: 480px) {
     .controls { grid-template-columns: 1fr; }
     .stepper { justify-content: space-between; }
   }
@@ -186,40 +214,58 @@
 <body>
 <main>
   <header>
-    <h1>Jam Room Tuner</h1>
+    <h1>Jam Room <span>Tuner</span></h1>
   </header>
 
   <section class="card controls" aria-label="Settings">
-    <label class="field">Instrument / tuning
+    <label class="field" for="instrument">Instrument
       <select id="instrument"></select>
     </label>
-    <label class="field">Reference pitch (A4)
+    <div class="field">Reference pitch (A4)
       <div class="stepper">
         <button type="button" id="a4down" aria-label="Lower reference pitch">−</button>
         <output id="a4out">440 Hz</output>
         <button type="button" id="a4up" aria-label="Raise reference pitch">+</button>
       </div>
-    </label>
+    </div>
   </section>
 
-  <section class="card readout" aria-live="polite">
-    <div id="note" class="note idle">–</div>
-    <div class="sub-readout">
-      <span id="freq">— Hz</span>
-      <span id="cents">— ¢</span>
+  <section class="card readout">
+    <div class="walk" id="walk" hidden>
+      <div class="walk-top"><span id="walkStep"></span><button type="button" class="ghost" id="walkExit">Exit</button></div>
+      <div class="walk-title" id="walkTitle"></div>
+      <div class="walk-hint" id="walkHint"></div>
+      <ul class="walk-results" id="walkResults" hidden></ul>
+      <div class="walk-dots" id="walkDots"></div>
+      <div class="walk-nav" id="walkNav">
+        <button type="button" id="walkBack">Back</button>
+        <button type="button" id="walkPlay">▶ Hear it</button>
+        <button type="button" id="walkSkip">Skip</button>
+      </div>
     </div>
-    <div id="hint" class="hint"></div>
+    <div aria-live="polite">
+      <div id="note" class="note idle">–</div>
+      <div class="sub-readout">
+        <span id="freq">— Hz</span>
+        <span id="cents">— ¢</span>
+      </div>
+      <div id="hint" class="hint"></div>
+    </div>
     <div class="meter" aria-hidden="true">
       <div class="scale" id="scale"></div>
       <div class="needle" id="needle"></div>
     </div>
+    <div class="flatsharp" aria-hidden="true"><span>◀ Too low</span><span>Too high ▶</span></div>
     <div class="level" aria-hidden="true"><div id="level"></div></div>
   </section>
+
+  <button type="button" class="start primary" id="start">Start tuning</button>
+  <div class="status" id="status">Uses your microphone. Nothing is recorded or sent anywhere.</div>
 
   <section class="card" id="stringsCard">
     <div class="strings-head">
       <span id="stringsLabel">Strings</span>
-      <label class="toggle"><input type="checkbox" id="auto" checked> Auto-detect string</label>
+      <label class="toggle" id="autoWrap"><input type="checkbox" id="auto" checked> Auto-detect string</label>
     </div>
     <div class="strings" id="strings"></div>
     <div class="ref-row">
@@ -227,8 +273,36 @@
     </div>
   </section>
 
-  <button type="button" class="start" id="start">Start tuning</button>
-  <div class="status" id="status">Uses your microphone. Nothing is recorded or sent anywhere.</div>
+  <section class="card guide" id="guide" aria-labelledby="guideTitle">
+    <h2 id="guideTitle">How to tune</h2>
+    <p id="guideIntro"></p>
+    <button type="button" class="primary walk-btn" id="walkStart">Walk me through it</button>
+    <h3>Step by step</h3>
+    <ol id="guideSteps"></ol>
+    <div id="guideExtra"></div>
+    <h3>Good to know</h3>
+    <ul id="guideTips"></ul>
+    <details id="basics">
+      <summary>New to tuners? How to read this one</summary>
+      <ul>
+        <li>Play <strong>one note at a time</strong> and let it ring. The big letter is the note it hears.</li>
+        <li>The needle shows how far off you are. <strong>Left of the middle = too low</strong> (called “flat”). <strong>Right = too high</strong> (“sharp”).</li>
+        <li>Adjust until the needle sits in the middle and everything turns <strong style="color:var(--good)">green</strong>. Within 5 “cents” is in tune. A cent is 1/100 of a note.</li>
+        <li><strong>Tighter string = higher note.</strong> Looser = lower. If you’re not sure which way a peg goes, turn it a little and watch the needle.</li>
+        <li>Leave the reference pitch on <strong>440 Hz</strong> unless you’re matching something else (like an old piano).</li>
+      </ul>
+    </details>
+    <details id="iphone">
+      <summary>Using this on an iPhone</summary>
+      <ul>
+        <li>Open the link in <strong>Safari</strong>. Tap <strong>Start tuning</strong>, then <strong>Allow</strong> when it asks for the microphone.</li>
+        <li>If you tapped “Don’t Allow” by mistake, tap <strong>aA</strong> in the address bar, then <strong>Website Settings › Microphone › Allow</strong>, and reload.</li>
+        <li>To keep it like an app: tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</li>
+        <li>No sound from “Hear it”? Check the volume, and flip the silent switch on the side of the phone off.</li>
+        <li>The tuner stops when you switch apps or lock the phone. Tap Start again when you come back.</li>
+      </ul>
+    </details>
+  </section>
 </main>
 
 <script>
@@ -237,71 +311,286 @@
 
   // ---------- Instruments ----------
   const INSTRUMENTS = [
-    { group: 'General', items: [
-      { id: 'chromatic', name: 'Chromatic (any instrument)', strings: [] },
-    ]},
     { group: 'Guitar', items: [
-      { id: 'guitar', name: 'Guitar — Standard (EADGBE)', strings: ['E2','A2','D3','G3','B3','E4'] },
-      { id: 'guitar-dropd', name: 'Guitar — Drop D', strings: ['D2','A2','D3','G3','B3','E4'] },
-      { id: 'guitar-halfdown', name: 'Guitar — Half step down', strings: ['Eb2','Ab2','Db3','Gb3','Bb3','Eb4'] },
-      { id: 'guitar-dadgad', name: 'Guitar — DADGAD', strings: ['D2','A2','D3','G3','A3','D4'] },
-      { id: 'guitar-openg', name: 'Guitar — Open G', strings: ['D2','G2','D3','G3','B3','D4'] },
-      { id: 'guitar-opend', name: 'Guitar — Open D', strings: ['D2','A2','D3','F#3','A3','D4'] },
-      { id: 'guitar-7', name: 'Guitar — 7-string', strings: ['B1','E2','A2','D3','G3','B3','E4'] },
+      { id: 'guitar', name: 'Guitar (standard)', strings: ['E2','A2','D3','G3','B3','E4'] },
+      { id: 'guitar-dropd', name: 'Guitar: Drop D', strings: ['D2','A2','D3','G3','B3','E4'] },
+      { id: 'guitar-halfdown', name: 'Guitar: half step down', strings: ['Eb2','Ab2','Db3','Gb3','Bb3','Eb4'] },
+      { id: 'guitar-dadgad', name: 'Guitar: DADGAD', strings: ['D2','A2','D3','G3','A3','D4'] },
+      { id: 'guitar-openg', name: 'Guitar: Open G', strings: ['D2','G2','D3','G3','B3','D4'] },
+      { id: 'guitar-opend', name: 'Guitar: Open D', strings: ['D2','A2','D3','F#3','A3','D4'] },
+      { id: 'guitar-7', name: 'Guitar: 7-string', strings: ['B1','E2','A2','D3','G3','B3','E4'] },
     ]},
     { group: 'Bass', items: [
-      { id: 'bass4', name: 'Bass — 4-string (EADG)', strings: ['E1','A1','D2','G2'] },
-      { id: 'bass4-dropd', name: 'Bass — Drop D', strings: ['D1','A1','D2','G2'] },
-      { id: 'bass5', name: 'Bass — 5-string (BEADG)', strings: ['B0','E1','A1','D2','G2'] },
+      { id: 'bass4', name: 'Bass guitar (4-string)', strings: ['E1','A1','D2','G2'] },
+      { id: 'bass4-dropd', name: 'Bass guitar: Drop D', strings: ['D1','A1','D2','G2'] },
+      { id: 'bass5', name: 'Bass guitar (5-string)', strings: ['B0','E1','A1','D2','G2'] },
+      { id: 'doublebass', name: 'Double bass (upright)', strings: ['E1','A1','D2','G2'] },
     ]},
     { group: 'Ukulele', items: [
-      { id: 'uke', name: 'Ukulele — Standard (GCEA)', strings: ['G4','C4','E4','A4'] },
-      { id: 'uke-lowg', name: 'Ukulele — Low G', strings: ['G3','C4','E4','A4'] },
-      { id: 'uke-bari', name: 'Ukulele — Baritone (DGBE)', strings: ['D3','G3','B3','E4'] },
+      { id: 'uke', name: 'Ukulele (standard)', strings: ['G4','C4','E4','A4'] },
+      { id: 'uke-lowg', name: 'Ukulele: low G', strings: ['G3','C4','E4','A4'] },
+      { id: 'uke-bari', name: 'Ukulele: baritone', strings: ['D3','G3','B3','E4'] },
     ]},
-    { group: 'Orchestral strings', items: [
+    { group: 'Violin family', items: [
       { id: 'violin', name: 'Violin', strings: ['G3','D4','A4','E5'] },
       { id: 'viola', name: 'Viola', strings: ['C3','G3','D4','A4'] },
       { id: 'cello', name: 'Cello', strings: ['C2','G2','D3','A3'] },
-      { id: 'doublebass', name: 'Double bass', strings: ['E1','A1','D2','G2'] },
     ]},
     { group: 'Folk', items: [
       { id: 'mandolin', name: 'Mandolin', strings: ['G3','D4','A4','E5'] },
-      { id: 'banjo', name: 'Banjo — 5-string Open G', strings: ['G4','D3','G3','B3','D4'] },
-      { id: 'banjo-tenor', name: 'Banjo — Tenor (CGDA)', strings: ['C3','G3','D4','A4'] },
+      { id: 'banjo', name: 'Banjo (5-string, open G)', strings: ['G4','D3','G3','B3','D4'] },
+      { id: 'banjo-tenor', name: 'Banjo (tenor)', strings: ['C3','G3','D4','A4'] },
+    ]},
+    { group: 'Other', items: [
+      { id: 'piano', name: 'Piano or keyboard', strings: [] },
+      { id: 'winds', name: 'Trumpet, sax, flute & other winds', strings: [] },
+      { id: 'chromatic', name: 'Anything else (chromatic)', strings: [] },
     ]},
   ];
   const BY_ID = {};
   INSTRUMENTS.forEach(g => g.items.forEach(i => { BY_ID[i.id] = i; }));
 
+  // ---------- Guides (10 instruments + a general one) ----------
+  const thick = n => Array.from({ length: n }, (_, i) =>
+    i === 0 ? 'Thickest string' : i === n - 1 ? 'Thinnest string' : ordinal(i + 1) + ' thickest string');
+  const topDown = n => Array.from({ length: n }, (_, i) =>
+    i === 0 ? 'Top string (thickest, closest to your face)' : i === n - 1 ? 'Bottom string (thinnest, closest to the floor)' : ordinal(i + 1) + ' string from the top');
+  function ordinal(n) { return n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'); }
+
+  const GUIDES = {
+    guitar: {
+      title: 'Guitar',
+      intro: 'You tune a guitar by turning the pegs (tuning keys) on the headstock. Each peg tightens or loosens one string.',
+      hints: topDown,
+      peg: 'Turn its peg: tighter to go up, looser to go down.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and hold the phone near the sound hole (or near the amp for electric).',
+        'Pluck <strong>one open string</strong> (no fingers on the frets) and let it ring.',
+        'Needle on the left = too low: <strong>tighten</strong> the peg. Needle on the right = too high: <strong>loosen</strong> it.',
+        'Turn in small amounts. A quarter turn is a lot. Aim to come <strong>up</strong> to the note. If you overshoot, drop below and come back up, because it holds better.',
+        'When it goes green, move to the next string. When all six are done, check them once more, since tuning one can pull the others slightly.',
+      ],
+      tips: [
+        'If the big letter is completely different from the string you want, the string is way off. Turn off Auto-detect and tap the string you’re tuning, so the tuner knows the target.',
+        'New strings stretch and keep going flat for a day or two. That’s normal; just retune.',
+        'Drop D, DADGAD and the other tunings are in the Instrument menu.',
+      ],
+    },
+    bass: {
+      title: 'Bass',
+      intro: 'Same idea as a guitar, with fewer, thicker strings that play much lower notes. Low notes are harder for a phone mic to hear, so hold it close.',
+      hints: thick,
+      peg: 'Turn its tuning key: tighter to go up, looser to go down.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and hold the phone close to the strings or the amp speaker.',
+        'Pluck one open string <strong>firmly</strong> with your finger and let it ring. Low notes take a second to register.',
+        'Needle left = <strong>tighten</strong>. Needle right = <strong>loosen</strong>. Small turns.',
+        'When it’s green, move to the next string, then check them all once more.',
+      ],
+      tips: [
+        'If the phone struggles with the lowest string, play the <strong>harmonic</strong>: touch the string lightly right above the 12th fret (don’t press), pluck, and let go. In the walkthrough it still counts as the right note.',
+        'Upright (double) bass: same notes. Pluck the string rather than bowing for a steadier reading.',
+      ],
+    },
+    uke: {
+      title: 'Ukulele',
+      intro: 'A ukulele has four nylon strings tuned with the pegs on the headstock. The top string is thin and high, which surprises everyone. That’s on purpose.',
+      hints: n => ['Top string (closest to your face). It’s thin and high-pitched, and that’s normal.', '2nd string from the top (the lowest note)', '3rd string from the top', 'Bottom string (closest to the floor)'].slice(0, n),
+      hintsLowG: ['Top string (closest to your face)', '2nd string from the top', '3rd string from the top', 'Bottom string (closest to the floor)'],
+      peg: 'Turn its peg: tighter to go up, looser to go down.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and hold the phone near the sound hole.',
+        'Pluck one string with your thumb and let it ring.',
+        'Needle left = <strong>tighten</strong>. Needle right = <strong>loosen</strong>.',
+        'Go string by string, then strum all four. It should sound like a happy, bright chord (C6).',
+      ],
+      tips: [
+        'Nylon strings stretch a lot when new. Expect to retune often for the first week.',
+        'Don’t tighten the top G string to match the others. It’s supposed to be higher than the string next to it.',
+        'Baritone and low-G ukes are in the Instrument menu.',
+      ],
+    },
+    violin: {
+      title: 'Violin',
+      intro: 'Violins have two ways to tune: little <strong>fine tuners</strong> (screws on the tailpiece, near your chin) for small changes, and the big <strong>pegs</strong> at the scroll for big ones.',
+      hints: n => ['Thickest string (far left as you look at the front)', '2nd from the left', '2nd from the right', 'Thinnest string (far right). Careful, it snaps easily.'],
+      order: [2, 1, 0, 3],
+      peg: 'Use the fine tuner: clockwise raises the note, counter-clockwise lowers it.',
+      steps: [
+        'Tap <strong>Start tuning</strong>. Start with the <strong>A string</strong>; orchestras always tune A first.',
+        'Pluck the string (or bow it gently) and let it ring.',
+        'Too low: turn the <strong>fine tuner clockwise</strong>. Too high: counter-clockwise. Small turns.',
+        'If a string is way off, use the peg: push it <strong>in</strong> toward the scroll while you turn so it doesn’t slip back.',
+        'Then D, G and E. Check all four again at the end.',
+      ],
+      tips: [
+        'If a fine tuner is screwed all the way in, back it out to the middle and use the peg instead.',
+        'Make sure the bridge stays straight up and down while you tune. Strings can pull it forward.',
+      ],
+    },
+    viola: {
+      title: 'Viola',
+      intro: 'Tuned like a violin but a bit lower, with a C string instead of the violin’s E. Use the fine tuners for small changes and the pegs for big ones.',
+      hints: n => ['Thickest string (far left as you look at the front)', '2nd from the left', '2nd from the right', 'Thinnest string (far right)'],
+      order: [3, 2, 1, 0],
+      peg: 'Use the fine tuner: clockwise raises the note, counter-clockwise lowers it.',
+      steps: [
+        'Tap <strong>Start tuning</strong>. Start with the <strong>A string</strong> (the thinnest).',
+        'Pluck or gently bow the string and let it ring.',
+        'Too low: <strong>fine tuner clockwise</strong>. Too high: counter-clockwise.',
+        'Way off? Use the peg, pushing it in as you turn so it grips.',
+        'Then D, G and C. Check all four again at the end.',
+      ],
+      tips: ['Keep the bridge standing straight while you tune.'],
+    },
+    cello: {
+      title: 'Cello',
+      intro: 'Same as a violin, just bigger and lower: fine tuners on the tailpiece for small changes, pegs at the top for big ones.',
+      hints: n => ['Thickest string (far left as you face the cello)', '2nd from the left', '2nd from the right', 'Thinnest string (far right)'],
+      order: [3, 2, 1, 0],
+      peg: 'Use the fine tuner: clockwise raises the note, counter-clockwise lowers it.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and put the phone on a chair or stand near the cello.',
+        'Start with the <strong>A string</strong> (thinnest). Pluck or bow it and let it ring.',
+        'Too low: <strong>fine tuner clockwise</strong>. Too high: counter-clockwise.',
+        'Way off? Use the peg, pushing it in as you turn.',
+        'Then D, G and C. Check all four again.',
+      ],
+      tips: ['The low C is hard for phones to hear. Bow it steadily, or pluck firmly and hold the phone closer.'],
+    },
+    mandolin: {
+      title: 'Mandolin',
+      intro: 'A mandolin has <strong>8 strings in 4 pairs</strong>. Both strings in a pair are tuned to the same note, the same notes as a violin.',
+      hints: n => ['Top pair (thickest, closest to your face)', '2nd pair from the top', '3rd pair from the top', 'Bottom pair (thinnest)'],
+      peg: 'Tune <strong>each string of the pair</strong> one at a time: pluck one, tune it, then the other.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and hold the phone near the body.',
+        'Pluck <strong>just one string</strong> of a pair. Mute its partner with a finger.',
+        'Needle left = <strong>tighten</strong>. Needle right = <strong>loosen</strong>.',
+        'Tune the partner string to the same note. When both are right the pair sounds like one clean note, with no wobble.',
+        'Repeat for all four pairs.',
+      ],
+      tips: ['A wobbly, “wah-wah” sound from a pair means the two strings are slightly different. Nudge one until the wobble stops.'],
+    },
+    banjo: {
+      title: 'Banjo',
+      intro: 'A 5-string banjo has one short string whose peg sticks out of the side of the neck. In standard open G, strumming all the open strings plays a G chord.',
+      hints5: ['Short string (its peg is on the side of the neck, halfway up)', 'Top long string (closest to your face)', 'Middle long string', '2nd long string from the bottom', 'Bottom string (thinnest, closest to the floor)'],
+      hints: thick,
+      peg: 'Turn its peg: tighter to go up, looser to go down.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and hold the phone near the head (the drum part).',
+        'Pluck one open string and let it ring.',
+        'Needle left = <strong>tighten</strong>. Needle right = <strong>loosen</strong>.',
+        'Do all five, including the short one, then strum. It should be a clean G chord.',
+      ],
+      tips: ['Banjos ring briefly, so pluck again if the reading drops out.', 'Tenor banjo is in the Instrument menu.'],
+    },
+    piano: {
+      title: 'Piano or keyboard',
+      intro: 'A real piano has about 230 strings pulled very tight, and tuning it takes a special tool and training. This tuner <strong>can’t make you tune a piano</strong>, but it can tell you whether yours needs a piano tuner.',
+      steps: [
+        '<strong>Digital keyboards never go out of tune.</strong> If one sounds off, look for a “Tune” or “Transpose” setting that was changed.',
+        'For a real piano, tap <strong>Check my piano</strong>. It asks you to hold four keys and measures each one.',
+        'At the end it tells you whether the piano is fine or needs a tuner, plus what reference pitch to set in Jam Room so you can play along with it.',
+        'Pianos should be tuned about once a year, and they drift with the seasons.',
+      ],
+      tips: [
+        'Hold the key down so the note rings, and keep the room quiet.',
+        'Please don’t turn the pins yourself. The strings carry a lot of tension and can snap.',
+      ],
+      check: [
+        { note: 'A4', title: 'The A just above middle C', hint: 'Find middle C (usually under the brand name), then go up to the 6th white key. Press and hold it.' },
+        { note: 'C4', title: 'Middle C', hint: 'The C closest to the middle of the keyboard, usually under the brand name. C is the white key just left of a pair of black keys.' },
+        { note: 'A2', title: 'A low A', hint: 'Go two A’s down from the first one, toward the left. Press and hold.' },
+        { note: 'A5', title: 'A high A', hint: 'Go one A up from the first one, toward the right. Press and hold.' },
+      ],
+    },
+    winds: {
+      title: 'Trumpet, sax, flute & other winds',
+      intro: 'Wind and brass instruments are tuned by making the instrument a tiny bit <strong>longer (lower)</strong> or <strong>shorter (higher)</strong>, by moving the tuning slide, mouthpiece, barrel or head joint.',
+      steps: [
+        '<strong>Warm up for a couple of minutes first.</strong> A cold instrument plays flat.',
+        'Tap <strong>Start tuning</strong> and play the tuning note from the table below: long, steady, at a normal volume.',
+        'Too high (needle right)? <strong>Pull out</strong> the slide or mouthpiece a little.',
+        'Too low (needle left)? <strong>Push in</strong> a little.',
+        'Play the note again and repeat until it’s green. Then play a few other notes; the instrument itself has a few naturally off notes, and that’s fine.',
+      ],
+      table: [
+        ['Flute, oboe', 'Play A', 'A'],
+        ['Clarinet, trumpet, tenor & soprano sax', 'Play your C', 'B♭'],
+        ['Alto & baritone sax', 'Play your C', 'E♭'],
+        ['French horn', 'Play your C', 'F'],
+        ['Trombone, tuba, euphonium', 'B♭ (trombone: slide in 1st position)', 'B♭'],
+      ],
+      tips: [
+        'Many instruments are “transposing”: the note you read isn’t the note that comes out. The tuner shows the real note, which is why your C shows up as B♭ or E♭.',
+        'Your mouth matters as much as the slide. Play relaxed with your normal sound, not forced.',
+      ],
+    },
+    general: {
+      title: 'Any instrument',
+      intro: 'In chromatic mode the tuner just tells you the closest note to whatever you play. Use it for anything not in the list: harmonica, voice, steel drum, or checking a single note.',
+      steps: [
+        'Tap <strong>Start tuning</strong> and play or sing one steady note.',
+        'The big letter is the closest note. The needle shows how far off you are.',
+        'Adjust until the needle sits in the middle and goes green.',
+      ],
+      tips: ['If your instrument is in the menu, pick it. You’ll get string buttons and a walkthrough.'],
+    },
+  };
+  function guideKeyFor(id) {
+    if (id.startsWith('guitar')) return 'guitar';
+    if (id.startsWith('bass') || id === 'doublebass') return 'bass';
+    if (id.startsWith('uke')) return 'uke';
+    if (id.startsWith('banjo')) return 'banjo';
+    if (id === 'chromatic') return 'general';
+    return id;
+  }
+  function stringHints(inst) {
+    const g = GUIDES[guideKeyFor(inst.id)];
+    const n = inst.strings.length;
+    if (inst.id === 'banjo') return g.hints5;
+    if (inst.id === 'uke-lowg' || inst.id === 'uke-bari') return g.hintsLowG;
+    return g.hints(n);
+  }
+
   // ---------- Note math ----------
   const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   function parseNote(s) {
     const m = /^([A-G])([#b]?)(-?\d)$/.exec(s);
-    let n = SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    const n = SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
     return (parseInt(m[3], 10) + 1) * 12 + n; // MIDI number
   }
   const midiToFreq = (midi, a4) => a4 * Math.pow(2, (midi - 69) / 12);
   const freqToMidi = (f, a4) => 69 + 12 * Math.log2(f / a4);
   const midiName = m => NAMES[((m % 12) + 12) % 12];
   const midiOctave = m => Math.floor(m / 12) - 1;
-  const prettyNote = s => s.replace('#', '♯').replace(/([A-G])b/, '$1♭');
+  const pretty = s => s.replace('#', '♯').replace(/([A-G])b/, '$1♭');
+  const letter = s => s.replace(/-?\d$/, '');
+  const octaveOf = s => s.match(/-?\d$/)[0];
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
   // ---------- State ----------
   const store = {
-    get(k, d) { try { const v = localStorage.getItem('tuner.' + k); return v === null ? d : v; } catch { return d; } },
-    set(k, v) { try { localStorage.setItem('tuner.' + k, v); } catch {} },
+    get(k, d) { try { const v = localStorage.getItem('tuner.' + k); return v === null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('tuner.' + k, v); } catch (e) {} },
   };
   let a4 = clamp(parseInt(store.get('a4', '440'), 10) || 440, 415, 466);
-  let instrument = BY_ID[store.get('instrument', 'guitar')] || BY_ID.guitar;
+  const hashId = (location.hash || '').slice(1);
+  let instrument = BY_ID[hashId] || BY_ID[store.get('instrument', 'guitar')] || BY_ID.guitar;
   let autoString = true;
   let lockedIdx = 0;
+  let lastAutoIdx = 0;
 
-  let audioCtx = null, analyser = null, stream = null, source = null;
+  let audioCtx = null, analyser = null, stream = null, source = null, wakeLock = null;
   let buf = null, running = false, rafId = 0, lastAnalysis = 0;
   let smoothFreq = 0, lastHeard = 0;
   const history = [];
+
+  // Walkthrough: { kind: 'tune'|'check', items: [{label, freq, title, hint}], step, held, done[], samples[], results[], pauseUntil }
+  let walk = null;
 
   // ---------- DOM ----------
   const $ = id => document.getElementById(id);
@@ -309,11 +598,14 @@
     instrument: $('instrument'), a4out: $('a4out'), a4up: $('a4up'), a4down: $('a4down'),
     note: $('note'), freq: $('freq'), cents: $('cents'), hint: $('hint'),
     scale: $('scale'), needle: $('needle'), level: $('level'),
-    strings: $('strings'), stringsCard: $('stringsCard'), stringsLabel: $('stringsLabel'),
-    auto: $('auto'), playRef: $('playRef'), start: $('start'), status: $('status'),
+    strings: $('strings'), stringsLabel: $('stringsLabel'), auto: $('auto'), autoWrap: $('autoWrap'),
+    playRef: $('playRef'), start: $('start'), status: $('status'),
+    guideTitle: $('guideTitle'), guideIntro: $('guideIntro'), guideSteps: $('guideSteps'),
+    guideTips: $('guideTips'), guideExtra: $('guideExtra'), walkStart: $('walkStart'),
+    walk: $('walk'), walkStep: $('walkStep'), walkTitle: $('walkTitle'), walkHint: $('walkHint'),
+    walkDots: $('walkDots'), walkNav: $('walkNav'), walkBack: $('walkBack'), walkSkip: $('walkSkip'),
+    walkPlay: $('walkPlay'), walkExit: $('walkExit'), walkResults: $('walkResults'),
   };
-
-  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
   // Instrument picker
   INSTRUMENTS.forEach(g => {
@@ -327,13 +619,18 @@
     el.instrument.appendChild(og);
   });
   el.instrument.value = instrument.id;
-  el.instrument.addEventListener('change', () => {
-    instrument = BY_ID[el.instrument.value];
-    store.set('instrument', instrument.id);
+  el.instrument.addEventListener('change', () => setInstrument(BY_ID[el.instrument.value]));
+
+  function setInstrument(inst) {
+    instrument = inst;
+    el.instrument.value = inst.id;
+    store.set('instrument', inst.id);
     lockedIdx = 0;
+    endWalk();
     renderStrings();
+    renderGuide();
     resetReadout();
-  });
+  }
 
   // Reference pitch
   function renderA4() { el.a4out.textContent = a4 + ' Hz'; renderStrings(); }
@@ -344,7 +641,7 @@
   (function buildScale() {
     const zone = document.createElement('div');
     zone.className = 'zone';
-    zone.style.left = (50 - 5) + '%';
+    zone.style.left = '45%';
     zone.style.width = '10%';
     el.scale.appendChild(zone);
     for (let c = -50; c <= 50; c += 5) {
@@ -356,13 +653,13 @@
         const l = document.createElement('div');
         l.className = 'tick-label';
         l.style.left = (50 + c) + '%';
-        l.textContent = c > 0 ? '+' + c : String(c);
+        l.textContent = c > 0 ? '+' + c : c < 0 ? '−' + (-c) : '0';
         el.scale.appendChild(l);
       }
     }
   })();
 
-  // Strings
+  // ---------- Strings ----------
   function stringTargets() {
     return instrument.strings.map(s => {
       const midi = parseNote(s);
@@ -373,25 +670,27 @@
     const targets = stringTargets();
     el.strings.innerHTML = '';
     if (!targets.length) {
-      el.stringsLabel.textContent = 'Chromatic mode';
-      el.auto.parentElement.hidden = true;
-      el.playRef.textContent = '▶ Play A4 reference';
+      el.stringsLabel.textContent = 'Any note';
+      el.autoWrap.hidden = true;
+      el.playRef.textContent = '▶ Play an A (' + a4 + ' Hz)';
       const p = document.createElement('p');
       p.className = 'chromatic-msg';
-      p.textContent = 'Play any note — the tuner shows the closest pitch.';
+      p.textContent = 'Play one note. The tuner shows the closest pitch.';
       el.strings.appendChild(p);
       return;
     }
-    el.stringsLabel.textContent = targets.length + ' strings · low → high';
-    el.auto.parentElement.hidden = false;
+    el.stringsLabel.textContent = 'Tap a string to hear it and lock onto it';
+    el.autoWrap.hidden = false;
+    const hints = stringHints(instrument);
     targets.forEach((t, i) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'string';
-      b.dataset.idx = i;
-      b.innerHTML = `${prettyNote(t.label.replace(/-?\d$/, ''))}<small>${t.freq.toFixed(1)}</small>`;
-      b.setAttribute('aria-label', `String ${i + 1}: ${t.label}, ${t.freq.toFixed(1)} hertz`);
+      b.innerHTML = `${pretty(letter(t.label))}<small>${t.freq.toFixed(1)}</small>`;
+      b.title = hints[i];
+      b.setAttribute('aria-label', `${hints[i]}: ${pretty(t.label)}, ${t.freq.toFixed(1)} hertz`);
       b.addEventListener('click', () => {
+        if (walk) return goToStep(walk.items.findIndex(it => it.idx === i));
         lockedIdx = i;
         autoString = false;
         el.auto.checked = false;
@@ -402,46 +701,222 @@
     });
     el.playRef.textContent = '▶ Play reference tone';
     highlightString(autoString ? -1 : lockedIdx, false);
+    if (walk) renderWalk();
   }
   function highlightString(idx, tuned) {
     [...el.strings.querySelectorAll('.string')].forEach((b, i) => {
+      const doneInWalk = walk && walk.kind === 'tune' && walk.items.some((it, s) => it.idx === i && walk.done[s]);
       b.classList.toggle('target', i === idx);
-      b.classList.toggle('tuned', i === idx && tuned);
+      b.classList.toggle('tuned', (i === idx && tuned) || !!doneInWalk);
     });
   }
   el.auto.addEventListener('change', () => {
     autoString = el.auto.checked;
     highlightString(autoString ? -1 : lockedIdx, false);
   });
-
-  // ---------- Reference tone ----------
-  let toneCtx = null;
-  function playTone(freq) {
-    const ctx = audioCtx || toneCtx || (toneCtx = new (window.AudioContext || window.webkitAudioContext)());
-    if (ctx.state === 'suspended') ctx.resume();
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'triangle';
-    osc2.type = 'sine';
-    osc.frequency.value = freq;
-    osc2.frequency.value = freq * 2;
-    const g2 = ctx.createGain(); g2.gain.value = 0.25;
-    osc.connect(g); osc2.connect(g2).connect(g);
-    g.connect(ctx.destination);
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.25, now + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
-    osc.start(now); osc2.start(now);
-    osc.stop(now + 2.05); osc2.stop(now + 2.05);
-  }
   el.playRef.addEventListener('click', () => {
     const targets = stringTargets();
     if (!targets.length) return playTone(a4);
     playTone(targets[autoString ? lastAutoIdx : lockedIdx].freq);
   });
-  let lastAutoIdx = 0;
+
+  // ---------- Guide ----------
+  function renderGuide() {
+    const key = guideKeyFor(instrument.id);
+    const g = GUIDES[key];
+    el.guideTitle.textContent = 'How to tune: ' + g.title;
+    el.guideIntro.innerHTML = g.intro;
+    el.guideSteps.innerHTML = g.steps.map(s => `<li>${s}</li>`).join('');
+    el.guideTips.innerHTML = g.tips.map(s => `<li>${s}</li>`).join('');
+    el.guideExtra.innerHTML = g.table
+      ? '<h3>Tuning note for your instrument</h3><div class="table-wrap"><table><thead><tr><th>Instrument</th><th>Play</th><th>Tuner should say</th></tr></thead><tbody>' +
+        g.table.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('') + '</tbody></table></div>'
+      : '';
+    const canWalk = instrument.strings.length > 0 || !!g.check;
+    el.walkStart.hidden = !canWalk;
+    el.walkStart.textContent = g.check ? 'Check my piano' : 'Walk me through it';
+  }
+
+  // ---------- Walkthrough ----------
+  function buildWalkItems() {
+    const g = GUIDES[guideKeyFor(instrument.id)];
+    if (g.check) {
+      return { kind: 'check', items: g.check.map(c => ({ label: c.note, freq: midiToFreq(parseNote(c.note), a4), title: c.title, hint: c.hint })) };
+    }
+    const targets = stringTargets();
+    const hints = stringHints(instrument);
+    let order = targets.map((_, i) => i);
+    if (g.order && g.order.length === targets.length) order = g.order;
+    return {
+      kind: 'tune',
+      items: order.map(i => ({
+        idx: i, label: targets[i].label, freq: targets[i].freq,
+        title: `${pretty(letter(targets[i].label))} string`,
+        hint: `${hints[i]}. ${g.peg}`,
+      })),
+    };
+  }
+  async function startWalk() {
+    const w = buildWalkItems();
+    walk = Object.assign(w, { step: 0, held: 0, pauseUntil: 0, done: w.items.map(() => false), samples: [], results: w.items.map(() => null) });
+    el.walk.hidden = false;
+    renderWalk();
+    el.walk.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!running) await start();
+  }
+  function endWalk() {
+    walk = null;
+    el.walk.hidden = true;
+    if (instrument.strings.length) highlightString(autoString ? -1 : lockedIdx, false);
+  }
+  function goToStep(s) {
+    if (!walk || s < 0 || s >= walk.items.length) return;
+    walk.step = s; walk.held = 0; walk.samples = []; walk.pauseUntil = 0;
+    renderWalk();
+  }
+  function renderWalk() {
+    if (!walk) return;
+    const n = walk.items.length;
+    const finished = walk.step >= n;
+    el.walkResults.hidden = true;
+    el.walkNav.hidden = finished;
+    el.walkDots.innerHTML = walk.items.map((_, i) =>
+      `<span class="${walk.done[i] ? 'done' : i === walk.step ? 'now' : ''}"></span>`).join('');
+    if (finished) return renderWalkSummary();
+    const it = walk.items[walk.step];
+    el.walkStep.textContent = `Step ${walk.step + 1} of ${n}`;
+    el.walkTitle.innerHTML = walk.kind === 'tune'
+      ? `${it.title} <span style="color:var(--muted);font-weight:500">(${pretty(it.label)})</span>`
+      : `${it.title} <span style="color:var(--muted);font-weight:500">(${pretty(it.label)})</span>`;
+    el.walkHint.innerHTML = walk.kind === 'tune'
+      ? `${it.hint} Pluck it and watch the needle. It moves on by itself once it’s been green for a moment.`
+      : `${it.hint} Keep holding until it moves on by itself.`;
+    el.walkBack.disabled = walk.step === 0;
+    if (walk.kind === 'tune') highlightString(it.idx, false);
+  }
+  function renderWalkSummary() {
+    el.walkStep.textContent = 'Done';
+    if (walk.kind === 'tune') {
+      const skipped = walk.done.filter(d => !d).length;
+      el.walkTitle.textContent = skipped ? `Done, with ${skipped} skipped` : 'All tuned 🎉';
+      el.walkHint.innerHTML = 'Play each string once more to double-check. Tuning one string can pull the others a little. ' +
+        '<button type="button" id="walkAgain" style="margin-top:10px;width:100%">Go through again</button>';
+      $('walkAgain').addEventListener('click', startWalk);
+      highlightString(-1, false);
+      return;
+    }
+    // Piano check
+    const got = walk.results.filter(r => r !== null);
+    el.walkResults.hidden = false;
+    el.walkResults.innerHTML = walk.items.map((it, i) => {
+      const r = walk.results[i];
+      return `<li><span>${pretty(it.label)}</span><span>${r === null ? 'skipped' : (Math.round(r) > 0 ? '+' : Math.round(r) < 0 ? '−' : '') + Math.abs(Math.round(r)) + ' cents ' + (Math.abs(r) <= 5 ? '✓' : r < 0 ? '(low)' : '(high)')}</span></li>`;
+    }).join('');
+    if (!got.length) {
+      el.walkTitle.textContent = 'No readings';
+      el.walkHint.textContent = 'Every key was skipped. Try again in a quiet room, holding each key down.';
+      return;
+    }
+    const avg = got.reduce((s, x) => s + x, 0) / got.length;
+    const spread = Math.max(...got) - Math.min(...got);
+    const equivA4 = Math.round(a4 * Math.pow(2, avg / 1200));
+    let verdict, advice;
+    if (Math.abs(avg) <= 8 && spread <= 15) {
+      verdict = 'Your piano sounds in tune 👍';
+      advice = 'Nothing to do. Pianos drift over a year, so check again in a few months.';
+    } else if (Math.abs(avg) <= 25 && spread <= 25) {
+      verdict = 'A little out of tune';
+      advice = `Fine to play on your own. To play along with recordings or Jam Room, set Jam Room’s reference pitch to <strong>${equivA4} Hz</strong>. A tuner would fix it in one visit.`;
+    } else {
+      verdict = 'Time to call a piano tuner';
+      advice = spread > 25
+        ? 'The notes disagree with each other, so some parts of the keyboard are more off than others. Only a piano tuner can fix that.'
+        : `The whole piano is ${avg < 0 ? 'low' : 'high'} by about ${Math.abs(avg).toFixed(0)} cents. Until it’s tuned, set Jam Room’s reference pitch to <strong>${equivA4} Hz</strong> to play along.`;
+    }
+    el.walkTitle.textContent = verdict;
+    el.walkHint.innerHTML = advice;
+  }
+  el.walkStart.addEventListener('click', startWalk);
+  el.walkExit.addEventListener('click', endWalk);
+  el.walkBack.addEventListener('click', () => walk && goToStep(walk.step - 1));
+  el.walkSkip.addEventListener('click', () => {
+    if (!walk) return;
+    walk.step++; walk.held = 0; walk.samples = [];
+    renderWalk();
+  });
+  el.walkPlay.addEventListener('click', () => { if (walk && walk.items[walk.step]) playTone(walk.items[walk.step].freq); });
+
+  function walkTick(ts, cents) {
+    if (!walk || walk.step >= walk.items.length || ts < walk.pauseUntil) return;
+    if (walk.kind === 'tune') {
+      if (Math.abs(cents) <= 5) {
+        if (!walk.held) walk.held = ts;
+        if (ts - walk.held > 1200) {
+          walk.done[walk.step] = true;
+          el.hint.textContent = 'Got it ✓';
+          highlightString(walk.items[walk.step].idx, true);
+          walk.pauseUntil = ts + 900;
+          const s = walk.step;
+          setTimeout(() => { if (walk && walk.step === s) { walk.step++; walk.held = 0; renderWalk(); } }, 900);
+        }
+      } else {
+        walk.held = 0;
+      }
+    } else {
+      // Only measure the key we asked for; a different key (or the last one still ringing) doesn't count
+      if (Math.abs(cents) > 100) {
+        walk.samples = [];
+        el.hint.textContent = 'That’s a different key. Look for ' + pretty(walk.items[walk.step].label) + '.';
+        return;
+      }
+      walk.samples.push(cents);
+      el.hint.textContent = 'Measuring… keep holding';
+      if (walk.samples.length >= 18) {
+        const sorted = [...walk.samples].sort((x, y) => x - y);
+        walk.results[walk.step] = sorted[Math.floor(sorted.length / 2)];
+        walk.done[walk.step] = true;
+        el.hint.textContent = 'Got it ✓ Let go of the key.';
+        walk.pauseUntil = ts + 1500;
+        const s = walk.step;
+        setTimeout(() => { if (walk && walk.step === s) { walk.step++; walk.samples = []; renderWalk(); } }, 1500);
+      }
+    }
+  }
+  function walkSignalLost() {
+    if (!walk) return;
+    walk.held = 0;
+    if (walk.kind === 'check' && walk.step < walk.items.length && !walk.done[walk.step]) walk.samples = [];
+  }
+
+  // ---------- Audio helpers ----------
+  const AC = window.AudioContext || window.webkitAudioContext;
+  function setSession(type) {
+    // iPhone/iPad (Safari 16.4+): 'playback' lets reference tones play with the silent switch on.
+    try { if (navigator.audioSession && navigator.audioSession.type !== type) navigator.audioSession.type = type; } catch (e) {}
+  }
+  let toneCtx = null;
+  function playTone(freq) {
+    if (!running) setSession('playback');
+    const ctx = audioCtx || toneCtx || (toneCtx = new AC());
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
+    const now = ctx.currentTime + 0.01;
+    const g = ctx.createGain();
+    const osc = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    osc.type = 'triangle';
+    osc2.type = 'sine';
+    osc.frequency.value = freq;
+    osc2.frequency.value = freq * 2;
+    g2.gain.value = 0.25;
+    osc.connect(g); osc2.connect(g2); g2.connect(g);
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.3, now + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+    osc.start(now); osc2.start(now);
+    osc.stop(now + 2.05); osc2.stop(now + 2.05);
+  }
 
   // ---------- Pitch detection (YIN) ----------
   const MIN_FREQ = 27;   // a bit below B0 (30.9 Hz)
@@ -453,7 +928,7 @@
     let rms = 0;
     for (let i = 0; i < n; i++) rms += data[i] * data[i];
     rms = Math.sqrt(rms / n);
-    if (rms < 0.008) return { freq: 0, rms };
+    if (rms < 0.006) return { freq: 0, rms };
 
     const tauMax = Math.min(Math.floor(sr / MIN_FREQ), Math.floor(n / 2));
     const tauMin = Math.max(2, Math.floor(sr / MAX_FREQ));
@@ -463,23 +938,23 @@
     const threshold = 0.12;
 
     d[0] = 1;
-    let running = 0, found = -1, best = -1, bestVal = Infinity;
+    let runningSum = 0, found = -1, best = -1, bestVal = Infinity;
     for (let tau = 1; tau <= tauMax; tau++) {
       let sum = 0;
       for (let j = 0; j < W; j++) {
         const diff = data[j] - data[j + tau];
         sum += diff * diff;
       }
-      running += sum;
-      d[tau] = running > 0 ? sum * tau / running : 1;
+      runningSum += sum;
+      d[tau] = runningSum > 0 ? sum * tau / runningSum : 1;
       if (tau >= tauMin) {
         if (d[tau] < bestVal) { bestVal = d[tau]; best = tau; }
-        // once under threshold, walk to the bottom of that dip, then stop
+        // once under the threshold, walk to the bottom of that dip, then stop
         if (found < 0 && d[tau] < threshold) found = tau;
         if (found >= 0 && d[tau] > d[tau - 1]) { found = tau - 1; break; }
       }
     }
-    let tau = found >= 0 ? found : (bestVal < 0.25 ? best : -1);
+    const tau = found >= 0 ? found : (bestVal < 0.25 ? best : -1);
     if (tau < 0) return { freq: 0, rms };
 
     // Parabolic interpolation for sub-sample accuracy
@@ -489,7 +964,7 @@
       const denom = a - 2 * b + c;
       if (denom !== 0) refined = tau + 0.5 * (a - c) / denom;
     }
-    return { freq: sr / refined, rms, clarity: 1 - d[tau] };
+    return { freq: sr / refined, rms };
   }
 
   // ---------- Main loop ----------
@@ -503,27 +978,35 @@
     el.level.style.width = Math.min(100, rms * 400) + '%';
 
     if (freq > 0) {
-      // Median filter + smoothing; reset on big jumps (new note)
+      // Median of the last few readings, then smoothing; a big jump means a new note, so snap to it
       history.push(freq);
       if (history.length > 5) history.shift();
       const med = [...history].sort((x, y) => x - y)[Math.floor(history.length / 2)];
       if (!smoothFreq || Math.abs(1200 * Math.log2(med / smoothFreq)) > 40) smoothFreq = med;
       else smoothFreq += (med - smoothFreq) * 0.35;
       lastHeard = ts;
-      update(smoothFreq);
-    } else if (ts - lastHeard > 1200 && lastHeard) {
+      update(smoothFreq, ts);
+    } else if (lastHeard && ts - lastHeard > 1200) {
       history.length = 0;
       smoothFreq = 0;
       lastHeard = 0;
+      walkSignalLost();
       resetReadout(true);
+    } else if (lastHeard && ts - lastHeard > 250) {
+      walkSignalLost();
     }
   }
 
-  function update(freq) {
+  function update(freq, ts) {
     const targets = stringTargets();
-    let noteText, octave, targetFreq, stringIdx = -1;
+    let noteText, octave, targetFreq, stringIdx = -1, locked = false;
 
-    if (targets.length) {
+    if (walk && walk.step < walk.items.length) {
+      const it = walk.items[walk.step];
+      noteText = letter(it.label); octave = octaveOf(it.label); targetFreq = it.freq;
+      stringIdx = it.idx === undefined ? -1 : it.idx;
+      locked = true;
+    } else if (targets.length) {
       let idx = lockedIdx;
       if (autoString) {
         let bestDist = Infinity;
@@ -532,37 +1015,44 @@
           if (dist < bestDist) { bestDist = dist; idx = i; }
         });
         lastAutoIdx = idx;
+      } else {
+        locked = true;
       }
       const t = targets[idx];
-      noteText = t.label.replace(/-?\d$/, '');
-      octave = t.label.match(/-?\d$/)[0];
-      targetFreq = t.freq;
+      noteText = letter(t.label); octave = octaveOf(t.label); targetFreq = t.freq;
       stringIdx = idx;
     } else {
       const midi = Math.round(freqToMidi(freq, a4));
-      noteText = midiName(midi);
-      octave = midiOctave(midi);
+      noteText = midiName(midi); octave = midiOctave(midi);
       targetFreq = midiToFreq(midi, a4);
     }
 
-    const cents = 1200 * Math.log2(freq / targetFreq);
+    let cents = 1200 * Math.log2(freq / targetFreq);
+    // With a known target, a reading one octave off is a harmonic (or the mic missing a low fundamental): count it as the target note
+    if (locked) for (const k of [-2400, -1200, 1200, 2400]) if (Math.abs(cents - k) < 80) { cents -= k; break; }
     const abs = Math.abs(cents);
     const cls = abs <= 5 ? 'good' : abs <= 15 ? 'warn' : 'bad';
 
+    const heardMidi = Math.round(freqToMidi(freq, a4));
     el.note.className = 'note ' + cls;
-    el.note.innerHTML = `${prettyNote(noteText)}<sub>${octave}</sub>`;
-    el.freq.textContent = freq.toFixed(1) + ' Hz';
-    el.cents.textContent = (cents >= 0 ? '+' : '−') + Math.abs(cents).toFixed(0) + ' ¢';
+    el.note.innerHTML = `${pretty(noteText)}<sub>${octave}</sub>`;
+    el.freq.textContent = (targets.length || walk ? 'hearing ' + pretty(midiName(heardMidi)) + midiOctave(heardMidi) + ' · ' : '') + freq.toFixed(1) + ' Hz';
+    const rc = Math.round(cents);
+    el.cents.textContent = (rc > 0 ? '+' : rc < 0 ? '−' : '') + Math.abs(rc) + ' ¢';
 
     el.needle.className = 'needle active ' + cls;
     el.needle.style.left = (50 + clamp(cents, -50, 50)) + '%';
 
-    if (abs <= 5) el.hint.textContent = 'In tune ✓';
-    else if (abs > 50) el.hint.textContent = cents < 0 ? 'Way flat — tighten ↑' : 'Way sharp — loosen ↓';
-    else el.hint.textContent = cents < 0 ? 'Flat — tune up ↑' : 'Sharp — tune down ↓';
-    el.hint.style.color = `var(--${cls})`;
+    const pianoCheck = walk && walk.kind === 'check';
+    if (pianoCheck) el.hint.textContent = '';
+    else if (abs <= 5) el.hint.textContent = 'In tune ✓';
+    else if (abs > 50) el.hint.textContent = cents < 0 ? 'Way too low: tighten ↑' : 'Way too high: loosen ↓';
+    else el.hint.textContent = cents < 0 ? 'Too low: tighten a little ↑' : 'Too high: loosen a little ↓';
+    if (instrument.id === 'winds' && !pianoCheck && abs > 5) el.hint.textContent = cents < 0 ? 'Too low: push in ↑' : 'Too high: pull out ↓';
+    el.hint.style.color = pianoCheck ? '' : `var(--${cls})`;
 
-    if (targets.length) highlightString(stringIdx, abs <= 5);
+    if (stringIdx >= 0) highlightString(stringIdx, abs <= 5);
+    walkTick(ts, cents);
   }
 
   function resetReadout(keepNote) {
@@ -570,56 +1060,69 @@
     if (!keepNote) el.note.textContent = '–';
     el.freq.textContent = '— Hz';
     el.cents.textContent = '— ¢';
-    el.hint.textContent = running ? 'Listening… play a string' : '';
+    el.hint.textContent = running ? (walk ? 'Listening…' : 'Listening… play a note') : '';
     el.hint.style.color = '';
     el.needle.className = 'needle';
     el.needle.style.left = '50%';
-    if (instrument.strings.length) highlightString(autoString ? -1 : lockedIdx, false);
+    if (instrument.strings.length && !walk) highlightString(autoString ? -1 : lockedIdx, false);
   }
 
   // ---------- Start / stop ----------
   async function start() {
+    if (running) return;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setStatus('This browser can’t access the microphone. Try Chrome, Safari or Firefox over HTTPS.', true);
+      setStatus(location.protocol === 'https:' || location.hostname === 'localhost'
+        ? 'This browser can’t use the microphone. On iPhone, open this link in Safari.'
+        : 'The microphone only works on a secure (https://) link. Open the tuner from its web link.', true);
       return;
     }
+    el.start.disabled = true;
+    setStatus('Asking for the microphone…');
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
     } catch (err) {
-      setStatus(err && err.name === 'NotAllowedError'
-        ? 'Microphone access was blocked. Allow it in your browser settings and try again.'
-        : 'Couldn’t open the microphone: ' + (err && err.message || err), true);
+      el.start.disabled = false;
+      const blocked = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      setStatus(blocked
+        ? 'Microphone is blocked. On iPhone: tap aA in the address bar › Website Settings › Microphone › Allow, then reload.'
+        : 'Couldn’t open the microphone: ' + ((err && err.message) || err), true);
       return;
     }
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    // Create the audio engine after the mic is open: on iPhone this keeps the mic and the engine at the same sample rate.
+    if (toneCtx) { toneCtx.close().catch(() => {}); toneCtx = null; }
+    audioCtx = new AC();
+    audioCtx.onstatechange = () => { if (running && audioCtx && audioCtx.state !== 'running') setStatus('Paused by the phone. Tap anywhere to continue.', true); };
     source = audioCtx.createMediaStreamSource(stream);
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 4096;
     source.connect(analyser);
     buf = new Float32Array(analyser.fftSize);
+    try { await audioCtx.resume(); } catch (e) {}
 
     running = true;
+    el.start.disabled = false;
     el.start.textContent = 'Stop';
     el.start.classList.add('listening');
-    setStatus('Listening. Pluck one string at a time and let it ring.');
+    setStatus(audioCtx.state === 'running' ? 'Listening. Play one note at a time and let it ring.' : 'Tap anywhere to start listening.');
     resetReadout();
     rafId = requestAnimationFrame(tick);
+    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
   }
 
   function stop() {
     running = false;
     cancelAnimationFrame(rafId);
     if (stream) stream.getTracks().forEach(t => t.stop());
-    if (audioCtx) audioCtx.close();
+    if (audioCtx) audioCtx.close().catch(() => {});
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     stream = audioCtx = analyser = source = null;
     history.length = 0; smoothFreq = 0; lastHeard = 0;
     el.level.style.width = '0';
     el.start.textContent = 'Start tuning';
     el.start.classList.remove('listening');
-    setStatus('Stopped. Uses your microphone. Nothing is recorded or sent anywhere.');
+    setStatus('Stopped. Nothing was recorded or sent anywhere.');
     resetReadout();
   }
 
@@ -629,9 +1132,22 @@
   }
 
   el.start.addEventListener('click', () => (running ? stop() : start()));
-  document.addEventListener('visibilitychange', () => { if (document.hidden && running) stop(); });
+  // iPhone can pause audio (phone call, Siri, silent mode changes); any tap resumes it
+  document.addEventListener('pointerdown', () => {
+    if (running && audioCtx && audioCtx.state !== 'running') {
+      audioCtx.resume().then(() => setStatus('Listening. Play one note at a time and let it ring.')).catch(() => {});
+    }
+  }, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && running) { stop(); setStatus('Stopped while the app was in the background. Tap Start to keep tuning.'); }
+  });
+  window.addEventListener('hashchange', () => {
+    const id = location.hash.slice(1);
+    if (BY_ID[id] && id !== instrument.id) setInstrument(BY_ID[id]);
+  });
 
   renderA4();
+  renderGuide();
 })();
 </script>
 </body>
